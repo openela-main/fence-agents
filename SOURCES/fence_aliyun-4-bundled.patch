@@ -1,0 +1,11 @@
+diff -uNr a/agents/aliyun/fence_aliyun.py b/agents/aliyun/fence_aliyun.py
+--- a/agents/aliyun/fence_aliyun.py	2018-07-24 14:30:29.030311806 +0200
++++ b/agents/aliyun/fence_aliyun.py	2018-07-24 14:31:10.023884949 +0200
+@@ -9,6 +9,7 @@
+ from fencing import fail, fail_usage, EC_TIMED_OUT, run_delay
+ 
+ try:
++	sys.path.insert(0, '/usr/lib/fence-agents/bundled/aliyun')
+ 	from aliyunsdkcore import client
+ 
+ 	from aliyunsdkecs.request.v20140526.DescribeInstancesRequest import DescribeInstancesRequest

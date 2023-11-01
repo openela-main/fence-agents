@@ -1,0 +1,22 @@
+From 199b5e8a63d8b3457262751b7fbe187f92b38e73 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Tue, 4 May 2021 09:33:34 +0200
+Subject: [PATCH] fencing: fix issue with hardcoded help text length for
+ metadata
+
+---
+ lib/fencing.py.py                             | 2 +-
+ 77 files changed, 153 insertions(+), 153 deletions(-)
+
+diff --git a/lib/fencing.py.py b/lib/fencing.py.py
+index bd7f529f7..b0ddde850 100644
+--- a/lib/fencing.py.py
++++ b/lib/fencing.py.py
+@@ -641,7 +641,7 @@ def metadata(options, avail_opt, docs):
+ 			mixed = _encode_html_entities(mixed)
+ 
+ 			if not "shortdesc" in opt:
+-				shortdesc = re.sub("\s\s+", " ", opt["help"][31:])
++				shortdesc = re.sub(".*\s\s+", "", opt["help"][31:])
+ 			else:
+ 				shortdesc = opt["shortdesc"]

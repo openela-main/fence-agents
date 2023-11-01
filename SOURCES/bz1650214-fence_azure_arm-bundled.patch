@@ -1,0 +1,12 @@
+diff -uNr a/agents/azure_arm/fence_azure_arm.py b/agents/azure_arm/fence_azure_arm.py
+--- a/agents/azure_arm/fence_azure_arm.py	2018-06-28 14:24:54.000000000 +0200
++++ b/agents/azure_arm/fence_azure_arm.py	2019-01-15 10:24:16.030092206 +0100
+@@ -7,6 +7,8 @@
+ sys.path.append("@FENCEAGENTSLIBDIR@")
+ from fencing import *
+ from fencing import fail_usage, run_command, run_delay
++
++sys.path.insert(0, '/usr/lib/fence-agents/bundled/azure')
+ import azure_fence
+ 
+ def get_nodes_list(clients, options):

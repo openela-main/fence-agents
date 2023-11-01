@@ -1,0 +1,23 @@
+From 2d0057dabae0b4cd4394fec5a60a3f649c8e3d2b Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Wed, 1 Jul 2020 13:18:26 +0200
+Subject: [PATCH] fence_mpath: allow spaces for comma-separated devices and add
+ support for space-separated devices
+
+---
+ agents/mpath/fence_mpath.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/agents/mpath/fence_mpath.py b/agents/mpath/fence_mpath.py
+index a3d9fe23..bc15aae2 100644
+--- a/agents/mpath/fence_mpath.py
++++ b/agents/mpath/fence_mpath.py
+@@ -297,7 +297,7 @@ def main():
+ 	if not ("--devices" in options and options["--devices"]):
+ 		fail_usage("Failed: No devices found")
+ 
+-	options["devices"] = options["--devices"].split(",")
++	options["devices"] = [d for d in re.split("\s*,\s*|\s+", options["--devices"].strip()) if d]
+ 	# Input control END
+ 
+ 	result = fence_action(None, options, set_status, get_status)

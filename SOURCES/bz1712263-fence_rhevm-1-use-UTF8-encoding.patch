@@ -1,0 +1,32 @@
+From a77165d7c8caadf514462d359c6d564048c2c33a Mon Sep 17 00:00:00 2001
+From: Sandro <42254081+Numblesix@users.noreply.github.com>
+Date: Tue, 29 Jan 2019 13:29:52 +0100
+Subject: [PATCH] Changed Encoding to UTF-8
+
+Starting from RHV/Ovirt 4.2 we saw issues with the agent(unable to fence) after switching to UTF-8 all worked again.
+---
+ agents/rhevm/fence_rhevm.py | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/agents/rhevm/fence_rhevm.py b/agents/rhevm/fence_rhevm.py
+index 2a5107cc6..a1cdaf605 100644
+--- a/agents/rhevm/fence_rhevm.py
++++ b/agents/rhevm/fence_rhevm.py
+@@ -88,7 +88,7 @@ def send_command(opt, command, method="GET"):
+ 	## send command through pycurl
+ 	conn = pycurl.Curl()
+ 	web_buffer = io.BytesIO()
+-	conn.setopt(pycurl.URL, url.encode("ascii"))
++	conn.setopt(pycurl.URL, url.encode("UTF-8"))
+ 	conn.setopt(pycurl.HTTPHEADER, [
+ 		"Version: 3",
+ 		"Content-type: application/xml",
+@@ -128,7 +128,7 @@ def send_command(opt, command, method="GET"):
+ 
+ 		opt["cookie"] = cookie
+ 
+-	result = web_buffer.getvalue().decode()
++	result = web_buffer.getvalue().decode("UTF-8")
+ 
+ 	logging.debug("%s\n", command)
+ 	logging.debug("%s\n", result)

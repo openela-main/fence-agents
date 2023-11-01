@@ -1,0 +1,53 @@
+From 570e04d68c3595b137b104ba723aa2e6ceca5a3a Mon Sep 17 00:00:00 2001
+From: Reid Wahl <nrwahl@protonmail.com>
+Date: Wed, 27 Jan 2021 01:45:43 -0800
+Subject: [PATCH] fence_redfish: Add diag action
+
+Sends NMI to fenced node.
+
+Ref:
+  - http://redfish.dmtf.org/schemas/DSP2046_2020.3.html#redfish.dmtf.org/schemas/v1/ComputerSystem.json|details|ResetType
+
+Resolves: RHBZ#1920947
+
+Signed-off-by: Reid Wahl <nrwahl@protonmail.com>
+---
+ agents/redfish/fence_redfish.py       | 6 ++++--
+ tests/data/metadata/fence_redfish.xml | 1 +
+ 2 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/agents/redfish/fence_redfish.py b/agents/redfish/fence_redfish.py
+index 1b259576..9a7d604d 100644
+--- a/agents/redfish/fence_redfish.py
++++ b/agents/redfish/fence_redfish.py
+@@ -40,7 +40,8 @@ def set_power_status(conn, options):
+     action = {
+         'on' : "On",
+         'off': "ForceOff",
+-        'reboot': "ForceRestart"
++        'reboot': "ForceRestart",
++        'diag': "Nmi"
+     }[options["--action"]]
+ 
+     payload = {'ResetType': action}
+@@ -119,7 +120,8 @@ def define_new_opts():
+ 
+ def main():
+     atexit.register(atexit_handler)
+-    device_opt = ["ipaddr", "login", "passwd", "redfish-uri", "systems-uri", "ssl"]
++    device_opt = ["ipaddr", "login", "passwd", "redfish-uri", "systems-uri",
++                  "ssl", "diag"]
+     define_new_opts()
+ 
+     opt = process_input(device_opt)
+diff --git a/tests/data/metadata/fence_redfish.xml b/tests/data/metadata/fence_redfish.xml
+index 6daf2cd9..fb112781 100644
+--- a/tests/data/metadata/fence_redfish.xml
++++ b/tests/data/metadata/fence_redfish.xml
+@@ -187,5 +187,6 @@
+ 	<action name="metadata" />
+ 	<action name="manpage" />
+ 	<action name="validate-all" />
++	<action name="diag" />
+ </actions>
+ </resource-agent>

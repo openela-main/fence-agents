@@ -1,0 +1,237 @@
+From baf8d524e89d7f6c716e8241a12d8135debadfcc Mon Sep 17 00:00:00 2001
+From: Ondrej Famera <ondrej@famera.cz>
+Date: Sun, 20 Oct 2019 20:13:40 +0900
+Subject: [PATCH 1/4] add new method for autogenerating SCSI key
+
+this methos generates second part of SCSI key based on hash of cluster
+node name instead of currently used ID based approach which can brake if
+the nodes get removed from cluster but whole cluster is not restarted
+because the IDs changes. With hash approach hashes stays same.
+Note that there is theoretical risk that hashes could colide.
+---
+ agents/scsi/fence_scsi.py          | 32 ++++++++++++++++++++++++++++--
+ tests/data/metadata/fence_scsi.xml |  5 +++++
+ 2 files changed, 35 insertions(+), 2 deletions(-)
+
+diff --git a/agents/scsi/fence_scsi.py b/agents/scsi/fence_scsi.py
+index 5580e08b..4cc9b66c 100644
+--- a/agents/scsi/fence_scsi.py
++++ b/agents/scsi/fence_scsi.py
+@@ -202,9 +202,20 @@ def get_node_id(options):
+ 
+ 	return match.group(1) if match else fail_usage("Failed: unable to parse output of corosync-cmapctl or node does not exist")
+ 
++def get_node_hash(options):
++	try:
++		return hashlib.md5(options["--plug"].encode('ascii')).hexdigest()
++	except ValueError:
++		# FIPS requires usedforsecurity=False and might not be
++		# available on all distros: https://bugs.python.org/issue9216
++		return hashlib.md5(options["--plug"].encode('ascii'), usedforsecurity=False).hexdigest()
++
+ 
+ def generate_key(options):
+-	return "%.4s%.4d" % (get_cluster_id(options), int(get_node_id(options)))
++	if options["--key_value"] == "hash":
++		return "%.4s%.4s" % (get_cluster_id(options), get_node_hash(options))
++	else:
++		return "%.4s%.4d" % (get_cluster_id(options), int(get_node_id(options)))
+ 
+ 
+ # save node key to file
+@@ -375,6 +386,19 @@ def define_new_opts():
+ 		"default" : "@VGS_PATH@",
+ 		"order": 300
+ 	}
++	all_opt["key_value"] = {
++		"getopt" : ":",
++		"longopt" : "key_value",
++		"help" : "--key_value=<id|hash>          SCSI key node generation method",
++		"required" : "0",
++		"shortdesc" : "Method used to generate the SCSI key. \"id\" (default) \
++uses the positional ID from \"corosync-cmactl nodelist\" output which can get inconsistent \
++when nodes are removed from cluster without full cluster restart. \"hash\" uses part of hash \
++made out of node names which is not affected over time but there is theoretical chance that \
++hashes can collide as size of SCSI key is quite limited.",
++		"default" : "id",
++		"order": 300
++	}
+ 
+ 
+ def scsi_check_get_options(options):
+@@ -440,7 +464,7 @@ def main():
+ 
+ 	device_opt = ["no_login", "no_password", "devices", "nodename", "port",\
+ 	"no_port", "key", "aptpl", "fabric_fencing", "on_target", "corosync_cmap_path",\
+-	"sg_persist_path", "sg_turs_path", "logfile", "vgs_path", "force_on"]
++	"sg_persist_path", "sg_turs_path", "logfile", "vgs_path", "force_on", "key_value"]
+ 
+ 	define_new_opts()
+ 
+@@ -517,6 +541,10 @@ def main():
+ 	if options["--key"] == "0" or not options["--key"]:
+ 		fail_usage("Failed: key cannot be 0", stop_after_error)
+ 
++	if "--key_value" in options\
++	and (options["--key_value"] != "id" and options["--key_value"] != "hash"):
++		fail_usage("Failed: key_value has to be 'id' or 'hash'", stop_after_error)
++
+ 	if options["--action"] == "validate-all":
+ 		sys.exit(0)
+ 
+diff --git a/tests/data/metadata/fence_scsi.xml b/tests/data/metadata/fence_scsi.xml
+index b8cdabd1..56c6224d 100644
+--- a/tests/data/metadata/fence_scsi.xml
++++ b/tests/data/metadata/fence_scsi.xml
+@@ -105,6 +105,11 @@ When used as a watchdog device you can define e.g. retry=1, retry-sleep=2 and ve
+ 		<getopt mixed="--corosync-cmap-path=[path]" />
+ 		<shortdesc lang="en">Path to corosync-cmapctl binary</shortdesc>
+ 	</parameter>
++	<parameter name="key_value" unique="0" required="0">
++		<getopt mixed="--key_value=&lt;id|hash&gt;" />
++		<content type="string" default="id"  />
++		<shortdesc lang="en">Method used to generate the SCSI key. "id" (default) uses the positional ID from "corosync-cmactl nodelist" output which can get inconsistent when nodes are removed from cluster without full cluster restart. "hash" uses part of hash made out of node names which is not affected over time but there is theoretical chance that hashes can collide as size of SCSI key is quite limited.</shortdesc>
++	</parameter>
+ 	<parameter name="sg_persist_path" unique="0" required="0">
+ 		<getopt mixed="--sg_persist-path=[path]" />
+ 		<shortdesc lang="en">Path to sg_persist binary</shortdesc>
+
+From ee7a5ea238b4b3312384e4cfd9edd392c311d17a Mon Sep 17 00:00:00 2001
+From: Ondrej Famera <ondrej@famera.cz>
+Date: Fri, 1 Nov 2019 13:16:58 +0900
+Subject: [PATCH 2/4] rename 'key_value' to 'key-value' for manual invokation
+
+---
+ agents/scsi/fence_scsi.py          | 12 ++++++------
+ tests/data/metadata/fence_scsi.xml |  2 +-
+ 2 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/agents/scsi/fence_scsi.py b/agents/scsi/fence_scsi.py
+index 4cc9b66c..7d515e16 100644
+--- a/agents/scsi/fence_scsi.py
++++ b/agents/scsi/fence_scsi.py
+@@ -212,7 +212,7 @@ def get_node_hash(options):
+ 
+ 
+ def generate_key(options):
+-	if options["--key_value"] == "hash":
++	if options["--key-value"] == "hash":
+ 		return "%.4s%.4s" % (get_cluster_id(options), get_node_hash(options))
+ 	else:
+ 		return "%.4s%.4d" % (get_cluster_id(options), int(get_node_id(options)))
+@@ -388,8 +388,8 @@ def define_new_opts():
+ 	}
+ 	all_opt["key_value"] = {
+ 		"getopt" : ":",
+-		"longopt" : "key_value",
+-		"help" : "--key_value=<id|hash>          SCSI key node generation method",
++		"longopt" : "key-value",
++		"help" : "--key-value=<id|hash>          SCSI key node generation method",
+ 		"required" : "0",
+ 		"shortdesc" : "Method used to generate the SCSI key. \"id\" (default) \
+ uses the positional ID from \"corosync-cmactl nodelist\" output which can get inconsistent \
+@@ -541,9 +541,9 @@ def main():
+ 	if options["--key"] == "0" or not options["--key"]:
+ 		fail_usage("Failed: key cannot be 0", stop_after_error)
+ 
+-	if "--key_value" in options\
+-	and (options["--key_value"] != "id" and options["--key_value"] != "hash"):
+-		fail_usage("Failed: key_value has to be 'id' or 'hash'", stop_after_error)
++	if "--key-value" in options\
++	and (options["--key-value"] != "id" and options["--key-value"] != "hash"):
++		fail_usage("Failed: key-value has to be 'id' or 'hash'", stop_after_error)
+ 
+ 	if options["--action"] == "validate-all":
+ 		sys.exit(0)
+diff --git a/tests/data/metadata/fence_scsi.xml b/tests/data/metadata/fence_scsi.xml
+index 56c6224d..72800688 100644
+--- a/tests/data/metadata/fence_scsi.xml
++++ b/tests/data/metadata/fence_scsi.xml
+@@ -106,7 +106,7 @@ When used as a watchdog device you can define e.g. retry=1, retry-sleep=2 and ve
+ 		<shortdesc lang="en">Path to corosync-cmapctl binary</shortdesc>
+ 	</parameter>
+ 	<parameter name="key_value" unique="0" required="0">
+-		<getopt mixed="--key_value=&lt;id|hash&gt;" />
++		<getopt mixed="--key-value=&lt;id|hash&gt;" />
+ 		<content type="string" default="id"  />
+ 		<shortdesc lang="en">Method used to generate the SCSI key. "id" (default) uses the positional ID from "corosync-cmactl nodelist" output which can get inconsistent when nodes are removed from cluster without full cluster restart. "hash" uses part of hash made out of node names which is not affected over time but there is theoretical chance that hashes can collide as size of SCSI key is quite limited.</shortdesc>
+ 	</parameter>
+
+From 58105710876bd6a2220f92ea37d621991d68bf4b Mon Sep 17 00:00:00 2001
+From: Ondrej Famera <ondrej@famera.cz>
+Date: Fri, 1 Nov 2019 13:20:17 +0900
+Subject: [PATCH 3/4] expand longdesc of fence_scsi to describe the impact of
+ key_value option
+
+---
+ agents/scsi/fence_scsi.py          | 6 +++++-
+ tests/data/metadata/fence_scsi.xml | 2 +-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/agents/scsi/fence_scsi.py b/agents/scsi/fence_scsi.py
+index 7d515e16..4b2bfe20 100644
+--- a/agents/scsi/fence_scsi.py
++++ b/agents/scsi/fence_scsi.py
+@@ -493,7 +493,11 @@ def main():
+ devices must support SCSI-3 persistent reservations (SPC-3 or greater) as \
+ well as the \"preempt-and-abort\" subcommand.\nThe fence_scsi agent works by \
+ having each node in the cluster register a unique key with the SCSI \
+-device(s). Once registered, a single node will become the reservation holder \
++device(s). Reservation key is generated from \"node id\" (default) or from \
++\"node name hash\" (recommended) by adjusting \"key_value\" option. \
++Using hash is recommended to prevent issues when removing nodes \
++from cluster without full cluster restart. \
++Once registered, a single node will become the reservation holder \
+ by creating a \"write exclusive, registrants only\" reservation on the \
+ device(s). The result is that only registered nodes may write to the \
+ device(s). When a node failure occurs, the fence_scsi agent will remove the \
+diff --git a/tests/data/metadata/fence_scsi.xml b/tests/data/metadata/fence_scsi.xml
+index 72800688..6f914823 100644
+--- a/tests/data/metadata/fence_scsi.xml
++++ b/tests/data/metadata/fence_scsi.xml
+@@ -1,7 +1,7 @@
+ <?xml version="1.0" ?>
+ <resource-agent name="fence_scsi" shortdesc="Fence agent for SCSI persistent reservation" >
+ <longdesc>fence_scsi is an I/O fencing agent that uses SCSI-3 persistent reservations to control access to shared storage devices. These devices must support SCSI-3 persistent reservations (SPC-3 or greater) as well as the "preempt-and-abort" subcommand.
+-The fence_scsi agent works by having each node in the cluster register a unique key with the SCSI device(s). Once registered, a single node will become the reservation holder by creating a "write exclusive, registrants only" reservation on the device(s). The result is that only registered nodes may write to the device(s). When a node failure occurs, the fence_scsi agent will remove the key belonging to the failed node from the device(s). The failed node will no longer be able to write to the device(s). A manual reboot is required.
++The fence_scsi agent works by having each node in the cluster register a unique key with the SCSI device(s). Reservation key is generated from "node id" (default) or from "node name hash" (recommended) by adjusting "key_value" option. Using hash is recommended to prevent issues when removing nodes from cluster without full cluster restart. Once registered, a single node will become the reservation holder by creating a "write exclusive, registrants only" reservation on the device(s). The result is that only registered nodes may write to the device(s). When a node failure occurs, the fence_scsi agent will remove the key belonging to the failed node from the device(s). The failed node will no longer be able to write to the device(s). A manual reboot is required.
+ 
+ When used as a watchdog device you can define e.g. retry=1, retry-sleep=2 and verbose=yes parameters in /etc/sysconfig/stonith if you have issues with it failing.</longdesc>
+ <vendor-url></vendor-url>
+
+From 6a73919ab70d76fcf4ce19b4fd00e182e41f33b5 Mon Sep 17 00:00:00 2001
+From: Ondrej Famera <ondrej@famera.cz>
+Date: Sat, 16 Nov 2019 17:03:42 +0900
+Subject: [PATCH 4/4] emphasize the recommendation to use 'hash' over 'id'
+
+---
+ agents/scsi/fence_scsi.py          | 2 +-
+ tests/data/metadata/fence_scsi.xml | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/agents/scsi/fence_scsi.py b/agents/scsi/fence_scsi.py
+index 4b2bfe20..9b6af556 100644
+--- a/agents/scsi/fence_scsi.py
++++ b/agents/scsi/fence_scsi.py
+@@ -494,7 +494,7 @@ def main():
+ well as the \"preempt-and-abort\" subcommand.\nThe fence_scsi agent works by \
+ having each node in the cluster register a unique key with the SCSI \
+ device(s). Reservation key is generated from \"node id\" (default) or from \
+-\"node name hash\" (recommended) by adjusting \"key_value\" option. \
++\"node name hash\" (RECOMMENDED) by adjusting \"key_value\" option. \
+ Using hash is recommended to prevent issues when removing nodes \
+ from cluster without full cluster restart. \
+ Once registered, a single node will become the reservation holder \
+diff --git a/tests/data/metadata/fence_scsi.xml b/tests/data/metadata/fence_scsi.xml
+index 6f914823..b840f3cf 100644
+--- a/tests/data/metadata/fence_scsi.xml
++++ b/tests/data/metadata/fence_scsi.xml
+@@ -1,7 +1,7 @@
+ <?xml version="1.0" ?>
+ <resource-agent name="fence_scsi" shortdesc="Fence agent for SCSI persistent reservation" >
+ <longdesc>fence_scsi is an I/O fencing agent that uses SCSI-3 persistent reservations to control access to shared storage devices. These devices must support SCSI-3 persistent reservations (SPC-3 or greater) as well as the "preempt-and-abort" subcommand.
+-The fence_scsi agent works by having each node in the cluster register a unique key with the SCSI device(s). Reservation key is generated from "node id" (default) or from "node name hash" (recommended) by adjusting "key_value" option. Using hash is recommended to prevent issues when removing nodes from cluster without full cluster restart. Once registered, a single node will become the reservation holder by creating a "write exclusive, registrants only" reservation on the device(s). The result is that only registered nodes may write to the device(s). When a node failure occurs, the fence_scsi agent will remove the key belonging to the failed node from the device(s). The failed node will no longer be able to write to the device(s). A manual reboot is required.
++The fence_scsi agent works by having each node in the cluster register a unique key with the SCSI device(s). Reservation key is generated from "node id" (default) or from "node name hash" (RECOMMENDED) by adjusting "key_value" option. Using hash is recommended to prevent issues when removing nodes from cluster without full cluster restart. Once registered, a single node will become the reservation holder by creating a "write exclusive, registrants only" reservation on the device(s). The result is that only registered nodes may write to the device(s). When a node failure occurs, the fence_scsi agent will remove the key belonging to the failed node from the device(s). The failed node will no longer be able to write to the device(s). A manual reboot is required.
+ 
+ When used as a watchdog device you can define e.g. retry=1, retry-sleep=2 and verbose=yes parameters in /etc/sysconfig/stonith if you have issues with it failing.</longdesc>
+ <vendor-url></vendor-url>

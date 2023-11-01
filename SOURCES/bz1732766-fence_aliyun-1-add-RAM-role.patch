@@ -1,0 +1,152 @@
+From 31548d184c977521dad5e6320c7a74ed732c19bb Mon Sep 17 00:00:00 2001
+From: dongchen126 <51401223+dongchen126@users.noreply.github.com>
+Date: Thu, 11 Jul 2019 14:05:58 +0800
+Subject: [PATCH 1/4] Update fence_aliyun.py
+
+1.Import region provider to enable Alibaba cloud private zone functionality which support  API endpoint access from intranet
+2.Add ram role functionality to improve security which disable AccessKey ID and Access Key Secret
+---
+ agents/aliyun/fence_aliyun.py | 28 +++++++++++++++++++++-------
+ 1 file changed, 21 insertions(+), 7 deletions(-)
+
+diff --git a/agents/aliyun/fence_aliyun.py b/agents/aliyun/fence_aliyun.py
+index d780e2ab..aea1ea8f 100644
+--- a/agents/aliyun/fence_aliyun.py
++++ b/agents/aliyun/fence_aliyun.py
+@@ -15,6 +15,7 @@
+ 	from aliyunsdkecs.request.v20140526.StartInstanceRequest import StartInstanceRequest
+ 	from aliyunsdkecs.request.v20140526.StopInstanceRequest import StopInstanceRequest
+ 	from aliyunsdkecs.request.v20140526.RebootInstanceRequest import RebootInstanceRequest
++	from aliyunsdkcore.profile import region_provider
+ except ImportError:
+ 	pass
+ 
+@@ -121,12 +122,20 @@ def define_new_opts():
+ 		"required" : "0",
+ 		"order" : 4
+ 	}
++	all_opt["ram_role"] = {
++		"getopt": "m:",
++		"longopt": "ram-role",
++		"help": "-m, --ram-role=[name]        Ram Role",
++		"shortdesc": "Ram Role.",
++		"required": "0",
++		"order": 5
++	}
+ 
+ # Main agent method
+ def main():
+ 	conn = None
+ 
+-	device_opt = ["port", "no_password", "region", "access_key", "secret_key"]
++	device_opt = ["port", "no_password", "region", "access_key", "secret_key", "ram_role"]
+ 
+ 	atexit.register(atexit_handler)
+ 
+@@ -144,13 +153,18 @@ def main():
+ 
+ 	run_delay(options)
+ 
+-	if "--region" in options and "--access-key" in options and "--secret-key" in options:  
++	if "--region" in options:
+ 		region = options["--region"]
+-		access_key = options["--access-key"]
+-		secret_key = options["--secret-key"]
+-		conn = client.AcsClient(access_key, secret_key, region)
+-
+-
++		if "--access-key" in options and "--secret-key" in options:
++			access_key = options["--access-key"]
++			secret_key = options["--secret-key"]
++			conn = client.AcsClient(access_key, secret_key, region)
++		elif "--ram-role" in options:
++			ram_role = options["--ram-role"]
++			role = EcsRamRoleCredential(ram_role)
++			conn = client.AcsClient(region_id=region, credential=role)
++		region_provider.modify_point('Ecs', region, 'ecs.%s.aliyuncs.com' % region)
++		
+ 	# Operate the fencing device
+ 	result = fence_action(conn, options, set_power_status, get_power_status, get_nodes_list)
+ 	sys.exit(result)
+
+From 285d29d398bbf8f87da7acfde3f89f83b32fa586 Mon Sep 17 00:00:00 2001
+From: chen dong <51401223+dongchen126@users.noreply.github.com>
+Date: Thu, 11 Jul 2019 15:30:10 +0800
+Subject: [PATCH 2/4] Update fence_aliyun.xml
+
+Add ram role for security
+Add region provider for private zone functionality
+---
+ tests/data/metadata/fence_aliyun.xml | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/tests/data/metadata/fence_aliyun.xml b/tests/data/metadata/fence_aliyun.xml
+index b41d82bf..eecd6f4e 100644
+--- a/tests/data/metadata/fence_aliyun.xml
++++ b/tests/data/metadata/fence_aliyun.xml
+@@ -33,6 +33,11 @@
+ 		<content type="string"  />
+ 		<shortdesc lang="en">Secret Key.</shortdesc>
+ 	</parameter>
++	<parameter name="ram_role" unique="0" required="0">
++		<getopt mixed="-m, --ram-role=[name]" />
++		<content type="string"  />
++		<shortdesc lang="en">Ram Role.</shortdesc>
++	</parameter>
+ 	<parameter name="quiet" unique="0" required="0">
+ 		<getopt mixed="-q, --quiet" />
+ 		<content type="boolean"  />
+
+From d4de57fdb94eeee483988584086c5690c8967f76 Mon Sep 17 00:00:00 2001
+From: chen dong <51401223+dongchen126@users.noreply.github.com>
+Date: Wed, 24 Jul 2019 17:23:48 +0800
+Subject: [PATCH 3/4] Update fence_aliyun.py
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+delet paramater “m”
+---
+ agents/aliyun/fence_aliyun.py | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/agents/aliyun/fence_aliyun.py b/agents/aliyun/fence_aliyun.py
+index aea1ea8f..3bc825fe 100644
+--- a/agents/aliyun/fence_aliyun.py
++++ b/agents/aliyun/fence_aliyun.py
+@@ -123,9 +123,9 @@ def define_new_opts():
+ 		"order" : 4
+ 	}
+ 	all_opt["ram_role"] = {
+-		"getopt": "m:",
++		"getopt": ":",
+ 		"longopt": "ram-role",
+-		"help": "-m, --ram-role=[name]        Ram Role",
++		"help": "--ram-role=[name]        Ram Role",
+ 		"shortdesc": "Ram Role.",
+ 		"required": "0",
+ 		"order": 5
+
+From 367c17ef4f44b6cce2d10f0a220b55b02d0d631e Mon Sep 17 00:00:00 2001
+From: chen dong <51401223+dongchen126@users.noreply.github.com>
+Date: Wed, 24 Jul 2019 17:25:39 +0800
+Subject: [PATCH 4/4] Update fence_aliyun.xml
+
+delete "m" parameter
+---
+ tests/data/metadata/fence_aliyun.xml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tests/data/metadata/fence_aliyun.xml b/tests/data/metadata/fence_aliyun.xml
+index eecd6f4e..2de3a8aa 100644
+--- a/tests/data/metadata/fence_aliyun.xml
++++ b/tests/data/metadata/fence_aliyun.xml
+@@ -34,7 +34,7 @@
+ 		<shortdesc lang="en">Secret Key.</shortdesc>
+ 	</parameter>
+ 	<parameter name="ram_role" unique="0" required="0">
+-		<getopt mixed="-m, --ram-role=[name]" />
++		<getopt mixed="--ram-role=[name]" />
+ 		<content type="string"  />
+ 		<shortdesc lang="en">Ram Role.</shortdesc>
+ 	</parameter>

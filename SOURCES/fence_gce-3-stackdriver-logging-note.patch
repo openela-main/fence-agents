@@ -1,0 +1,34 @@
+diff -uNr a/agents/gce/fence_gce.py b/agents/gce/fence_gce.py
+--- a/agents/gce/fence_gce.py	2018-07-30 16:09:45.811531118 +0200
++++ b/agents/gce/fence_gce.py	2018-07-30 16:31:28.970202508 +0200
+@@ -174,9 +174,9 @@
+ 	all_opt["stackdriver-logging"] = {
+ 		"getopt" : "",
+ 		"longopt" : "stackdriver-logging",
+-		"help" : "--stackdriver-logging		Enable Logging to Stackdriver",
+-		"shortdesc" : "Stackdriver-logging support.",
+-		"longdesc" : "If enabled IP failover logs will be posted to stackdriver logging.",
++		"help" : "--stackdriver-logging		Enable Logging to Stackdriver. Using stackdriver logging requires additional libraries (google-cloud-logging).",
++		"shortdesc" : "Stackdriver-logging support. Requires additional libraries (google-cloud-logging).",
++		"longdesc" : "If enabled IP failover logs will be posted to stackdriver logging. Using stackdriver logging requires additional libraries (google-cloud-logging).",
+ 		"required" : "0",
+ 		"order" : 4
+ 	}
+diff -uNr a/tests/data/metadata/fence_gce.xml b/tests/data/metadata/fence_gce.xml
+--- a/tests/data/metadata/fence_gce.xml	2018-07-30 16:09:45.548532576 +0200
++++ b/tests/data/metadata/fence_gce.xml	2018-07-30 16:32:05.392988450 +0200
+@@ -41,12 +41,12 @@
+ 	<parameter name="stackdriver-logging" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="--stackdriver-logging" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Stackdriver-logging support.</shortdesc>
++		<shortdesc lang="en">Stackdriver-logging support. Requires additional libraries (google-cloud-logging).</shortdesc>
+ 	</parameter>
+ 	<parameter name="stackdriver_logging" unique="0" required="0" obsoletes="stackdriver-logging">
+ 		<getopt mixed="--stackdriver-logging" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Stackdriver-logging support.</shortdesc>
++		<shortdesc lang="en">Stackdriver-logging support. Requires additional libraries (google-cloud-logging).</shortdesc>
+ 	</parameter>
+ 	<parameter name="quiet" unique="0" required="0">
+ 		<getopt mixed="-q, --quiet" />

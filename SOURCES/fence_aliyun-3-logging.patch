@@ -1,0 +1,51 @@
+From 790cbaa66f3927a84739af4a1f0e8bba295cdc36 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Mon, 30 Jul 2018 10:43:04 +0200
+Subject: [PATCH] fence_aliyun: add logging
+
+---
+ agents/aliyun/fence_aliyun.py | 16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
+
+diff --git a/agents/aliyun/fence_aliyun.py b/agents/aliyun/fence_aliyun.py
+index aa6c0acf..2cda6b7f 100644
+--- a/agents/aliyun/fence_aliyun.py
++++ b/agents/aliyun/fence_aliyun.py
+@@ -23,9 +23,10 @@ def _send_request(conn, request):
+ 	try:
+ 		response_str = conn.do_action_with_exception(request)
+ 		response_detail = json.loads(response_str)
++		logging.debug("_send_request reponse: %s" % response_detail)
+ 		return response_detail
+ 	except Exception as e:
+-		fail_usage("Failed: _send_request failed")
++		fail_usage("Failed: _send_request failed: %s" % e)
+ 
+ def start_instance(conn, instance_id):
+ 	request = StartInstanceRequest()
+@@ -69,15 +70,22 @@ def get_nodes_list(conn, options):
+ 
+ def get_power_status(conn, options):
+ 	state = get_status(conn, options["--plug"])
++
+ 	if state == "Running":
+-		return "on"
++		status = "on"
+ 	elif state == "Stopped":
+-		return "off"
++		status = "off"
+ 	else:
+-		return "unknown"
++		status = "unknown"
++
++	logging.info("get_power_status: %s" % status)
++
++	return status
+ 
+ 
+ def set_power_status(conn, options):
++	logging.info("set_power_status: %s" % options["--action"])
++
+ 	if (options["--action"]=="off"):
+ 		stop_instance(conn, options["--plug"])
+ 	elif (options["--action"]=="on"):

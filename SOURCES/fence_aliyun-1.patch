@@ -1,0 +1,344 @@
+From 418df5845d1781e18e300cf17b2de714e4ff09d1 Mon Sep 17 00:00:00 2001
+From: "feng.changf1" <feng.changf1@alibaba-inc.com>
+Date: Tue, 24 Jul 2018 15:56:50 +0800
+Subject: [PATCH 1/3] Add Aliyun fence agent.
+
+---
+ agents/aliyun/fence_aliyun.py | 146 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 146 insertions(+)
+ create mode 100644 agents/aliyun/fence_aliyun.py
+
+diff --git a/agents/aliyun/fence_aliyun.py b/agents/aliyun/fence_aliyun.py
+new file mode 100644
+index 00000000..ec7d2316
+--- /dev/null
++++ b/agents/aliyun/fence_aliyun.py
+@@ -0,0 +1,146 @@
++#!/usr/bin/python -tt
++
++import sys, re
++import logging
++import atexit
++import json
++sys.path.append("@FENCEAGENTSLIBDIR@")
++from fencing import *
++from fencing import fail, fail_usage, EC_TIMED_OUT, run_delay
++
++from aliyunsdkcore import client
++
++from aliyunsdkecs.request.v20140526.DescribeInstancesRequest import DescribeInstancesRequest
++from aliyunsdkecs.request.v20140526.StartInstanceRequest import StartInstanceRequest
++from aliyunsdkecs.request.v20140526.StopInstanceRequest import StopInstanceRequest
++from aliyunsdkecs.request.v20140526.RebootInstanceRequest import RebootInstanceRequest
++
++def _send_request(conn, request):
++	request.set_accept_format('json')
++	try:
++		response_str = conn.do_action_with_exception(request)
++		response_detail = json.loads(response_str)
++		return response_detail
++	except Exception as e:
++		fail_usage("Failed: _send_request failed")
++
++def start_instance(conn, instance_id):
++	request = StartInstanceRequest()
++	request.set_InstanceId(instance_id)
++	_send_request(conn, request)
++
++def stop_instance(conn, instance_id):
++	request = StopInstanceRequest()
++	request.set_InstanceId(instance_id)
++	request.set_ForceStop('true')
++	_send_request(conn, request)
++
++def reboot_instance(conn, instance_id):
++	request = RebootInstanceRequest()
++	request.set_InstanceId(instance_id)
++	request.set_ForceStop('true')
++	_send_request(conn, request)
++
++def get_status(conn, instance_id):
++	request = DescribeInstancesRequest()
++	request.set_InstanceIds(json.dumps([instance_id]))
++	response = _send_request(conn, request)
++	instance_status = None
++	if response is not None:
++		instance_list = response.get('Instances').get('Instance')
++		for item in instance_list:
++			instance_status = item.get('Status')
++	return instance_status
++
++def get_nodes_list(conn, options):
++	result = {}
++	request = DescribeInstancesRequest()
++	response = _send_request(conn, request)
++	instance_status = None
++	if response is not None:
++		instance_list = response.get('Instances').get('Instance')
++		for item in instance_list:
++			instance_id = item.get('InstanceId')
++			result[instance_id] = ("", None)
++	return result
++
++def get_power_status(conn, options):
++	state = get_status(conn, options["--plug"])
++	if state == "Running":
++		return "on"
++	elif state == "Stopped":
++		return "off"
++	else:
++		return "unknown"
++
++
++def set_power_status(conn, options):
++	if (options["--action"]=="off"):
++		stop_instance(conn, options["--plug"])
++	elif (options["--action"]=="on"):
++		start_instance(conn, options["--plug"])
++	elif (options["--action"]=="reboot"):
++		reboot_instance(conn, options["--plug"])
++
++
++def define_new_opts():
++	all_opt["region"] = {
++		"getopt" : "r:",
++		"longopt" : "region",
++		"help" : "-r, --region=[name]            Region, e.g. cn-hangzhou",
++		"shortdesc" : "Region.",
++		"required" : "0",
++		"order" : 2
++	}
++	all_opt["access_key"] = {
++		"getopt" : "a:",
++		"longopt" : "access-key",
++		"help" : "-a, --access-key=[name]         Access Key",
++		"shortdesc" : "Access Key.",
++		"required" : "0",
++		"order" : 3
++	}
++	all_opt["secret_key"] = {
++		"getopt" : "s:",
++		"longopt" : "secret-key",
++		"help" : "-s, --secret-key=[name]         Secret Key",
++		"shortdesc" : "Secret Key.",
++		"required" : "0",
++		"order" : 4
++	}
++
++# Main agent method
++def main():
++	conn = None
++
++	device_opt = ["port", "no_password", "region", "access_key", "secret_key"]
++
++	atexit.register(atexit_handler)
++
++	define_new_opts()
++
++	all_opt["power_timeout"]["default"] = "60"
++
++	options = check_input(device_opt, process_input(device_opt))
++
++	docs = {}
++	docs["shortdesc"] = "Fence agent for Aliyun (Aliyun Web Services)"
++	docs["longdesc"] = "fence_aliyun is an I/O Fencing agent for Aliyun"
++	docs["vendorurl"] = "http://www.aliyun.com"
++	show_docs(options, docs)
++
++	run_delay(options)
++
++	if "--region" in options and "--access-key" in options and "--secret-key" in options:  
++		region = options["--region"]
++		access_key = options["--access-key"]
++		secret_key = options["--secret-key"]
++		conn = client.AcsClient(access_key, secret_key, region)
++
++
++	# Operate the fencing device
++	result = fence_action(conn, options, set_power_status, get_power_status, get_nodes_list)
++	sys.exit(result)
++
++if __name__ == "__main__":
++	main()
+
+From 28b55555abda9b6c278a7f082bb22c4f6f1e2474 Mon Sep 17 00:00:00 2001
+From: "feng.changf1" <feng.changf1@alibaba-inc.com>
+Date: Tue, 24 Jul 2018 17:18:53 +0800
+Subject: [PATCH 2/3] Add Aliyun fence agent.
+
+---
+ tests/data/metadata/fence_aliyun.xml | 113 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 113 insertions(+)
+ create mode 100644 tests/data/metadata/fence_aliyun.xml
+
+diff --git a/tests/data/metadata/fence_aliyun.xml b/tests/data/metadata/fence_aliyun.xml
+new file mode 100644
+index 00000000..1db692ee
+--- /dev/null
++++ b/tests/data/metadata/fence_aliyun.xml
+@@ -0,0 +1,113 @@
++<?xml version="1.0" ?>
++<resource-agent name="fence_aliyun" shortdesc="Fence agent for Aliyun (Aliyun Web Services)" >
++<longdesc>fence_aliyun is an I/O Fencing agent for Aliyun</longdesc>
++<vendor-url>http://www.aliyun.com</vendor-url>
++<parameters>
++	<parameter name="action" unique="0" required="1">
++		<getopt mixed="-o, --action=[action]" />
++		<content type="string" default="reboot"  />
++		<shortdesc lang="en">Fencing action</shortdesc>
++	</parameter>
++	<parameter name="plug" unique="0" required="1" obsoletes="port">
++		<getopt mixed="-n, --plug=[id]" />
++		<content type="string"  />
++		<shortdesc lang="en">Physical plug number on device, UUID or identification of machine</shortdesc>
++	</parameter>
++	<parameter name="port" unique="0" required="1" deprecated="1">
++		<getopt mixed="-n, --plug=[id]" />
++		<content type="string"  />
++		<shortdesc lang="en">Physical plug number on device, UUID or identification of machine</shortdesc>
++	</parameter>
++	<parameter name="region" unique="0" required="0">
++		<getopt mixed="-r, --region=[name]" />
++		<content type="string"  />
++		<shortdesc lang="en">Region.</shortdesc>
++	</parameter>
++	<parameter name="access_key" unique="0" required="0">
++		<getopt mixed="-a, --access-key=[name]" />
++		<content type="string"  />
++		<shortdesc lang="en">Access Key.</shortdesc>
++	</parameter>
++	<parameter name="secret_key" unique="0" required="0">
++		<getopt mixed="-s, --secret-key=[name]" />
++		<content type="string"  />
++		<shortdesc lang="en">Secret Key.</shortdesc>
++	</parameter>
++	<parameter name="quiet" unique="0" required="0">
++		<getopt mixed="-q, --quiet" />
++		<content type="boolean"  />
++		<shortdesc lang="en">Disable logging to stderr. Does not affect --verbose or --debug-file or logging to syslog.</shortdesc>
++	</parameter>
++	<parameter name="verbose" unique="0" required="0">
++		<getopt mixed="-v, --verbose" />
++		<content type="boolean"  />
++		<shortdesc lang="en">Verbose mode</shortdesc>
++	</parameter>
++	<parameter name="debug" unique="0" required="0" deprecated="1">
++		<getopt mixed="-D, --debug-file=[debugfile]" />
++		<content type="string"  />
++		<shortdesc lang="en">Write debug information to given file</shortdesc>
++	</parameter>
++	<parameter name="debug_file" unique="0" required="0" obsoletes="debug">
++		<getopt mixed="-D, --debug-file=[debugfile]" />
++		<content type="string"  />
++		<shortdesc lang="en">Write debug information to given file</shortdesc>
++	</parameter>
++	<parameter name="version" unique="0" required="0">
++		<getopt mixed="-V, --version" />
++		<content type="boolean"  />
++		<shortdesc lang="en">Display version information and exit</shortdesc>
++	</parameter>
++	<parameter name="help" unique="0" required="0">
++		<getopt mixed="-h, --help" />
++		<content type="boolean"  />
++		<shortdesc lang="en">Display help and exit</shortdesc>
++	</parameter>
++	<parameter name="separator" unique="0" required="0">
++		<getopt mixed="-C, --separator=[char]" />
++		<content type="string" default=","  />
++		<shortdesc lang="en">Separator for CSV created by 'list' operation</shortdesc>
++	</parameter>
++	<parameter name="delay" unique="0" required="0">
++		<getopt mixed="--delay=[seconds]" />
++		<content type="second" default="0"  />
++		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
++	</parameter>
++	<parameter name="login_timeout" unique="0" required="0">
++		<getopt mixed="--login-timeout=[seconds]" />
++		<content type="second" default="5"  />
++		<shortdesc lang="en">Wait X seconds for cmd prompt after login</shortdesc>
++	</parameter>
++	<parameter name="power_timeout" unique="0" required="0">
++		<getopt mixed="--power-timeout=[seconds]" />
++		<content type="second" default="60"  />
++		<shortdesc lang="en">Test X seconds for status change after ON/OFF</shortdesc>
++	</parameter>
++	<parameter name="power_wait" unique="0" required="0">
++		<getopt mixed="--power-wait=[seconds]" />
++		<content type="second" default="0"  />
++		<shortdesc lang="en">Wait X seconds after issuing ON/OFF</shortdesc>
++	</parameter>
++	<parameter name="shell_timeout" unique="0" required="0">
++		<getopt mixed="--shell-timeout=[seconds]" />
++		<content type="second" default="3"  />
++		<shortdesc lang="en">Wait X seconds for cmd prompt after issuing command</shortdesc>
++	</parameter>
++	<parameter name="retry_on" unique="0" required="0">
++		<getopt mixed="--retry-on=[attempts]" />
++		<content type="integer" default="1"  />
++		<shortdesc lang="en">Count of attempts to retry power on</shortdesc>
++	</parameter>
++</parameters>
++<actions>
++	<action name="on" automatic="0"/>
++	<action name="off" />
++	<action name="reboot" />
++	<action name="status" />
++	<action name="list" />
++	<action name="list-status" />
++	<action name="monitor" />
++	<action name="metadata" />
++	<action name="validate-all" />
++</actions>
++</resource-agent>
+
+From 53bbd91e91c231c89ae8981238bb15d85d02207b Mon Sep 17 00:00:00 2001
+From: "feng.changf1" <feng.changf1@alibaba-inc.com>
+Date: Tue, 24 Jul 2018 17:26:45 +0800
+Subject: [PATCH 3/3] Fix CI error.
+
+---
+ agents/aliyun/fence_aliyun.py | 32 +++++++++++++++++---------------
+ 1 file changed, 17 insertions(+), 15 deletions(-)
+
+diff --git a/agents/aliyun/fence_aliyun.py b/agents/aliyun/fence_aliyun.py
+index ec7d2316..0f24b83e 100644
+--- a/agents/aliyun/fence_aliyun.py
++++ b/agents/aliyun/fence_aliyun.py
+@@ -1,20 +1,22 @@
+ #!/usr/bin/python -tt
+ 
+-import sys, re
+-import logging
+-import atexit
+-import json
+-sys.path.append("@FENCEAGENTSLIBDIR@")
+-from fencing import *
+-from fencing import fail, fail_usage, EC_TIMED_OUT, run_delay
+-
+-from aliyunsdkcore import client
+-
+-from aliyunsdkecs.request.v20140526.DescribeInstancesRequest import DescribeInstancesRequest
+-from aliyunsdkecs.request.v20140526.StartInstanceRequest import StartInstanceRequest
+-from aliyunsdkecs.request.v20140526.StopInstanceRequest import StopInstanceRequest
+-from aliyunsdkecs.request.v20140526.RebootInstanceRequest import RebootInstanceRequest
+-
++try:
++	import sys, re
++	import logging
++	import atexit
++	import json
++	sys.path.append("@FENCEAGENTSLIBDIR@")
++	from fencing import *
++	from fencing import fail, fail_usage, EC_TIMED_OUT, run_delay
++
++	from aliyunsdkcore import client
++
++	from aliyunsdkecs.request.v20140526.DescribeInstancesRequest import DescribeInstancesRequest
++	from aliyunsdkecs.request.v20140526.StartInstanceRequest import StartInstanceRequest
++	from aliyunsdkecs.request.v20140526.StopInstanceRequest import StopInstanceRequest
++	from aliyunsdkecs.request.v20140526.RebootInstanceRequest import RebootInstanceRequest
++except ImportError:
++	pass
+ def _send_request(conn, request):
+ 	request.set_accept_format('json')
+ 	try:

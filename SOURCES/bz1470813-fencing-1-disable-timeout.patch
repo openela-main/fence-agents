@@ -1,0 +1,1233 @@
+From c9e44928d5818bb6c609756bf3ac936afce22610 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Fri, 7 Aug 2020 16:08:47 +0200
+Subject: [PATCH 1/2] fencing: add disable-timeout parameter, and make it
+ default when run from Pacemaker (at least 2.0+)
+
+---
+ lib/fencing.py.py | 16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
+
+diff --git a/lib/fencing.py.py b/lib/fencing.py.py
+index 63b13036..4a41af02 100644
+--- a/lib/fencing.py.py
++++ b/lib/fencing.py.py
+@@ -351,6 +351,12 @@
+ 		"default" : "20",
+ 		"required" : "0",
+ 		"order" : 200},
++	"disable_timeout" : {
++		"getopt" : ":",
++		"longopt" : "disable-timeout",
++		"help" : "--disable-timeout=[true/false]     Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)",
++		"required" : "0",
++		"order" : 200},
+ 	"power_wait" : {
+ 		"getopt" : ":",
+ 		"longopt" : "power-wait",
+@@ -469,8 +475,8 @@
+ DEPENDENCY_OPT = {
+ 		"default" : ["help", "debug", "verbose", "verbose_level",
+ 			 "version", "action", "agent", "power_timeout",
+-			 "shell_timeout", "login_timeout", "power_wait",
+-			 "retry_on", "delay", "quiet"],
++			 "shell_timeout", "login_timeout", "disable_timeout",
++			 "power_wait", "retry_on", "delay", "quiet"],
+ 		"passwd" : ["passwd_script"],
+ 		"sudo" : ["sudo_path"],
+ 		"secure" : ["identity_file", "ssh_options", "ssh_path", "inet4_only", "inet6_only"],
+@@ -769,6 +775,12 @@ def check_input(device_opt, opt, other_conditions = False):
+ 	if "--password-script" in options:
+ 		options["--password"] = os.popen(options["--password-script"]).read().rstrip()
+ 
++	if os.environ.get("PCMK_service") == "pacemaker-fenced" and "--disable-timeout" not in options:
++		options["--disable-timeout"] = "1"
++
++	if options.get("--disable-timeout", "").lower() in ["1", "yes", "on", "true"]:
++		options["--power-timeout"] = options["--shell-timeout"] = options["--login-timeout"] = 0
++
+ 	return options
+ 
+ ## Obtain a power status from possibly more than one plug
+
+From 3ca4f45d0d32204fc4346a445720a8b894243604 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Tue, 6 Oct 2020 15:05:42 +0200
+Subject: [PATCH 2/2] metadata: update for disable_timeout parameter
+
+---
+ tests/data/metadata/fence_aliyun.xml          | 5 +++++
+ tests/data/metadata/fence_alom.xml            | 5 +++++
+ tests/data/metadata/fence_amt.xml             | 5 +++++
+ tests/data/metadata/fence_amt_ws.xml          | 5 +++++
+ tests/data/metadata/fence_apc.xml             | 5 +++++
+ tests/data/metadata/fence_apc_snmp.xml        | 5 +++++
+ tests/data/metadata/fence_aws.xml             | 5 +++++
+ tests/data/metadata/fence_azure_arm.xml       | 5 +++++
+ tests/data/metadata/fence_bladecenter.xml     | 5 +++++
+ tests/data/metadata/fence_brocade.xml         | 5 +++++
+ tests/data/metadata/fence_cisco_mds.xml       | 5 +++++
+ tests/data/metadata/fence_cisco_ucs.xml       | 5 +++++
+ tests/data/metadata/fence_compute.xml         | 5 +++++
+ tests/data/metadata/fence_docker.xml          | 5 +++++
+ tests/data/metadata/fence_drac.xml            | 5 +++++
+ tests/data/metadata/fence_drac5.xml           | 5 +++++
+ tests/data/metadata/fence_dummy.xml           | 5 +++++
+ tests/data/metadata/fence_eaton_snmp.xml      | 5 +++++
+ tests/data/metadata/fence_emerson.xml         | 5 +++++
+ tests/data/metadata/fence_eps.xml             | 5 +++++
+ tests/data/metadata/fence_evacuate.xml        | 5 +++++
+ tests/data/metadata/fence_gce.xml             | 5 +++++
+ tests/data/metadata/fence_hds_cb.xml          | 5 +++++
+ tests/data/metadata/fence_heuristics_ping.xml | 5 +++++
+ tests/data/metadata/fence_hpblade.xml         | 5 +++++
+ tests/data/metadata/fence_ibmblade.xml        | 5 +++++
+ tests/data/metadata/fence_idrac.xml           | 5 +++++
+ tests/data/metadata/fence_ifmib.xml           | 5 +++++
+ tests/data/metadata/fence_ilo.xml             | 5 +++++
+ tests/data/metadata/fence_ilo2.xml            | 5 +++++
+ tests/data/metadata/fence_ilo3.xml            | 5 +++++
+ tests/data/metadata/fence_ilo3_ssh.xml        | 5 +++++
+ tests/data/metadata/fence_ilo4.xml            | 5 +++++
+ tests/data/metadata/fence_ilo4_ssh.xml        | 5 +++++
+ tests/data/metadata/fence_ilo_moonshot.xml    | 5 +++++
+ tests/data/metadata/fence_ilo_mp.xml          | 5 +++++
+ tests/data/metadata/fence_ilo_ssh.xml         | 5 +++++
+ tests/data/metadata/fence_imm.xml             | 5 +++++
+ tests/data/metadata/fence_intelmodular.xml    | 5 +++++
+ tests/data/metadata/fence_ipdu.xml            | 5 +++++
+ tests/data/metadata/fence_ipmilan.xml         | 5 +++++
+ tests/data/metadata/fence_ironic.xml          | 5 +++++
+ tests/data/metadata/fence_ldom.xml            | 5 +++++
+ tests/data/metadata/fence_lpar.xml            | 5 +++++
+ tests/data/metadata/fence_mpath.xml           | 5 +++++
+ tests/data/metadata/fence_netio.xml           | 5 +++++
+ tests/data/metadata/fence_openstack.xml       | 5 +++++
+ tests/data/metadata/fence_ovh.xml             | 5 +++++
+ tests/data/metadata/fence_powerman.xml        | 5 +++++
+ tests/data/metadata/fence_pve.xml             | 5 +++++
+ tests/data/metadata/fence_raritan.xml         | 5 +++++
+ tests/data/metadata/fence_rcd_serial.xml      | 5 +++++
+ tests/data/metadata/fence_redfish.xml         | 5 +++++
+ tests/data/metadata/fence_rhevm.xml           | 5 +++++
+ tests/data/metadata/fence_rsa.xml             | 5 +++++
+ tests/data/metadata/fence_rsb.xml             | 5 +++++
+ tests/data/metadata/fence_sanbox2.xml         | 5 +++++
+ tests/data/metadata/fence_sbd.xml             | 5 +++++
+ tests/data/metadata/fence_scsi.xml            | 5 +++++
+ tests/data/metadata/fence_tripplite_snmp.xml  | 5 +++++
+ tests/data/metadata/fence_vbox.xml            | 5 +++++
+ tests/data/metadata/fence_virsh.xml           | 5 +++++
+ tests/data/metadata/fence_vmware.xml          | 5 +++++
+ tests/data/metadata/fence_vmware_rest.xml     | 5 +++++
+ tests/data/metadata/fence_vmware_soap.xml     | 5 +++++
+ tests/data/metadata/fence_vmware_vcloud.xml   | 5 +++++
+ tests/data/metadata/fence_wti.xml             | 5 +++++
+ tests/data/metadata/fence_xenapi.xml          | 5 +++++
+ tests/data/metadata/fence_zvmip.xml           | 5 +++++
+ 73 files changed, 365 insertions(+)
+
+diff --git a/tests/data/metadata/fence_aliyun.xml b/tests/data/metadata/fence_aliyun.xml
+index 8f236806..d90acf71 100644
+--- a/tests/data/metadata/fence_aliyun.xml
++++ b/tests/data/metadata/fence_aliyun.xml
+@@ -83,6 +83,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_alom.xml b/tests/data/metadata/fence_alom.xml
+index ef6c06c3..91679e8e 100644
+--- a/tests/data/metadata/fence_alom.xml
++++ b/tests/data/metadata/fence_alom.xml
+@@ -143,6 +143,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_amt.xml b/tests/data/metadata/fence_amt.xml
+index ee174852..f2e7ac69 100644
+--- a/tests/data/metadata/fence_amt.xml
++++ b/tests/data/metadata/fence_amt.xml
+@@ -116,6 +116,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_amt_ws.xml b/tests/data/metadata/fence_amt_ws.xml
+index 9c223c8d..e6e03ea8 100644
+--- a/tests/data/metadata/fence_amt_ws.xml
++++ b/tests/data/metadata/fence_amt_ws.xml
+@@ -112,6 +112,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_apc.xml b/tests/data/metadata/fence_apc.xml
+index efad9db8..2ee96f32 100644
+--- a/tests/data/metadata/fence_apc.xml
++++ b/tests/data/metadata/fence_apc.xml
+@@ -153,6 +153,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_apc_snmp.xml b/tests/data/metadata/fence_apc_snmp.xml
+index a1947672..435f96dc 100644
+--- a/tests/data/metadata/fence_apc_snmp.xml
++++ b/tests/data/metadata/fence_apc_snmp.xml
+@@ -158,6 +158,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_aws.xml b/tests/data/metadata/fence_aws.xml
+index 527fc86c..1f3ab3b9 100644
+--- a/tests/data/metadata/fence_aws.xml
++++ b/tests/data/metadata/fence_aws.xml
+@@ -86,6 +86,11 @@ For instructions see: https://boto3.readthedocs.io/en/latest/guide/quickstart.ht
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_azure_arm.xml b/tests/data/metadata/fence_azure_arm.xml
+index 42c9952f..7e55863b 100644
+--- a/tests/data/metadata/fence_azure_arm.xml
++++ b/tests/data/metadata/fence_azure_arm.xml
+@@ -143,6 +143,11 @@ When using network fencing the reboot-action will cause a quick-return once the
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_bladecenter.xml b/tests/data/metadata/fence_bladecenter.xml
+index f2ee28b1..6ff6bee7 100644
+--- a/tests/data/metadata/fence_bladecenter.xml
++++ b/tests/data/metadata/fence_bladecenter.xml
+@@ -148,6 +148,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_brocade.xml b/tests/data/metadata/fence_brocade.xml
+index f3287503..2cfa7594 100644
+--- a/tests/data/metadata/fence_brocade.xml
++++ b/tests/data/metadata/fence_brocade.xml
+@@ -148,6 +148,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_cisco_mds.xml b/tests/data/metadata/fence_cisco_mds.xml
+index a0e62cba..4f744f0a 100644
+--- a/tests/data/metadata/fence_cisco_mds.xml
++++ b/tests/data/metadata/fence_cisco_mds.xml
+@@ -157,6 +157,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_cisco_ucs.xml b/tests/data/metadata/fence_cisco_ucs.xml
+index f4543f4b..a57a8486 100644
+--- a/tests/data/metadata/fence_cisco_ucs.xml
++++ b/tests/data/metadata/fence_cisco_ucs.xml
+@@ -133,6 +133,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_compute.xml b/tests/data/metadata/fence_compute.xml
+index a5ce53cd..0589c146 100644
+--- a/tests/data/metadata/fence_compute.xml
++++ b/tests/data/metadata/fence_compute.xml
+@@ -168,6 +168,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_docker.xml b/tests/data/metadata/fence_docker.xml
+index 6e3306d4..789f6c71 100644
+--- a/tests/data/metadata/fence_docker.xml
++++ b/tests/data/metadata/fence_docker.xml
+@@ -121,6 +121,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_drac.xml b/tests/data/metadata/fence_drac.xml
+index 451ee504..1179727a 100644
+--- a/tests/data/metadata/fence_drac.xml
++++ b/tests/data/metadata/fence_drac.xml
+@@ -113,6 +113,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_drac5.xml b/tests/data/metadata/fence_drac5.xml
+index 564008ab..9a3c0c1e 100644
+--- a/tests/data/metadata/fence_drac5.xml
++++ b/tests/data/metadata/fence_drac5.xml
+@@ -157,6 +157,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_dummy.xml b/tests/data/metadata/fence_dummy.xml
+index ec4d5b46..5287ec59 100644
+--- a/tests/data/metadata/fence_dummy.xml
++++ b/tests/data/metadata/fence_dummy.xml
+@@ -63,6 +63,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_eaton_snmp.xml b/tests/data/metadata/fence_eaton_snmp.xml
+index 1ec07c68..d2260308 100644
+--- a/tests/data/metadata/fence_eaton_snmp.xml
++++ b/tests/data/metadata/fence_eaton_snmp.xml
+@@ -157,6 +157,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_emerson.xml b/tests/data/metadata/fence_emerson.xml
+index fbdcbcde..870e363a 100644
+--- a/tests/data/metadata/fence_emerson.xml
++++ b/tests/data/metadata/fence_emerson.xml
+@@ -157,6 +157,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_eps.xml b/tests/data/metadata/fence_eps.xml
+index 47cad6f0..2e710249 100644
+--- a/tests/data/metadata/fence_eps.xml
++++ b/tests/data/metadata/fence_eps.xml
+@@ -120,6 +120,11 @@ Agent basically works by connecting to hidden page and pass appropriate argument
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_evacuate.xml b/tests/data/metadata/fence_evacuate.xml
+index f32b48eb..bf34df2e 100644
+--- a/tests/data/metadata/fence_evacuate.xml
++++ b/tests/data/metadata/fence_evacuate.xml
+@@ -163,6 +163,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_gce.xml b/tests/data/metadata/fence_gce.xml
+index 1ec1aa9e..78c0b0d6 100644
+--- a/tests/data/metadata/fence_gce.xml
++++ b/tests/data/metadata/fence_gce.xml
+@@ -113,6 +113,11 @@ For instructions see: https://cloud.google.com/compute/docs/tutorials/python-gui
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_hds_cb.xml b/tests/data/metadata/fence_hds_cb.xml
+index 5529472d..e3f511dd 100644
+--- a/tests/data/metadata/fence_hds_cb.xml
++++ b/tests/data/metadata/fence_hds_cb.xml
+@@ -148,6 +148,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_heuristics_ping.xml b/tests/data/metadata/fence_heuristics_ping.xml
+index 53e3bb05..4336adf4 100644
+--- a/tests/data/metadata/fence_heuristics_ping.xml
++++ b/tests/data/metadata/fence_heuristics_ping.xml
+@@ -88,6 +88,11 @@ This is not a fence agent by itself! Its only purpose is to enable/disable anoth
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_hpblade.xml b/tests/data/metadata/fence_hpblade.xml
+index bbb51668..cdc2f85c 100644
+--- a/tests/data/metadata/fence_hpblade.xml
++++ b/tests/data/metadata/fence_hpblade.xml
+@@ -148,6 +148,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="10"  />
+diff --git a/tests/data/metadata/fence_ibmblade.xml b/tests/data/metadata/fence_ibmblade.xml
+index 6585c4fb..b9ffbd1a 100644
+--- a/tests/data/metadata/fence_ibmblade.xml
++++ b/tests/data/metadata/fence_ibmblade.xml
+@@ -157,6 +157,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_idrac.xml b/tests/data/metadata/fence_idrac.xml
+index efecc720..c19ceefd 100644
+--- a/tests/data/metadata/fence_idrac.xml
++++ b/tests/data/metadata/fence_idrac.xml
+@@ -155,6 +155,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="ipmitool_path" unique="0" required="0">
+ 		<getopt mixed="--ipmitool-path=[path]" />
+ 		<shortdesc lang="en">Path to ipmitool binary</shortdesc>
+diff --git a/tests/data/metadata/fence_ifmib.xml b/tests/data/metadata/fence_ifmib.xml
+index 93bd8aa3..e0e9e0b5 100644
+--- a/tests/data/metadata/fence_ifmib.xml
++++ b/tests/data/metadata/fence_ifmib.xml
+@@ -159,6 +159,11 @@ It was written with managed ethernet switches in mind, in order to fence iSCSI S
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_ilo.xml b/tests/data/metadata/fence_ilo.xml
+index 7ed91061..691d48bc 100644
+--- a/tests/data/metadata/fence_ilo.xml
++++ b/tests/data/metadata/fence_ilo.xml
+@@ -139,6 +139,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="10"  />
+diff --git a/tests/data/metadata/fence_ilo2.xml b/tests/data/metadata/fence_ilo2.xml
+index 5527cf21..c43e8738 100644
+--- a/tests/data/metadata/fence_ilo2.xml
++++ b/tests/data/metadata/fence_ilo2.xml
+@@ -139,6 +139,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="10"  />
+diff --git a/tests/data/metadata/fence_ilo3.xml b/tests/data/metadata/fence_ilo3.xml
+index b5db044c..cf85c47f 100644
+--- a/tests/data/metadata/fence_ilo3.xml
++++ b/tests/data/metadata/fence_ilo3.xml
+@@ -155,6 +155,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="ipmitool_path" unique="0" required="0">
+ 		<getopt mixed="--ipmitool-path=[path]" />
+ 		<shortdesc lang="en">Path to ipmitool binary</shortdesc>
+diff --git a/tests/data/metadata/fence_ilo3_ssh.xml b/tests/data/metadata/fence_ilo3_ssh.xml
+index a3c8f11c..5433d042 100644
+--- a/tests/data/metadata/fence_ilo3_ssh.xml
++++ b/tests/data/metadata/fence_ilo3_ssh.xml
+@@ -156,6 +156,11 @@ WARNING: The monitor-action is prone to timeouts. Use the fence_ilo-equivalent t
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_ilo4.xml b/tests/data/metadata/fence_ilo4.xml
+index 210b05d2..aaf3bf5a 100644
+--- a/tests/data/metadata/fence_ilo4.xml
++++ b/tests/data/metadata/fence_ilo4.xml
+@@ -155,6 +155,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="ipmitool_path" unique="0" required="0">
+ 		<getopt mixed="--ipmitool-path=[path]" />
+ 		<shortdesc lang="en">Path to ipmitool binary</shortdesc>
+diff --git a/tests/data/metadata/fence_ilo4_ssh.xml b/tests/data/metadata/fence_ilo4_ssh.xml
+index 9b993dd5..663853dd 100644
+--- a/tests/data/metadata/fence_ilo4_ssh.xml
++++ b/tests/data/metadata/fence_ilo4_ssh.xml
+@@ -156,6 +156,11 @@ WARNING: The monitor-action is prone to timeouts. Use the fence_ilo-equivalent t
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_ilo_moonshot.xml b/tests/data/metadata/fence_ilo_moonshot.xml
+index 1e31424a..c0739e1b 100644
+--- a/tests/data/metadata/fence_ilo_moonshot.xml
++++ b/tests/data/metadata/fence_ilo_moonshot.xml
+@@ -148,6 +148,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_ilo_mp.xml b/tests/data/metadata/fence_ilo_mp.xml
+index b825cd32..1ce0327c 100644
+--- a/tests/data/metadata/fence_ilo_mp.xml
++++ b/tests/data/metadata/fence_ilo_mp.xml
+@@ -143,6 +143,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_ilo_ssh.xml b/tests/data/metadata/fence_ilo_ssh.xml
+index df87fd5f..8a3d5b1a 100644
+--- a/tests/data/metadata/fence_ilo_ssh.xml
++++ b/tests/data/metadata/fence_ilo_ssh.xml
+@@ -156,6 +156,11 @@ WARNING: The monitor-action is prone to timeouts. Use the fence_ilo-equivalent t
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_imm.xml b/tests/data/metadata/fence_imm.xml
+index d00ad7fa..d969a4c7 100644
+--- a/tests/data/metadata/fence_imm.xml
++++ b/tests/data/metadata/fence_imm.xml
+@@ -155,6 +155,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="ipmitool_path" unique="0" required="0">
+ 		<getopt mixed="--ipmitool-path=[path]" />
+ 		<shortdesc lang="en">Path to ipmitool binary</shortdesc>
+diff --git a/tests/data/metadata/fence_intelmodular.xml b/tests/data/metadata/fence_intelmodular.xml
+index ed5afcb8..37d85f65 100644
+--- a/tests/data/metadata/fence_intelmodular.xml
++++ b/tests/data/metadata/fence_intelmodular.xml
+@@ -159,6 +159,11 @@ Note: Since firmware update version 2.7, SNMP v2 write support is removed, and r
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_ipdu.xml b/tests/data/metadata/fence_ipdu.xml
+index 78575c7c..ade366c3 100644
+--- a/tests/data/metadata/fence_ipdu.xml
++++ b/tests/data/metadata/fence_ipdu.xml
+@@ -157,6 +157,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_ipmilan.xml b/tests/data/metadata/fence_ipmilan.xml
+index d4c23f73..649f5bcd 100644
+--- a/tests/data/metadata/fence_ipmilan.xml
++++ b/tests/data/metadata/fence_ipmilan.xml
+@@ -155,6 +155,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="ipmitool_path" unique="0" required="0">
+ 		<getopt mixed="--ipmitool-path=[path]" />
+ 		<shortdesc lang="en">Path to ipmitool binary</shortdesc>
+diff --git a/tests/data/metadata/fence_ironic.xml b/tests/data/metadata/fence_ironic.xml
+index 84beaffc..c79e1f11 100644
+--- a/tests/data/metadata/fence_ironic.xml
++++ b/tests/data/metadata/fence_ironic.xml
+@@ -113,6 +113,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_ldom.xml b/tests/data/metadata/fence_ldom.xml
+index 4bb38571..b02b4883 100644
+--- a/tests/data/metadata/fence_ldom.xml
++++ b/tests/data/metadata/fence_ldom.xml
+@@ -150,6 +150,11 @@ Very useful parameter is -c (or cmd_prompt in stdin mode). This must be set to s
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_lpar.xml b/tests/data/metadata/fence_lpar.xml
+index 7ddc2c45..94e2273a 100644
+--- a/tests/data/metadata/fence_lpar.xml
++++ b/tests/data/metadata/fence_lpar.xml
+@@ -162,6 +162,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="15"  />
+diff --git a/tests/data/metadata/fence_mpath.xml b/tests/data/metadata/fence_mpath.xml
+index 83d69f6c..bf014fcd 100644
+--- a/tests/data/metadata/fence_mpath.xml
++++ b/tests/data/metadata/fence_mpath.xml
+@@ -69,6 +69,11 @@ The fence_mpath agent works by having a unique key for each node that has to be
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_netio.xml b/tests/data/metadata/fence_netio.xml
+index b409bde7..43aca0af 100644
+--- a/tests/data/metadata/fence_netio.xml
++++ b/tests/data/metadata/fence_netio.xml
+@@ -108,6 +108,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_openstack.xml b/tests/data/metadata/fence_openstack.xml
+index 645cd655..eddd8de7 100644
+--- a/tests/data/metadata/fence_openstack.xml
++++ b/tests/data/metadata/fence_openstack.xml
+@@ -133,6 +133,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_ovh.xml b/tests/data/metadata/fence_ovh.xml
+index e8160bf7..551007f1 100644
+--- a/tests/data/metadata/fence_ovh.xml
++++ b/tests/data/metadata/fence_ovh.xml
+@@ -98,6 +98,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_powerman.xml b/tests/data/metadata/fence_powerman.xml
+index 3bf56882..9df6f25b 100644
+--- a/tests/data/metadata/fence_powerman.xml
++++ b/tests/data/metadata/fence_powerman.xml
+@@ -73,6 +73,11 @@
+ 		<content type="second" default="3"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_pve.xml b/tests/data/metadata/fence_pve.xml
+index 1c83f2ef..37485597 100644
+--- a/tests/data/metadata/fence_pve.xml
++++ b/tests/data/metadata/fence_pve.xml
+@@ -131,6 +131,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_raritan.xml b/tests/data/metadata/fence_raritan.xml
+index 537cb141..90f21b54 100644
+--- a/tests/data/metadata/fence_raritan.xml
++++ b/tests/data/metadata/fence_raritan.xml
+@@ -108,6 +108,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_rcd_serial.xml b/tests/data/metadata/fence_rcd_serial.xml
+index b2a20cb7..c13c81ca 100644
+--- a/tests/data/metadata/fence_rcd_serial.xml
++++ b/tests/data/metadata/fence_rcd_serial.xml
+@@ -61,6 +61,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_redfish.xml b/tests/data/metadata/fence_redfish.xml
+index 32ea402e..6daf2cd9 100644
+--- a/tests/data/metadata/fence_redfish.xml
++++ b/tests/data/metadata/fence_redfish.xml
+@@ -138,6 +138,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_rhevm.xml b/tests/data/metadata/fence_rhevm.xml
+index deb326c3..ba78a928 100644
+--- a/tests/data/metadata/fence_rhevm.xml
++++ b/tests/data/metadata/fence_rhevm.xml
+@@ -152,6 +152,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_rsa.xml b/tests/data/metadata/fence_rsa.xml
+index 51009427..4f7d0b93 100644
+--- a/tests/data/metadata/fence_rsa.xml
++++ b/tests/data/metadata/fence_rsa.xml
+@@ -143,6 +143,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="10"  />
+diff --git a/tests/data/metadata/fence_rsb.xml b/tests/data/metadata/fence_rsb.xml
+index 7d8575d1..6f81c6ac 100644
+--- a/tests/data/metadata/fence_rsb.xml
++++ b/tests/data/metadata/fence_rsb.xml
+@@ -143,6 +143,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_sanbox2.xml b/tests/data/metadata/fence_sanbox2.xml
+index bf07f360..c18beea5 100644
+--- a/tests/data/metadata/fence_sanbox2.xml
++++ b/tests/data/metadata/fence_sanbox2.xml
+@@ -118,6 +118,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_sbd.xml b/tests/data/metadata/fence_sbd.xml
+index db52b49a..24f648a2 100644
+--- a/tests/data/metadata/fence_sbd.xml
++++ b/tests/data/metadata/fence_sbd.xml
+@@ -76,6 +76,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_scsi.xml b/tests/data/metadata/fence_scsi.xml
+index ceb79de5..ea093c7c 100644
+--- a/tests/data/metadata/fence_scsi.xml
++++ b/tests/data/metadata/fence_scsi.xml
+@@ -86,6 +86,11 @@ When used as a watchdog device you can define e.g. retry=1, retry-sleep=2 and ve
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_tripplite_snmp.xml b/tests/data/metadata/fence_tripplite_snmp.xml
+index becc0d18..3d104e06 100644
+--- a/tests/data/metadata/fence_tripplite_snmp.xml
++++ b/tests/data/metadata/fence_tripplite_snmp.xml
+@@ -158,6 +158,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_vbox.xml b/tests/data/metadata/fence_vbox.xml
+index 045fbe9e..ef37e27d 100644
+--- a/tests/data/metadata/fence_vbox.xml
++++ b/tests/data/metadata/fence_vbox.xml
+@@ -150,6 +150,11 @@ By default, vbox needs to log in as a user that is a member of the vboxusers gro
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="host_os" unique="0" required="0">
+ 		<getopt mixed="--host-os=[os]" />
+ 		<content type="select" default="linux"  >
+diff --git a/tests/data/metadata/fence_virsh.xml b/tests/data/metadata/fence_virsh.xml
+index 2ab09c33..2439be68 100644
+--- a/tests/data/metadata/fence_virsh.xml
++++ b/tests/data/metadata/fence_virsh.xml
+@@ -150,6 +150,11 @@ By default, virsh needs root account to do properly work. So you must allow ssh
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_vmware.xml b/tests/data/metadata/fence_vmware.xml
+index 14b504ed..5a3c2f5b 100644
+--- a/tests/data/metadata/fence_vmware.xml
++++ b/tests/data/metadata/fence_vmware.xml
+@@ -156,6 +156,11 @@ After you have successfully installed VI Perl Toolkit or VIX API, you should be
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_vmware_rest.xml b/tests/data/metadata/fence_vmware_rest.xml
+index 41b09ba2..3c3693af 100644
+--- a/tests/data/metadata/fence_vmware_rest.xml
++++ b/tests/data/metadata/fence_vmware_rest.xml
+@@ -139,6 +139,11 @@ NOTE: If there's more than 1000 VMs there is a filter parameter to work around t
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_vmware_soap.xml b/tests/data/metadata/fence_vmware_soap.xml
+index ee385adf..33d2371b 100644
+--- a/tests/data/metadata/fence_vmware_soap.xml
++++ b/tests/data/metadata/fence_vmware_soap.xml
+@@ -130,6 +130,11 @@ Name of virtual machine (-n / port) has to be used in inventory path format (e.g
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_vmware_vcloud.xml b/tests/data/metadata/fence_vmware_vcloud.xml
+index 21c9b77d..eef2cf9a 100644
+--- a/tests/data/metadata/fence_vmware_vcloud.xml
++++ b/tests/data/metadata/fence_vmware_vcloud.xml
+@@ -132,6 +132,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_wti.xml b/tests/data/metadata/fence_wti.xml
+index 8064b703..e43c0c03 100644
+--- a/tests/data/metadata/fence_wti.xml
++++ b/tests/data/metadata/fence_wti.xml
+@@ -148,6 +148,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_xenapi.xml b/tests/data/metadata/fence_xenapi.xml
+index a1694ec5..60e6291d 100644
+--- a/tests/data/metadata/fence_xenapi.xml
++++ b/tests/data/metadata/fence_xenapi.xml
+@@ -98,6 +98,11 @@
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />
+diff --git a/tests/data/metadata/fence_zvmip.xml b/tests/data/metadata/fence_zvmip.xml
+index 95c2ded3..094bc6b8 100644
+--- a/tests/data/metadata/fence_zvmip.xml
++++ b/tests/data/metadata/fence_zvmip.xml
+@@ -141,6 +141,11 @@ to access the system's directory manager.
+ 		<content type="second" default="0"  />
+ 		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
+ 	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en"> Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
+ 	<parameter name="login_timeout" unique="0" required="0">
+ 		<getopt mixed="--login-timeout=[seconds]" />
+ 		<content type="second" default="5"  />

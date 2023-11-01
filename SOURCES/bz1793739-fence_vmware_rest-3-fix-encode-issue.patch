@@ -1,0 +1,23 @@
+From 2ac3b05200477f3f04ce73de439e84c10a269552 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Thu, 2 Jul 2020 12:05:33 +0200
+Subject: [PATCH] fence_vmware_rest: remove .encode() that made the list action
+ fail on Python 3. It works fine with/without this on Python 2.x
+
+---
+ agents/vmware_rest/fence_vmware_rest.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/agents/vmware_rest/fence_vmware_rest.py b/agents/vmware_rest/fence_vmware_rest.py
+index a038a096..e49fd566 100644
+--- a/agents/vmware_rest/fence_vmware_rest.py
++++ b/agents/vmware_rest/fence_vmware_rest.py
+@@ -61,7 +61,7 @@ def get_list(conn, options):
+ 			fail(EC_STATUS)
+ 
+ 	for r in res["value"]:
+-		outlets[r["name"].encode("UTF-8")] = ("", state[r["power_state"]])
++		outlets[r["name"]] = ("", state[r["power_state"]])
+ 
+ 	return outlets
+ 

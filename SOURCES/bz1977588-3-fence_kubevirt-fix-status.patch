@@ -1,0 +1,55 @@
+From c23bfc3b9fc6e1dc7b1350e340171f3827fb6fb7 Mon Sep 17 00:00:00 2001
+From: Nir Argaman <nargaman@redhat.com>
+Date: Mon, 1 Nov 2021 08:34:00 +0200
+Subject: [PATCH] fence_kubevirt: Fix kubevirt VM status
+
+---
+ agents/kubevirt/fence_kubevirt.py | 19 +++++++++++++------
+ 1 file changed, 13 insertions(+), 6 deletions(-)
+
+diff --git a/agents/kubevirt/fence_kubevirt.py b/agents/kubevirt/fence_kubevirt.py
+index 70c14d89a..61ffcaa09 100755
+--- a/agents/kubevirt/fence_kubevirt.py
++++ b/agents/kubevirt/fence_kubevirt.py
+@@ -4,7 +4,7 @@
+ import logging
+ sys.path.append("@FENCEAGENTSLIBDIR@")
+ from fencing import *
+-from fencing import fail, fail_usage, run_delay, EC_STATUS
++from fencing import fail, fail_usage, run_delay, EC_STATUS, EC_FETCH_VM_UUID
+ 
+ try:
+     from kubernetes.client.exceptions import ApiException
+@@ -35,13 +35,15 @@ def get_power_status(conn, options):
+         vmi_api = conn.resources.get(api_version=apiversion,
+                                               kind='VirtualMachineInstance')
+         vmi = vmi_api.get(name=name, namespace=namespace)
+-        if vmi is not None:
+-            phase = vmi.status.phase
+-            if phase == "Running":
+-                return "on"
+-        return "off"
++        return translate_status(vmi.status.phase)
+     except ApiException as e:
+         if e.status == 404:
++            try:
++                vm_api = conn.resources.get(api_version=apiversion, kind='VirtualMachine')
++                vm = vm_api.get(name=name, namespace=namespace)
++            except ApiException as e:
++                logging.error("VM %s doesn't exist", name)
++                fail(EC_FETCH_VM_UUID)
+             return "off"
+         logging.error("Failed to get power status, with API Exception: %s", e)
+         fail(EC_STATUS)
+@@ -49,6 +51,11 @@ def get_power_status(conn, options):
+         logging.error("Failed to get power status, with Exception: %s", e)
+         fail(EC_STATUS)
+ 
++def translate_status(instance_status):
++    if instance_status == "Running":
++        return "on"
++    return "unknown"
++
+ def set_power_status(conn, options):
+     logging.debug("Starting set status operation")
+     try:

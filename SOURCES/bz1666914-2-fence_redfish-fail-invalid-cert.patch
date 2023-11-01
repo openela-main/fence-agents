@@ -1,0 +1,60 @@
+From 7aa3c50d1d02dd26bdeac99c49ada72f842d88e8 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Thu, 17 Jan 2019 16:52:52 +0100
+Subject: [PATCH] fence_redfish: fail when using invalid cert without
+ --ssl-insecure
+
+---
+ agents/redfish/fence_redfish.py | 16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
+
+diff --git a/agents/redfish/fence_redfish.py b/agents/redfish/fence_redfish.py
+index 67ef67ab..5b719d4b 100644
+--- a/agents/redfish/fence_redfish.py
++++ b/agents/redfish/fence_redfish.py
+@@ -6,6 +6,7 @@
+ 
+ import sys
+ import re
++import logging
+ import json
+ import requests
+ import atexit
+@@ -20,6 +21,9 @@ def get_power_status(conn, options):
+     if response['ret'] is False:
+         fail_usage("Couldn't get power information")
+     data = response['data']
++
++    logging.debug("PowerState is: " + data[u'PowerState'])
++
+     if data[u'PowerState'].strip() == "Off":
+         return "off"
+     else:
+@@ -50,21 +54,21 @@ def set_power_status(conn, options):
+ def send_get_request(options, uri):
+     full_uri = "https://" + options["--ip"] + uri
+     try:
+-        resp = requests.get(full_uri, verify=False,
++        resp = requests.get(full_uri, verify=not "--ssl-insecure" in options,
+                             auth=(options["--username"], options["--password"]))
+         data = resp.json()
+-    except:
+-        return {'ret': False}
++    except Exception as e:
++        fail_usage("Failed: send_get_request: " + str(e))
+     return {'ret': True, 'data': data}
+ 
+ def send_post_request(options, uri, payload, headers):
+     full_uri = "https://" + options["--ip"] + uri
+     try:
+         requests.post(full_uri, data=json.dumps(payload),
+-                      headers=headers, verify=False,
++                      headers=headers, verify=not "--ssl-insecure" in options,
+                       auth=(options["--username"], options["--password"]))
+-    except:
+-        return {'ret': False}
++    except Exception as e:
++        fail_usage("Failed: send_post_request: " + str(e))
+     return {'ret': True}
+ 
+ def find_systems_resource(options):

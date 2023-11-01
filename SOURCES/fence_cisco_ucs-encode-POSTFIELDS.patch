@@ -1,0 +1,22 @@
+From 70bd4ffa245ef7e8b7698228bab3b41c240d50d2 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Tue, 4 Sep 2018 12:35:07 +0200
+Subject: [PATCH] fence_cisco_ucs: encode POSTFIELDS
+
+---
+ agents/cisco_ucs/fence_cisco_ucs.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/agents/cisco_ucs/fence_cisco_ucs.py b/agents/cisco_ucs/fence_cisco_ucs.py
+index d509b3e0..ec311754 100644
+--- a/agents/cisco_ucs/fence_cisco_ucs.py
++++ b/agents/cisco_ucs/fence_cisco_ucs.py
+@@ -111,7 +111,7 @@ def send_command(opt, command, timeout):
+ 	web_buffer = io.BytesIO()
+ 	conn.setopt(pycurl.URL, url.encode("ascii"))
+ 	conn.setopt(pycurl.HTTPHEADER, ["Content-type: text/xml"])
+-	conn.setopt(pycurl.POSTFIELDS, command)
++	conn.setopt(pycurl.POSTFIELDS, command.encode("ascii"))
+ 	conn.setopt(pycurl.WRITEFUNCTION, web_buffer.write)
+ 	conn.setopt(pycurl.TIMEOUT, timeout)
+ 	if "--ssl" in opt or "--ssl-secure" in opt:

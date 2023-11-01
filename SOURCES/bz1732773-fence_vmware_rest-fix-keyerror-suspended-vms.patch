@@ -1,0 +1,23 @@
+From 33a638ff624839d7fa2d409479c348abee57763e Mon Sep 17 00:00:00 2001
+From: dwannamaker-onr <dwannamaker@onr.com>
+Date: Tue, 25 Jun 2019 15:28:00 -0400
+Subject: [PATCH] Fixed issue with SUSPENDED VMs
+
+If any VMs in the vCenter are suspended, you get a KeyError because that state is not expected.  This breaks list and monitor actions.
+---
+ agents/vmware_rest/fence_vmware_rest.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/agents/vmware_rest/fence_vmware_rest.py b/agents/vmware_rest/fence_vmware_rest.py
+index b544d385..53b4066d 100644
+--- a/agents/vmware_rest/fence_vmware_rest.py
++++ b/agents/vmware_rest/fence_vmware_rest.py
+@@ -8,7 +8,7 @@
+ from fencing import *
+ from fencing import fail, run_delay, EC_LOGIN_DENIED, EC_STATUS
+ 
+-state = {"POWERED_ON": "on", 'POWERED_OFF': "off"}
++state = {"POWERED_ON": "on", 'POWERED_OFF': "off", 'SUSPENDED': "off"}
+ 
+ def get_power_status(conn, options):
+ 	res = send_command(conn, "vcenter/vm?filter.names={}".format(options["--plug"]))["value"]

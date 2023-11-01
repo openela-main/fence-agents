@@ -1,0 +1,37 @@
+From b8793b7cdacf0eb13e86581fcba1f78bb7a4bc13 Mon Sep 17 00:00:00 2001
+From: Tim Megela <megela@google.com>
+Date: Thu, 11 Mar 2021 06:41:59 -0500
+Subject: [PATCH] Default method moved back to powercycle
+
+Moving back to powercycle as the default method for GCE.  This is the recommended approach from Google.  Using on/off as the default will have unintended consequences on google cloud platforms.
+---
+ agents/gce/fence_gce.py           | 2 ++
+ tests/data/metadata/fence_gce.xml | 2 +-
+ 2 files changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/agents/gce/fence_gce.py b/agents/gce/fence_gce.py
+index 1784e1b70..d59ce2bad 100644
+--- a/agents/gce/fence_gce.py
++++ b/agents/gce/fence_gce.py
+@@ -358,6 +358,8 @@ def main():
+ 	define_new_opts()
+ 
+ 	all_opt["power_timeout"]["default"] = "60"
++	all_opt["method"]["default"] = "cycle"
++	all_opt["method"]["help"] = "-m, --method=[method]          Method to fence (onoff|cycle) (Default: cycle)"
+ 
+ 	options = check_input(device_opt, process_input(device_opt))
+ 
+diff --git a/tests/data/metadata/fence_gce.xml b/tests/data/metadata/fence_gce.xml
+index f09c771f3..bb5137878 100644
+--- a/tests/data/metadata/fence_gce.xml
++++ b/tests/data/metadata/fence_gce.xml
+@@ -12,7 +12,7 @@ For instructions see: https://cloud.google.com/compute/docs/tutorials/python-gui
+ 	</parameter>
+ 	<parameter name="method" unique="0" required="0">
+ 		<getopt mixed="-m, --method=[method]" />
+-		<content type="select" default="onoff"  >
++		<content type="select" default="cycle"  >
+ 			<option value="onoff" />
+ 			<option value="cycle" />
+ 		</content>

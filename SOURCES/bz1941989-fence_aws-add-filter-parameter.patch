@@ -1,0 +1,91 @@
+From d920421ccb3abb42ecb9ea3ba56948db00fe1c80 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Tue, 23 Mar 2021 12:14:11 +0100
+Subject: [PATCH] fence_aws: add filter parameter to be able to limit which
+ nodes are listed
+
+---
+ agents/aws/fence_aws.py           | 27 +++++++++++++++++++++------
+ tests/data/metadata/fence_aws.xml |  5 +++++
+ 2 files changed, 26 insertions(+), 6 deletions(-)
+
+diff --git a/agents/aws/fence_aws.py b/agents/aws/fence_aws.py
+index 8322df9ed..c947bf29c 100644
+--- a/agents/aws/fence_aws.py
++++ b/agents/aws/fence_aws.py
+@@ -38,8 +38,15 @@ def get_nodes_list(conn, options):
+ 	logger.info("Starting monitor operation")
+ 	result = {}
+ 	try:
+-		for instance in conn.instances.all():
+-			result[instance.id] = ("", None)
++		if "--filter" in options:
++			filter_key   = options["--filter"].split("=")[0].strip()
++			filter_value = options["--filter"].split("=")[1].strip()
++			filter = [{ "Name": filter_key, "Values": [filter_value] }]
++			for instance in conn.instances.filter(Filters=filter):
++				result[instance.id] = ("", None)
++		else:
++			for instance in conn.instances.all():
++				result[instance.id] = ("", None)
+ 	except ClientError:
+ 		fail_usage("Failed: Incorrect Access Key or Secret Key.")
+ 	except EndpointConnectionError:
+@@ -111,7 +118,7 @@ def define_new_opts():
+ 	all_opt["region"] = {
+ 		"getopt" : "r:",
+ 		"longopt" : "region",
+-		"help" : "-r, --region=[region]           Region, e.g. us-east-1",
++		"help" : "-r, --region=[region]          Region, e.g. us-east-1",
+ 		"shortdesc" : "Region.",
+ 		"required" : "0",
+ 		"order" : 2
+@@ -132,21 +139,29 @@ def define_new_opts():
+ 		"required" : "0",
+ 		"order" : 4
+ 	}
++	all_opt["filter"] = {
++		"getopt" : ":",
++		"longopt" : "filter",
++		"help" : "--filter=[key=value]           Filter (e.g. vpc-id=[vpc-XXYYZZAA]",
++		"shortdesc": "Filter for list-action",
++		"required": "0",
++		"order": 5
++	}
+ 	all_opt["boto3_debug"] = {
+ 		"getopt" : "b:",
+ 		"longopt" : "boto3_debug",
+-		"help" : "-b, --boto3_debug=[option]      Boto3 and Botocore library debug logging",
++		"help" : "-b, --boto3_debug=[option]     Boto3 and Botocore library debug logging",
+ 		"shortdesc": "Boto Lib debug",
+ 		"required": "0",
+ 		"default": "False",
+-		"order": 5
++		"order": 6
+ 	}
+ 
+ # Main agent method
+ def main():
+ 	conn = None
+ 
+-	device_opt = ["port", "no_password", "region", "access_key", "secret_key", "boto3_debug"]
++	device_opt = ["port", "no_password", "region", "access_key", "secret_key", "filter", "boto3_debug"]
+ 
+ 	atexit.register(atexit_handler)
+ 
+diff --git a/tests/data/metadata/fence_aws.xml b/tests/data/metadata/fence_aws.xml
+index 1f3ab3b97..a767e93c2 100644
+--- a/tests/data/metadata/fence_aws.xml
++++ b/tests/data/metadata/fence_aws.xml
+@@ -36,6 +36,11 @@ For instructions see: https://boto3.readthedocs.io/en/latest/guide/quickstart.ht
+ 		<content type="string"  />
+ 		<shortdesc lang="en">Secret Key.</shortdesc>
+ 	</parameter>
++	<parameter name="filter" unique="0" required="0">
++		<getopt mixed="--filter=[key=value]" />
++		<content type="string"  />
++		<shortdesc lang="en">Filter for list-action</shortdesc>
++	</parameter>
+ 	<parameter name="boto3_debug" unique="0" required="0">
+ 		<getopt mixed="-b, --boto3_debug=[option]" />
+ 		<content type="string" default="False"  />

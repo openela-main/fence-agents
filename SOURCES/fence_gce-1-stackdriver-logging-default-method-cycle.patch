@@ -1,0 +1,674 @@
+From 59ae9d00060da5329d7ca538974498292bbe1d91 Mon Sep 17 00:00:00 2001
+From: Helen Koike <helen.koike@collabora.com>
+Date: Tue, 26 Jun 2018 10:18:29 -0300
+Subject: [PATCH 1/7] fence_gce: add support for stackdriver logging
+
+Add --logging option to enable sending logs to google stackdriver
+---
+ agents/gce/fence_gce.py           | 65 +++++++++++++++++++++++++++++++++++++--
+ tests/data/metadata/fence_gce.xml |  5 +++
+ 2 files changed, 67 insertions(+), 3 deletions(-)
+
+diff --git a/agents/gce/fence_gce.py b/agents/gce/fence_gce.py
+index 3abb5207..3af5bfc8 100644
+--- a/agents/gce/fence_gce.py
++++ b/agents/gce/fence_gce.py
+@@ -1,12 +1,19 @@
+ #!@PYTHON@ -tt
+ 
+ import atexit
++import logging
++import platform
+ import sys
++import time
+ sys.path.append("@FENCEAGENTSLIBDIR@")
+ 
+ import googleapiclient.discovery
+ from fencing import fail_usage, run_delay, all_opt, atexit_handler, check_input, process_input, show_docs, fence_action
+ 
++
++LOGGER = logging
++
++
+ def translate_status(instance_status):
+ 	"Returns on | off | unknown."
+ 	if instance_status == "RUNNING":
+@@ -27,6 +34,7 @@ def get_nodes_list(conn, options):
+ 
+ 	return result
+ 
++
+ def get_power_status(conn, options):
+ 	try:
+ 		instance = conn.instances().get(
+@@ -38,18 +46,37 @@ def get_power_status(conn, options):
+ 		fail_usage("Failed: get_power_status: {}".format(str(err)))
+ 
+ 
++def wait_for_operation(conn, project, zone, operation):
++	while True:
++		result = conn.zoneOperations().get(
++			project=project,
++			zone=zone,
++			operation=operation['name']).execute()
++		if result['status'] == 'DONE':
++			if 'error' in result:
++				raise Exception(result['error'])
++			return
++		time.sleep(1)
++
++
+ def set_power_status(conn, options):
+ 	try:
+ 		if options["--action"] == "off":
+-			conn.instances().stop(
++			LOGGER.info("Issuing poweroff of %s in zone %s" % (options["--plug"], options["--zone"]))
++			operation = conn.instances().stop(
+ 					project=options["--project"],
+ 					zone=options["--zone"],
+ 					instance=options["--plug"]).execute()
++			wait_for_operation(conn, options["--project"], options["--zone"], operation)
++			LOGGER.info("Poweroff of %s in zone %s complete" % (options["--plug"], options["--zone"]))
+ 		elif options["--action"] == "on":
+-			conn.instances().start(
++			LOGGER.info("Issuing poweron of %s in zone %s" % (options["--plug"], options["--zone"]))
++			operation = conn.instances().start(
+ 					project=options["--project"],
+ 					zone=options["--zone"],
+ 					instance=options["--plug"]).execute()
++			wait_for_operation(conn, options["--project"], options["--zone"], operation)
++			LOGGER.info("Poweron of %s in zone %s complete" % (options["--plug"], options["--zone"]))
+ 	except Exception as err:
+ 		fail_usage("Failed: set_power_status: {}".format(str(err)))
+ 
+@@ -71,11 +98,24 @@ def define_new_opts():
+ 		"required" : "1",
+ 		"order" : 3
+ 	}
++	all_opt["logging"] = {
++		"getopt" : ":",
++		"longopt" : "logging",
++		"help" : "--logging=[bool]               Logging, true/false",
++		"shortdesc" : "Stackdriver-logging support.",
++		"longdesc" : "If enabled (set to true), IP failover logs will be posted to stackdriver logging.",
++		"required" : "0",
++		"default" : "false",
++		"order" : 4
++	}
+ 
+ def main():
+ 	conn = None
++	global LOGGER
++
++	hostname = platform.node()
+ 
+-	device_opt = ["port", "no_password", "zone", "project"]
++	device_opt = ["port", "no_password", "zone", "project", "logging"]
+ 
+ 	atexit.register(atexit_handler)
+ 
+@@ -97,6 +137,25 @@ def main():
+ 
+ 	run_delay(options)
+ 
++	# Prepare logging
++	logging_env = options.get('--logging')
++	if logging_env:
++		logging_env = logging_env.lower()
++		if any(x in logging_env for x in ['yes', 'true', 'enabled']):
++			try:
++				import google.cloud.logging.handlers
++				client = google.cloud.logging.Client()
++				handler = google.cloud.logging.handlers.CloudLoggingHandler(client, name=hostname)
++				formatter = logging.Formatter('gcp:stonish "%(message)s"')
++				LOGGER = logging.getLogger(hostname)
++				handler.setFormatter(formatter)
++				LOGGER.addHandler(handler)
++				LOGGER.setLevel(logging.INFO)
++			except ImportError:
++				LOGGER.error('Couldn\'t import google.cloud.logging, '
++					'disabling Stackdriver-logging support')
++
++	# Prepare cli
+ 	try:
+ 		credentials = None
+ 		if tuple(googleapiclient.__version__) < tuple("1.6.0"):
+diff --git a/tests/data/metadata/fence_gce.xml b/tests/data/metadata/fence_gce.xml
+index 2a147f21..805ecc6b 100644
+--- a/tests/data/metadata/fence_gce.xml
++++ b/tests/data/metadata/fence_gce.xml
+@@ -30,6 +30,11 @@ For instructions see: https://cloud.google.com/compute/docs/tutorials/python-gui
+ 		<content type="string"  />
+ 		<shortdesc lang="en">Project ID.</shortdesc>
+ 	</parameter>
++	<parameter name="logging" unique="0" required="0">
++		<getopt mixed="--logging=[bool]" />
++		<content type="string" default="false"  />
++		<shortdesc lang="en">Stackdriver-logging support.</shortdesc>
++	</parameter>
+ 	<parameter name="quiet" unique="0" required="0">
+ 		<getopt mixed="-q, --quiet" />
+ 		<content type="boolean"  />
+
+From bb34acd8b0b150599c393d56dd81a7d8185b27d3 Mon Sep 17 00:00:00 2001
+From: Helen Koike <helen.koike@collabora.com>
+Date: Tue, 26 Jun 2018 10:44:41 -0300
+Subject: [PATCH 2/7] fence_gce: set project and zone as not required
+
+Try to retrieve the GCE project if the script is being executed inside a
+GCE machine if --project is not provided.
+Try to retrieve the zone automatically from GCE if --zone is not
+provided.
+---
+ agents/gce/fence_gce.py           | 63 +++++++++++++++++++++++++++++++++++++--
+ tests/data/metadata/fence_gce.xml |  4 +--
+ 2 files changed, 63 insertions(+), 4 deletions(-)
+
+diff --git a/agents/gce/fence_gce.py b/agents/gce/fence_gce.py
+index 3af5bfc8..e53dc5a6 100644
+--- a/agents/gce/fence_gce.py
++++ b/agents/gce/fence_gce.py
+@@ -12,6 +12,8 @@
+ 
+ 
+ LOGGER = logging
++METADATA_SERVER = 'http://metadata.google.internal/computeMetadata/v1/'
++METADATA_HEADERS = {'Metadata-Flavor': 'Google'}
+ 
+ 
+ def translate_status(instance_status):
+@@ -81,13 +83,56 @@ def set_power_status(conn, options):
+ 		fail_usage("Failed: set_power_status: {}".format(str(err)))
+ 
+ 
++def get_instance(conn, project, zone, instance):
++	request = conn.instances().get(
++			project=project, zone=zone, instance=instance)
++	return request.execute()
++
++
++def get_zone(conn, project, instance):
++	request = conn.instances().aggregatedList(project=project)
++	while request is not None:
++		response = request.execute()
++		zones = response.get('items', {})
++		for zone in zones.values():
++			for inst in zone.get('instances', []):
++				if inst['name'] == instance:
++					return inst['zone'].split("/")[-1]
++		request = conn.instances().aggregatedList_next(
++				previous_request=request, previous_response=response)
++	raise Exception("Unable to find instance %s" % (instance))
++
++
++def get_metadata(metadata_key, params=None, timeout=None):
++	"""Performs a GET request with the metadata headers.
++
++	Args:
++		metadata_key: string, the metadata to perform a GET request on.
++		params: dictionary, the query parameters in the GET request.
++		timeout: int, timeout in seconds for metadata requests.
++
++	Returns:
++		HTTP response from the GET request.
++
++	Raises:
++		urlerror.HTTPError: raises when the GET request fails.
++	"""
++	timeout = timeout or 60
++	metadata_url = os.path.join(METADATA_SERVER, metadata_key)
++	params = urlparse.urlencode(params or {})
++	url = '%s?%s' % (metadata_url, params)
++	request = urlrequest.Request(url, headers=METADATA_HEADERS)
++	request_opener = urlrequest.build_opener(urlrequest.ProxyHandler({}))
++	return request_opener.open(request, timeout=timeout * 1.1).read()
++
++
+ def define_new_opts():
+ 	all_opt["zone"] = {
+ 		"getopt" : ":",
+ 		"longopt" : "zone",
+ 		"help" : "--zone=[name]                  Zone, e.g. us-central1-b",
+ 		"shortdesc" : "Zone.",
+-		"required" : "1",
++		"required" : "0",
+ 		"order" : 2
+ 	}
+ 	all_opt["project"] = {
+@@ -95,7 +140,7 @@ def define_new_opts():
+ 		"longopt" : "project",
+ 		"help" : "--project=[name]               Project ID",
+ 		"shortdesc" : "Project ID.",
+-		"required" : "1",
++		"required" : "0",
+ 		"order" : 3
+ 	}
+ 	all_opt["logging"] = {
+@@ -109,6 +154,7 @@ def define_new_opts():
+ 		"order" : 4
+ 	}
+ 
++
+ def main():
+ 	conn = None
+ 	global LOGGER
+@@ -165,6 +211,19 @@ def main():
+ 	except Exception as err:
+ 		fail_usage("Failed: Create GCE compute v1 connection: {}".format(str(err)))
+ 
++	# Get project and zone
++	if not options.get("--project"):
++		try:
++			options["--project"] = get_metadata('project/project-id')
++		except Exception as err:
++			fail_usage("Failed retrieving GCE project. Please provide --project option: {}".format(str(err)))
++
++	if not options.get("--zone"):
++		try:
++			options["--zone"] = get_zone(conn, options['--project'], options['--plug'])
++		except Exception as err:
++			fail_usage("Failed retrieving GCE zone. Please provide --zone option: {}".format(str(err)))
++
+ 	# Operate the fencing device
+ 	result = fence_action(conn, options, set_power_status, get_power_status, get_nodes_list)
+ 	sys.exit(result)
+diff --git a/tests/data/metadata/fence_gce.xml b/tests/data/metadata/fence_gce.xml
+index 805ecc6b..507b8385 100644
+--- a/tests/data/metadata/fence_gce.xml
++++ b/tests/data/metadata/fence_gce.xml
+@@ -20,12 +20,12 @@ For instructions see: https://cloud.google.com/compute/docs/tutorials/python-gui
+ 		<content type="string"  />
+ 		<shortdesc lang="en">Physical plug number on device, UUID or identification of machine</shortdesc>
+ 	</parameter>
+-	<parameter name="zone" unique="0" required="1">
++	<parameter name="zone" unique="0" required="0">
+ 		<getopt mixed="--zone=[name]" />
+ 		<content type="string"  />
+ 		<shortdesc lang="en">Zone.</shortdesc>
+ 	</parameter>
+-	<parameter name="project" unique="0" required="1">
++	<parameter name="project" unique="0" required="0">
+ 		<getopt mixed="--project=[name]" />
+ 		<content type="string"  />
+ 		<shortdesc lang="en">Project ID.</shortdesc>
+
+From 8ae1af8068d1718a861a25bf954e14392384fa55 Mon Sep 17 00:00:00 2001
+From: Helen Koike <helen.koike@collabora.com>
+Date: Wed, 4 Jul 2018 09:25:46 -0300
+Subject: [PATCH 3/7] fence_gce: add power cycle as default method
+
+Add function to power cycle an instance and set cycle as the default
+method to reboot.
+---
+ agents/gce/fence_gce.py           | 21 +++++++++++++++++++--
+ tests/data/metadata/fence_gce.xml |  8 ++++++++
+ 2 files changed, 27 insertions(+), 2 deletions(-)
+
+diff --git a/agents/gce/fence_gce.py b/agents/gce/fence_gce.py
+index e53dc5a6..3f77dc24 100644
+--- a/agents/gce/fence_gce.py
++++ b/agents/gce/fence_gce.py
+@@ -83,6 +83,21 @@ def set_power_status(conn, options):
+ 		fail_usage("Failed: set_power_status: {}".format(str(err)))
+ 
+ 
++def power_cycle(conn, options):
++	try:
++		LOGGER.info('Issuing reset of %s in zone %s' % (options["--plug"], options["--zone"]))
++		operation = conn.instances().reset(
++				project=options["--project"],
++				zone=options["--zone"],
++				instance=options["--plug"]).execute()
++		wait_for_operation(conn, options["--project"], options["--zone"], operation)
++		LOGGER.info('Reset of %s in zone %s complete' % (options["--plug"], options["--zone"]))
++		return True
++	except Exception as err:
++		LOGGER.error("Failed: power_cycle: {}".format(str(err)))
++		return False
++
++
+ def get_instance(conn, project, zone, instance):
+ 	request = conn.instances().get(
+ 			project=project, zone=zone, instance=instance)
+@@ -161,13 +176,15 @@ def main():
+ 
+ 	hostname = platform.node()
+ 
+-	device_opt = ["port", "no_password", "zone", "project", "logging"]
++	device_opt = ["port", "no_password", "zone", "project", "logging", "method"]
+ 
+ 	atexit.register(atexit_handler)
+ 
+ 	define_new_opts()
+ 
+ 	all_opt["power_timeout"]["default"] = "60"
++	all_opt["method"]["default"] = "cycle"
++	all_opt["method"]["help"] = "-m, --method=[method]          Method to fence (onoff|cycle) (Default: cycle)"
+ 
+ 	options = check_input(device_opt, process_input(device_opt))
+ 
+@@ -225,7 +242,7 @@ def main():
+ 			fail_usage("Failed retrieving GCE zone. Please provide --zone option: {}".format(str(err)))
+ 
+ 	# Operate the fencing device
+-	result = fence_action(conn, options, set_power_status, get_power_status, get_nodes_list)
++	result = fence_action(conn, options, set_power_status, get_power_status, get_nodes_list, power_cycle)
+ 	sys.exit(result)
+ 
+ if __name__ == "__main__":
+diff --git a/tests/data/metadata/fence_gce.xml b/tests/data/metadata/fence_gce.xml
+index 507b8385..f522550f 100644
+--- a/tests/data/metadata/fence_gce.xml
++++ b/tests/data/metadata/fence_gce.xml
+@@ -10,6 +10,14 @@ For instructions see: https://cloud.google.com/compute/docs/tutorials/python-gui
+ 		<content type="string" default="reboot"  />
+ 		<shortdesc lang="en">Fencing action</shortdesc>
+ 	</parameter>
++	<parameter name="method" unique="0" required="0">
++		<getopt mixed="-m, --method=[method]" />
++		<content type="select" default="cycle"  >
++			<option value="onoff" />
++			<option value="cycle" />
++		</content>
++		<shortdesc lang="en">Method to fence</shortdesc>
++	</parameter>
+ 	<parameter name="plug" unique="0" required="1" obsoletes="port">
+ 		<getopt mixed="-n, --plug=[id]" />
+ 		<content type="string"  />
+
+From 68644764695b79a3b75826fe009ea7da675677f7 Mon Sep 17 00:00:00 2001
+From: Helen Koike <helen.koike@collabora.com>
+Date: Thu, 5 Jul 2018 11:04:32 -0300
+Subject: [PATCH 4/7] fence_gce: add missing imports to retrieve the project
+
+---
+ agents/gce/fence_gce.py | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/agents/gce/fence_gce.py b/agents/gce/fence_gce.py
+index 3f77dc24..9b7b5e55 100644
+--- a/agents/gce/fence_gce.py
++++ b/agents/gce/fence_gce.py
+@@ -2,9 +2,18 @@
+ 
+ import atexit
+ import logging
++import os
+ import platform
+ import sys
+ import time
++if sys.version_info >= (3, 0):
++  # Python 3 imports.
++  import urllib.parse as urlparse
++  import urllib.request as urlrequest
++else:
++  # Python 2 imports.
++  import urllib as urlparse
++  import urllib2 as urlrequest
+ sys.path.append("@FENCEAGENTSLIBDIR@")
+ 
+ import googleapiclient.discovery
+
+From f8f3f11187341622c26e4e439dfda6a37ad660b0 Mon Sep 17 00:00:00 2001
+From: Helen Koike <helen.koike@collabora.com>
+Date: Thu, 5 Jul 2018 11:05:32 -0300
+Subject: [PATCH 5/7] fence_gce: s/--loging/--stackdriver-logging/
+
+---
+ agents/gce/fence_gce.py           | 42 ++++++++++++++++++---------------------
+ tests/data/metadata/fence_gce.xml | 11 +++++++---
+ 2 files changed, 27 insertions(+), 26 deletions(-)
+
+diff --git a/agents/gce/fence_gce.py b/agents/gce/fence_gce.py
+index 9b7b5e55..a6befe39 100644
+--- a/agents/gce/fence_gce.py
++++ b/agents/gce/fence_gce.py
+@@ -167,14 +167,13 @@ def define_new_opts():
+ 		"required" : "0",
+ 		"order" : 3
+ 	}
+-	all_opt["logging"] = {
+-		"getopt" : ":",
+-		"longopt" : "logging",
+-		"help" : "--logging=[bool]               Logging, true/false",
++	all_opt["stackdriver-logging"] = {
++		"getopt" : "",
++		"longopt" : "stackdriver-logging",
++		"help" : "--stackdriver-logging		Enable Logging to Stackdriver",
+ 		"shortdesc" : "Stackdriver-logging support.",
+-		"longdesc" : "If enabled (set to true), IP failover logs will be posted to stackdriver logging.",
++		"longdesc" : "If enabled IP failover logs will be posted to stackdriver logging.",
+ 		"required" : "0",
+-		"default" : "false",
+ 		"order" : 4
+ 	}
+ 
+@@ -185,7 +184,7 @@ def main():
+ 
+ 	hostname = platform.node()
+ 
+-	device_opt = ["port", "no_password", "zone", "project", "logging", "method"]
++	device_opt = ["port", "no_password", "zone", "project", "stackdriver-logging", "method"]
+ 
+ 	atexit.register(atexit_handler)
+ 
+@@ -210,22 +209,19 @@ def main():
+ 	run_delay(options)
+ 
+ 	# Prepare logging
+-	logging_env = options.get('--logging')
+-	if logging_env:
+-		logging_env = logging_env.lower()
+-		if any(x in logging_env for x in ['yes', 'true', 'enabled']):
+-			try:
+-				import google.cloud.logging.handlers
+-				client = google.cloud.logging.Client()
+-				handler = google.cloud.logging.handlers.CloudLoggingHandler(client, name=hostname)
+-				formatter = logging.Formatter('gcp:stonish "%(message)s"')
+-				LOGGER = logging.getLogger(hostname)
+-				handler.setFormatter(formatter)
+-				LOGGER.addHandler(handler)
+-				LOGGER.setLevel(logging.INFO)
+-			except ImportError:
+-				LOGGER.error('Couldn\'t import google.cloud.logging, '
+-					'disabling Stackdriver-logging support')
++	if options.get('--stackdriver-logging'):
++		try:
++			import google.cloud.logging.handlers
++			client = google.cloud.logging.Client()
++			handler = google.cloud.logging.handlers.CloudLoggingHandler(client, name=hostname)
++			formatter = logging.Formatter('gcp:stonish "%(message)s"')
++			LOGGER = logging.getLogger(hostname)
++			handler.setFormatter(formatter)
++			LOGGER.addHandler(handler)
++			LOGGER.setLevel(logging.INFO)
++		except ImportError:
++			LOGGER.error('Couldn\'t import google.cloud.logging, '
++				'disabling Stackdriver-logging support')
+ 
+ 	# Prepare cli
+ 	try:
+diff --git a/tests/data/metadata/fence_gce.xml b/tests/data/metadata/fence_gce.xml
+index f522550f..79b82ebb 100644
+--- a/tests/data/metadata/fence_gce.xml
++++ b/tests/data/metadata/fence_gce.xml
+@@ -38,9 +38,14 @@ For instructions see: https://cloud.google.com/compute/docs/tutorials/python-gui
+ 		<content type="string"  />
+ 		<shortdesc lang="en">Project ID.</shortdesc>
+ 	</parameter>
+-	<parameter name="logging" unique="0" required="0">
+-		<getopt mixed="--logging=[bool]" />
+-		<content type="string" default="false"  />
++	<parameter name="stackdriver-logging" unique="0" required="0" deprecated="1">
++		<getopt mixed="--stackdriver-logging" />
++		<content type="boolean"  />
++		<shortdesc lang="en">Stackdriver-logging support.</shortdesc>
++	</parameter>
++	<parameter name="stackdriver_logging" unique="0" required="0" obsoletes="stackdriver-logging">
++		<getopt mixed="--stackdriver-logging" />
++		<content type="boolean"  />
+ 		<shortdesc lang="en">Stackdriver-logging support.</shortdesc>
+ 	</parameter>
+ 	<parameter name="quiet" unique="0" required="0">
+
+From 9ae0a072424fa982e1d18a2cb661628c38601c3a Mon Sep 17 00:00:00 2001
+From: Helen Koike <helen.koike@collabora.com>
+Date: Sat, 7 Jul 2018 18:42:01 -0300
+Subject: [PATCH 6/7] fence_gce: use root logger for stackdriver
+
+---
+ agents/gce/fence_gce.py | 29 +++++++++++++++--------------
+ 1 file changed, 15 insertions(+), 14 deletions(-)
+
+diff --git a/agents/gce/fence_gce.py b/agents/gce/fence_gce.py
+index a6befe39..1d5095ae 100644
+--- a/agents/gce/fence_gce.py
++++ b/agents/gce/fence_gce.py
+@@ -20,7 +20,6 @@
+ from fencing import fail_usage, run_delay, all_opt, atexit_handler, check_input, process_input, show_docs, fence_action
+ 
+ 
+-LOGGER = logging
+ METADATA_SERVER = 'http://metadata.google.internal/computeMetadata/v1/'
+ METADATA_HEADERS = {'Metadata-Flavor': 'Google'}
+ 
+@@ -73,37 +72,37 @@ def wait_for_operation(conn, project, zone, operation):
+ def set_power_status(conn, options):
+ 	try:
+ 		if options["--action"] == "off":
+-			LOGGER.info("Issuing poweroff of %s in zone %s" % (options["--plug"], options["--zone"]))
++			logging.info("Issuing poweroff of %s in zone %s" % (options["--plug"], options["--zone"]))
+ 			operation = conn.instances().stop(
+ 					project=options["--project"],
+ 					zone=options["--zone"],
+ 					instance=options["--plug"]).execute()
+ 			wait_for_operation(conn, options["--project"], options["--zone"], operation)
+-			LOGGER.info("Poweroff of %s in zone %s complete" % (options["--plug"], options["--zone"]))
++			logging.info("Poweroff of %s in zone %s complete" % (options["--plug"], options["--zone"]))
+ 		elif options["--action"] == "on":
+-			LOGGER.info("Issuing poweron of %s in zone %s" % (options["--plug"], options["--zone"]))
++			logging.info("Issuing poweron of %s in zone %s" % (options["--plug"], options["--zone"]))
+ 			operation = conn.instances().start(
+ 					project=options["--project"],
+ 					zone=options["--zone"],
+ 					instance=options["--plug"]).execute()
+ 			wait_for_operation(conn, options["--project"], options["--zone"], operation)
+-			LOGGER.info("Poweron of %s in zone %s complete" % (options["--plug"], options["--zone"]))
++			logging.info("Poweron of %s in zone %s complete" % (options["--plug"], options["--zone"]))
+ 	except Exception as err:
+ 		fail_usage("Failed: set_power_status: {}".format(str(err)))
+ 
+ 
+ def power_cycle(conn, options):
+ 	try:
+-		LOGGER.info('Issuing reset of %s in zone %s' % (options["--plug"], options["--zone"]))
++		logging.info('Issuing reset of %s in zone %s' % (options["--plug"], options["--zone"]))
+ 		operation = conn.instances().reset(
+ 				project=options["--project"],
+ 				zone=options["--zone"],
+ 				instance=options["--plug"]).execute()
+ 		wait_for_operation(conn, options["--project"], options["--zone"], operation)
+-		LOGGER.info('Reset of %s in zone %s complete' % (options["--plug"], options["--zone"]))
++		logging.info('Reset of %s in zone %s complete' % (options["--plug"], options["--zone"]))
+ 		return True
+ 	except Exception as err:
+-		LOGGER.error("Failed: power_cycle: {}".format(str(err)))
++		logging.error("Failed: power_cycle: {}".format(str(err)))
+ 		return False
+ 
+ 
+@@ -180,7 +179,6 @@ def define_new_opts():
+ 
+ def main():
+ 	conn = None
+-	global LOGGER
+ 
+ 	hostname = platform.node()
+ 
+@@ -209,18 +207,21 @@ def main():
+ 	run_delay(options)
+ 
+ 	# Prepare logging
+-	if options.get('--stackdriver-logging'):
++	if options.get('--stackdriver-logging') is not None:
+ 		try:
+ 			import google.cloud.logging.handlers
+ 			client = google.cloud.logging.Client()
+ 			handler = google.cloud.logging.handlers.CloudLoggingHandler(client, name=hostname)
++			handler.setLevel(logging.INFO)
+ 			formatter = logging.Formatter('gcp:stonish "%(message)s"')
+-			LOGGER = logging.getLogger(hostname)
+ 			handler.setFormatter(formatter)
+-			LOGGER.addHandler(handler)
+-			LOGGER.setLevel(logging.INFO)
++			root_logger = logging.getLogger()
++			if options.get('--verbose') is None:
++				root_logger.setLevel(logging.INFO)
++				logging.getLogger("googleapiclient").setLevel(logging.ERROR)
++			root_logger.addHandler(handler)
+ 		except ImportError:
+-			LOGGER.error('Couldn\'t import google.cloud.logging, '
++			logging.error('Couldn\'t import google.cloud.logging, '
+ 				'disabling Stackdriver-logging support')
+ 
+ 	# Prepare cli
+
+From a52e643708908539d6e5fdb5d36a6cea935e4481 Mon Sep 17 00:00:00 2001
+From: Helen Koike <helen.koike@collabora.com>
+Date: Wed, 11 Jul 2018 17:16:49 -0300
+Subject: [PATCH 7/7] fence_gce: minor changes in logging
+
+- Remove hostname (use --plug instead).
+- Supress messages from googleapiclient and oauth2client if not error in
+non verbose mode.
+- s/stonish/stonith
+---
+ agents/gce/fence_gce.py | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
+
+diff --git a/agents/gce/fence_gce.py b/agents/gce/fence_gce.py
+index 1d5095ae..3eca0139 100644
+--- a/agents/gce/fence_gce.py
++++ b/agents/gce/fence_gce.py
+@@ -3,7 +3,6 @@
+ import atexit
+ import logging
+ import os
+-import platform
+ import sys
+ import time
+ if sys.version_info >= (3, 0):
+@@ -180,8 +179,6 @@ def define_new_opts():
+ def main():
+ 	conn = None
+ 
+-	hostname = platform.node()
+-
+ 	device_opt = ["port", "no_password", "zone", "project", "stackdriver-logging", "method"]
+ 
+ 	atexit.register(atexit_handler)
+@@ -207,18 +204,20 @@ def main():
+ 	run_delay(options)
+ 
+ 	# Prepare logging
+-	if options.get('--stackdriver-logging') is not None:
++	if options.get('--verbose') is None:
++		logging.getLogger('googleapiclient').setLevel(logging.ERROR)
++		logging.getLogger('oauth2client').setLevel(logging.ERROR)
++	if options.get('--stackdriver-logging') is not None and options.get('--plug'):
+ 		try:
+ 			import google.cloud.logging.handlers
+ 			client = google.cloud.logging.Client()
+-			handler = google.cloud.logging.handlers.CloudLoggingHandler(client, name=hostname)
++			handler = google.cloud.logging.handlers.CloudLoggingHandler(client, name=options['--plug'])
+ 			handler.setLevel(logging.INFO)
+-			formatter = logging.Formatter('gcp:stonish "%(message)s"')
++			formatter = logging.Formatter('gcp:stonith "%(message)s"')
+ 			handler.setFormatter(formatter)
+ 			root_logger = logging.getLogger()
+ 			if options.get('--verbose') is None:
+ 				root_logger.setLevel(logging.INFO)
+-				logging.getLogger("googleapiclient").setLevel(logging.ERROR)
+ 			root_logger.addHandler(handler)
+ 		except ImportError:
+ 			logging.error('Couldn\'t import google.cloud.logging, '
