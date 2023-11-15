@@ -1,0 +1,38 @@
+From 08a4521f9361c7ca4877e691fa82cc0e8f51d707 Mon Sep 17 00:00:00 2001
+From: Thomas Renninger <trenn@suse.com>
+Date: Wed, 3 Feb 2021 11:20:14 +0100
+Subject: [PATCH] Add fence_ipmilanplus as fence_ipmilan wrapper always
+ enabling lanplus
+
+Lanplus (IPMI protocol version 2) is the up-to-date protocol to
+connect to all recent IPMI driven BMCs.
+Using fence_ipmilan without lanplus=1 will fail on these.
+
+To get around compatibility issues (old HW might still exist),
+a new fence_agent is introduced via link and basename check.
+---
+ agents/ipmilan/fence_ipmilan.py           |   3 +
+ 9 files changed, 240 insertions(+)
+ create mode 100644 tests/data/metadata/fence_ipmilanplus.xml
+
+diff --git a/agents/ipmilan/fence_ipmilan.py b/agents/ipmilan/fence_ipmilan.py
+index ee014e79..f751de69 100644
+--- a/agents/ipmilan/fence_ipmilan.py
++++ b/agents/ipmilan/fence_ipmilan.py
+@@ -187,6 +187,8 @@ def main():
+ 		all_opt["lanplus"]["default"] = "1"
+ 	elif os.path.basename(sys.argv[0]) == "fence_ilo5":
+ 		all_opt["lanplus"]["default"] = "1"
++	elif os.path.basename(sys.argv[0]) == "fence_ipmilanplus":
++		all_opt["lanplus"]["default"] = "1"
+ 
+ 	all_opt["ipport"]["default"] = "623"
+ 	all_opt["method"]["help"] = "-m, --method=[method]          Method to fence (onoff|cycle) (Default: onoff)\n" \
+@@ -206,6 +208,7 @@ def main():
+ 	docs["symlink"] = [("fence_ilo3", "Fence agent for HP iLO3"),
+ 		("fence_ilo4", "Fence agent for HP iLO4"),
+ 		("fence_ilo5", "Fence agent for HP iLO5"),
++		("fence_ipmilanplus", "Fence agent for IPMIv2 lanplus"),
+ 		("fence_imm", "Fence agent for IBM Integrated Management Module"),
+ 		("fence_idrac", "Fence agent for Dell iDRAC")]
+ 	show_docs(options, docs)

@@ -1,0 +1,756 @@
+From cecf3b3edeccbac6293b95073b0c0ad4f02a8652 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Tue, 12 Nov 2019 17:25:57 +0100
+Subject: [PATCH] fencing: only use inetX_only parameters for SSH based agents
+ and fence_zvmip, and fixed syntax issue for Gawk v5+
+
+---
+ agents/zvm/fence_zvmip.py                    |  2 +-
+ lib/fencing.py.py                            |  4 ++--
+ make/agentpycheck.mk                         |  2 +-
+ tests/data/metadata/fence_amt.xml            | 10 ----------
+ tests/data/metadata/fence_amt_ws.xml         | 10 ----------
+ tests/data/metadata/fence_apc_snmp.xml       | 10 ----------
+ tests/data/metadata/fence_cisco_mds.xml      | 10 ----------
+ tests/data/metadata/fence_cisco_ucs.xml      | 10 ----------
+ tests/data/metadata/fence_docker.xml         | 10 ----------
+ tests/data/metadata/fence_drac.xml           | 10 ----------
+ tests/data/metadata/fence_eaton_snmp.xml     | 10 ----------
+ tests/data/metadata/fence_emerson.xml        | 10 ----------
+ tests/data/metadata/fence_eps.xml            | 10 ----------
+ tests/data/metadata/fence_ibmblade.xml       | 10 ----------
+ tests/data/metadata/fence_idrac.xml          | 10 ----------
+ tests/data/metadata/fence_ifmib.xml          | 10 ----------
+ tests/data/metadata/fence_ilo.xml            | 10 ----------
+ tests/data/metadata/fence_ilo2.xml           | 10 ----------
+ tests/data/metadata/fence_ilo3.xml           | 10 ----------
+ tests/data/metadata/fence_ilo4.xml           | 10 ----------
+ tests/data/metadata/fence_imm.xml            | 10 ----------
+ tests/data/metadata/fence_intelmodular.xml   | 10 ----------
+ tests/data/metadata/fence_ipdu.xml           | 10 ----------
+ tests/data/metadata/fence_ipmilan.xml        | 10 ----------
+ tests/data/metadata/fence_netio.xml          | 10 ----------
+ tests/data/metadata/fence_powerman.xml       | 10 ----------
+ tests/data/metadata/fence_pve.xml            | 10 ----------
+ tests/data/metadata/fence_raritan.xml        | 10 ----------
+ tests/data/metadata/fence_redfish.xml        | 10 ----------
+ tests/data/metadata/fence_rhevm.xml          | 10 ----------
+ tests/data/metadata/fence_sanbox2.xml        | 10 ----------
+ tests/data/metadata/fence_tripplite_snmp.xml | 10 ----------
+ tests/data/metadata/fence_vmware_rest.xml    | 10 ----------
+ tests/data/metadata/fence_vmware_soap.xml    | 10 ----------
+ tests/data/metadata/fence_vmware_vcloud.xml  | 10 ----------
+ 36 files changed, 4 insertions(+), 334 deletions(-)
+
+diff --git a/agents/zvm/fence_zvmip.py b/agents/zvm/fence_zvmip.py
+index e6bb01d1..5b272bb9 100644
+--- a/agents/zvm/fence_zvmip.py
++++ b/agents/zvm/fence_zvmip.py
+@@ -146,7 +146,7 @@ def get_list_of_images(options, command, data_as_plug):
+ 	return (return_code, reason_code, images)
+ 
+ def main():
+-	device_opt = ["ipaddr", "login", "passwd", "port", "method", "missing_as_off"]
++	device_opt = ["ipaddr", "login", "passwd", "port", "method", "missing_as_off", "inet4_only", "inet6_only"]
+ 
+ 	atexit.register(atexit_handler)
+ 
+diff --git a/lib/fencing.py.py b/lib/fencing.py.py
+index 2a0b0b91..4b54aa7c 100644
+--- a/lib/fencing.py.py
++++ b/lib/fencing.py.py
+@@ -459,9 +459,9 @@
+ 			"delay", "quiet"],
+ 		"passwd" : ["passwd_script"],
+ 		"sudo" : ["sudo_path"],
+-		"secure" : ["identity_file", "ssh_options", "ssh_path"],
++		"secure" : ["identity_file", "ssh_options", "ssh_path", "inet4_only", "inet6_only"],
+ 		"telnet" : ["telnet_path"],
+-		"ipaddr" : ["ipport", "inet4_only", "inet6_only"],
++		"ipaddr" : ["ipport"],
+ 		"port" : ["separator"],
+ 		"ssl" : ["ssl_secure", "ssl_insecure", "gnutlscli_path"],
+ 		"snmp" : ["snmp_auth_prot", "snmp_sec_level", "snmp_priv_prot", \
+diff --git a/make/agentpycheck.mk b/make/agentpycheck.mk
+index 58122c65..13482bf2 100644
+--- a/make/agentpycheck.mk
++++ b/make/agentpycheck.mk
+@@ -1,5 +1,5 @@
+ DATADIR:=$(abs_top_srcdir)/tests/data/metadata
+-AWK_VAL='BEGIN {store=-1} /name=\".*_path\"/ {store=2} {if (store!=0) {print}; store--}'
++AWK_VAL='BEGIN {store=-1} /name=".*_path"/ {store=2} {if (store!=0) {print}; store--}'
+ 
+ TEST_TARGET=$(filter-out $(TEST_TARGET_SKIP),$(TARGET))
+ 
+diff --git a/tests/data/metadata/fence_amt.xml b/tests/data/metadata/fence_amt.xml
+index c1e24db9..5f0adc98 100644
+--- a/tests/data/metadata/fence_amt.xml
++++ b/tests/data/metadata/fence_amt.xml
+@@ -19,16 +19,6 @@
+ 		</content>
+ 		<shortdesc lang="en">Change the default boot behavior of the machine.</shortdesc>
+ 	</parameter>
+-	<parameter name="inet4_only" unique="0" required="0">
+-		<getopt mixed="-4, --inet4-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv4 addresses only</shortdesc>
+-	</parameter>
+-	<parameter name="inet6_only" unique="0" required="0">
+-		<getopt mixed="-6, --inet6-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv6 addresses only</shortdesc>
+-	</parameter>
+ 	<parameter name="ip" unique="0" required="0" obsoletes="ipaddr">
+ 		<getopt mixed="-a, --ip=[ip]" />
+ 		<content type="string"  />
+diff --git a/tests/data/metadata/fence_amt_ws.xml b/tests/data/metadata/fence_amt_ws.xml
+index 07c22db3..86f36f6c 100644
+--- a/tests/data/metadata/fence_amt_ws.xml
++++ b/tests/data/metadata/fence_amt_ws.xml
+@@ -19,16 +19,6 @@
+ 		</content>
+ 		<shortdesc lang="en">Change the default boot behavior of the machine.</shortdesc>
+ 	</parameter>
+-	<parameter name="inet4_only" unique="0" required="0">
+-		<getopt mixed="-4, --inet4-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv4 addresses only</shortdesc>
+-	</parameter>
+-	<parameter name="inet6_only" unique="0" required="0">
+-		<getopt mixed="-6, --inet6-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv6 addresses only</shortdesc>
+-	</parameter>
+ 	<parameter name="ip" unique="0" required="0" obsoletes="ipaddr">
+ 		<getopt mixed="-a, --ip=[ip]" />
+ 		<content type="string"  />
+diff --git a/tests/data/metadata/fence_apc_snmp.xml b/tests/data/metadata/fence_apc_snmp.xml
+index 26661d6a..7f1c616c 100644
+--- a/tests/data/metadata/fence_apc_snmp.xml
++++ b/tests/data/metadata/fence_apc_snmp.xml
+@@ -14,16 +14,6 @@
+ 		<content type="string" default="private"  />
+ 		<shortdesc lang="en">Set the community string</shortdesc>
+ 	</parameter>
+-	<parameter name="inet4_only" unique="0" required="0">
+-		<getopt mixed="-4, --inet4-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv4 addresses only</shortdesc>
+-	</parameter>
+-	<parameter name="inet6_only" unique="0" required="0">
+-		<getopt mixed="-6, --inet6-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv6 addresses only</shortdesc>
+-	</parameter>
+ 	<parameter name="ip" unique="0" required="1" obsoletes="ipaddr">
+ 		<getopt mixed="-a, --ip=[ip]" />
+ 		<content type="string"  />
+diff --git a/tests/data/metadata/fence_cisco_mds.xml b/tests/data/metadata/fence_cisco_mds.xml
+index 1917595e..15d7798c 100644
+--- a/tests/data/metadata/fence_cisco_mds.xml
++++ b/tests/data/metadata/fence_cisco_mds.xml
+@@ -13,16 +13,6 @@
+ 		<content type="string"  />
+ 		<shortdesc lang="en">Set the community string</shortdesc>
+ 	</parameter>
+-	<parameter name="inet4_only" unique="0" required="0">
+-		<getopt mixed="-4, --inet4-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv4 addresses only</shortdesc>
+-	</parameter>
+-	<parameter name="inet6_only" unique="0" required="0">
+-		<getopt mixed="-6, --inet6-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv6 addresses only</shortdesc>
+-	</parameter>
+ 	<parameter name="ip" unique="0" required="1" obsoletes="ipaddr">
+ 		<getopt mixed="-a, --ip=[ip]" />
+ 		<content type="string"  />
+diff --git a/tests/data/metadata/fence_cisco_ucs.xml b/tests/data/metadata/fence_cisco_ucs.xml
+index 40581da7..848e72f8 100644
+--- a/tests/data/metadata/fence_cisco_ucs.xml
++++ b/tests/data/metadata/fence_cisco_ucs.xml
+@@ -8,16 +8,6 @@
+ 		<content type="string" default="reboot"  />
+ 		<shortdesc lang="en">Fencing action</shortdesc>
+ 	</parameter>
+-	<parameter name="inet4_only" unique="0" required="0">
+-		<getopt mixed="-4, --inet4-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv4 addresses only</shortdesc>
+-	</parameter>
+-	<parameter name="inet6_only" unique="0" required="0">
+-		<getopt mixed="-6, --inet6-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv6 addresses only</shortdesc>
+-	</parameter>
+ 	<parameter name="ip" unique="0" required="1" obsoletes="ipaddr">
+ 		<getopt mixed="-a, --ip=[ip]" />
+ 		<content type="string"  />
+diff --git a/tests/data/metadata/fence_docker.xml b/tests/data/metadata/fence_docker.xml
+index fdd6324c..3285314c 100644
+--- a/tests/data/metadata/fence_docker.xml
++++ b/tests/data/metadata/fence_docker.xml
+@@ -8,16 +8,6 @@
+ 		<content type="string" default="reboot"  />
+ 		<shortdesc lang="en">Fencing action</shortdesc>
+ 	</parameter>
+-	<parameter name="inet4_only" unique="0" required="0">
+-		<getopt mixed="-4, --inet4-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv4 addresses only</shortdesc>
+-	</parameter>
+-	<parameter name="inet6_only" unique="0" required="0">
+-		<getopt mixed="-6, --inet6-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv6 addresses only</shortdesc>
+-	</parameter>
+ 	<parameter name="ip" unique="0" required="1" obsoletes="ipaddr">
+ 		<getopt mixed="-a, --ip=[ip]" />
+ 		<content type="string"  />
+diff --git a/tests/data/metadata/fence_drac.xml b/tests/data/metadata/fence_drac.xml
+index 405d660a..2184ee0c 100644
+--- a/tests/data/metadata/fence_drac.xml
++++ b/tests/data/metadata/fence_drac.xml
+@@ -18,16 +18,6 @@
+ 		<content type="string" default="[&apos;\\[username\\]# &apos;]"  />
+ 		<shortdesc lang="en">Force Python regex for command prompt</shortdesc>
+ 	</parameter>
+-	<parameter name="inet4_only" unique="0" required="0">
+-		<getopt mixed="-4, --inet4-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv4 addresses only</shortdesc>
+-	</parameter>
+-	<parameter name="inet6_only" unique="0" required="0">
+-		<getopt mixed="-6, --inet6-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv6 addresses only</shortdesc>
+-	</parameter>
+ 	<parameter name="ip" unique="0" required="0" obsoletes="ipaddr">
+ 		<getopt mixed="-a, --ip=[ip]" />
+ 		<content type="string"  />
+diff --git a/tests/data/metadata/fence_eaton_snmp.xml b/tests/data/metadata/fence_eaton_snmp.xml
+index 33957ed1..3dd92dd2 100644
+--- a/tests/data/metadata/fence_eaton_snmp.xml
++++ b/tests/data/metadata/fence_eaton_snmp.xml
+@@ -13,16 +13,6 @@
+ 		<content type="string" default="private"  />
+ 		<shortdesc lang="en">Set the community string</shortdesc>
+ 	</parameter>
+-	<parameter name="inet4_only" unique="0" required="0">
+-		<getopt mixed="-4, --inet4-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv4 addresses only</shortdesc>
+-	</parameter>
+-	<parameter name="inet6_only" unique="0" required="0">
+-		<getopt mixed="-6, --inet6-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv6 addresses only</shortdesc>
+-	</parameter>
+ 	<parameter name="ip" unique="0" required="1" obsoletes="ipaddr">
+ 		<getopt mixed="-a, --ip=[ip]" />
+ 		<content type="string"  />
+diff --git a/tests/data/metadata/fence_emerson.xml b/tests/data/metadata/fence_emerson.xml
+index 87205c1b..f6886469 100644
+--- a/tests/data/metadata/fence_emerson.xml
++++ b/tests/data/metadata/fence_emerson.xml
+@@ -13,16 +13,6 @@
+ 		<content type="string"  />
+ 		<shortdesc lang="en">Set the community string</shortdesc>
+ 	</parameter>
+-	<parameter name="inet4_only" unique="0" required="0">
+-		<getopt mixed="-4, --inet4-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv4 addresses only</shortdesc>
+-	</parameter>
+-	<parameter name="inet6_only" unique="0" required="0">
+-		<getopt mixed="-6, --inet6-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv6 addresses only</shortdesc>
+-	</parameter>
+ 	<parameter name="ip" unique="0" required="1" obsoletes="ipaddr">
+ 		<getopt mixed="-a, --ip=[ip]" />
+ 		<content type="string"  />
+diff --git a/tests/data/metadata/fence_eps.xml b/tests/data/metadata/fence_eps.xml
+index 68d8fb69..26e75477 100644
+--- a/tests/data/metadata/fence_eps.xml
++++ b/tests/data/metadata/fence_eps.xml
+@@ -15,16 +15,6 @@ Agent basically works by connecting to hidden page and pass appropriate argument
+ 		<content type="string" default="hidden.htm"  />
+ 		<shortdesc lang="en">Name of hidden page</shortdesc>
+ 	</parameter>
+-	<parameter name="inet4_only" unique="0" required="0">
+-		<getopt mixed="-4, --inet4-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv4 addresses only</shortdesc>
+-	</parameter>
+-	<parameter name="inet6_only" unique="0" required="0">
+-		<getopt mixed="-6, --inet6-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv6 addresses only</shortdesc>
+-	</parameter>
+ 	<parameter name="ip" unique="0" required="1" obsoletes="ipaddr">
+ 		<getopt mixed="-a, --ip=[ip]" />
+ 		<content type="string"  />
+diff --git a/tests/data/metadata/fence_ibmblade.xml b/tests/data/metadata/fence_ibmblade.xml
+index eff551f6..5084b3a0 100644
+--- a/tests/data/metadata/fence_ibmblade.xml
++++ b/tests/data/metadata/fence_ibmblade.xml
+@@ -13,16 +13,6 @@
+ 		<content type="string"  />
+ 		<shortdesc lang="en">Set the community string</shortdesc>
+ 	</parameter>
+-	<parameter name="inet4_only" unique="0" required="0">
+-		<getopt mixed="-4, --inet4-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv4 addresses only</shortdesc>
+-	</parameter>
+-	<parameter name="inet6_only" unique="0" required="0">
+-		<getopt mixed="-6, --inet6-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv6 addresses only</shortdesc>
+-	</parameter>
+ 	<parameter name="ip" unique="0" required="1" obsoletes="ipaddr">
+ 		<getopt mixed="-a, --ip=[ip]" />
+ 		<content type="string"  />
+diff --git a/tests/data/metadata/fence_idrac.xml b/tests/data/metadata/fence_idrac.xml
+index f4588b35..55d9ced3 100644
+--- a/tests/data/metadata/fence_idrac.xml
++++ b/tests/data/metadata/fence_idrac.xml
+@@ -32,16 +32,6 @@
+ 		<content type="string"  />
+ 		<shortdesc lang="en">Hexadecimal-encoded Kg key for IPMIv2 authentication</shortdesc>
+ 	</parameter>
+-	<parameter name="inet4_only" unique="0" required="0">
+-		<getopt mixed="-4, --inet4-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv4 addresses only</shortdesc>
+-	</parameter>
+-	<parameter name="inet6_only" unique="0" required="0">
+-		<getopt mixed="-6, --inet6-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv6 addresses only</shortdesc>
+-	</parameter>
+ 	<parameter name="ip" unique="0" required="0" obsoletes="ipaddr">
+ 		<getopt mixed="-a, --ip=[ip]" />
+ 		<content type="string"  />
+diff --git a/tests/data/metadata/fence_ifmib.xml b/tests/data/metadata/fence_ifmib.xml
+index b5f3b1d4..c07a6e1f 100644
+--- a/tests/data/metadata/fence_ifmib.xml
++++ b/tests/data/metadata/fence_ifmib.xml
+@@ -15,16 +15,6 @@ It was written with managed ethernet switches in mind, in order to fence iSCSI S
+ 		<content type="string"  />
+ 		<shortdesc lang="en">Set the community string</shortdesc>
+ 	</parameter>
+-	<parameter name="inet4_only" unique="0" required="0">
+-		<getopt mixed="-4, --inet4-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv4 addresses only</shortdesc>
+-	</parameter>
+-	<parameter name="inet6_only" unique="0" required="0">
+-		<getopt mixed="-6, --inet6-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv6 addresses only</shortdesc>
+-	</parameter>
+ 	<parameter name="ip" unique="0" required="1" obsoletes="ipaddr">
+ 		<getopt mixed="-a, --ip=[ip]" />
+ 		<content type="string"  />
+diff --git a/tests/data/metadata/fence_ilo.xml b/tests/data/metadata/fence_ilo.xml
+index eb2e7a72..44b3c43a 100644
+--- a/tests/data/metadata/fence_ilo.xml
++++ b/tests/data/metadata/fence_ilo.xml
+@@ -9,16 +9,6 @@
+ 		<content type="string" default="reboot"  />
+ 		<shortdesc lang="en">Fencing action</shortdesc>
+ 	</parameter>
+-	<parameter name="inet4_only" unique="0" required="0">
+-		<getopt mixed="-4, --inet4-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv4 addresses only</shortdesc>
+-	</parameter>
+-	<parameter name="inet6_only" unique="0" required="0">
+-		<getopt mixed="-6, --inet6-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv6 addresses only</shortdesc>
+-	</parameter>
+ 	<parameter name="ip" unique="0" required="0" obsoletes="ipaddr">
+ 		<getopt mixed="-a, --ip=[ip]" />
+ 		<content type="string"  />
+diff --git a/tests/data/metadata/fence_ilo2.xml b/tests/data/metadata/fence_ilo2.xml
+index b14aa2fb..e9cae6d2 100644
+--- a/tests/data/metadata/fence_ilo2.xml
++++ b/tests/data/metadata/fence_ilo2.xml
+@@ -9,16 +9,6 @@
+ 		<content type="string" default="reboot"  />
+ 		<shortdesc lang="en">Fencing action</shortdesc>
+ 	</parameter>
+-	<parameter name="inet4_only" unique="0" required="0">
+-		<getopt mixed="-4, --inet4-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv4 addresses only</shortdesc>
+-	</parameter>
+-	<parameter name="inet6_only" unique="0" required="0">
+-		<getopt mixed="-6, --inet6-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv6 addresses only</shortdesc>
+-	</parameter>
+ 	<parameter name="ip" unique="0" required="0" obsoletes="ipaddr">
+ 		<getopt mixed="-a, --ip=[ip]" />
+ 		<content type="string"  />
+diff --git a/tests/data/metadata/fence_ilo3.xml b/tests/data/metadata/fence_ilo3.xml
+index deaeaaf0..2a99e0a4 100644
+--- a/tests/data/metadata/fence_ilo3.xml
++++ b/tests/data/metadata/fence_ilo3.xml
+@@ -32,16 +32,6 @@
+ 		<content type="string"  />
+ 		<shortdesc lang="en">Hexadecimal-encoded Kg key for IPMIv2 authentication</shortdesc>
+ 	</parameter>
+-	<parameter name="inet4_only" unique="0" required="0">
+-		<getopt mixed="-4, --inet4-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv4 addresses only</shortdesc>
+-	</parameter>
+-	<parameter name="inet6_only" unique="0" required="0">
+-		<getopt mixed="-6, --inet6-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv6 addresses only</shortdesc>
+-	</parameter>
+ 	<parameter name="ip" unique="0" required="0" obsoletes="ipaddr">
+ 		<getopt mixed="-a, --ip=[ip]" />
+ 		<content type="string"  />
+diff --git a/tests/data/metadata/fence_ilo4.xml b/tests/data/metadata/fence_ilo4.xml
+index bbf0833b..68790266 100644
+--- a/tests/data/metadata/fence_ilo4.xml
++++ b/tests/data/metadata/fence_ilo4.xml
+@@ -32,16 +32,6 @@
+ 		<content type="string"  />
+ 		<shortdesc lang="en">Hexadecimal-encoded Kg key for IPMIv2 authentication</shortdesc>
+ 	</parameter>
+-	<parameter name="inet4_only" unique="0" required="0">
+-		<getopt mixed="-4, --inet4-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv4 addresses only</shortdesc>
+-	</parameter>
+-	<parameter name="inet6_only" unique="0" required="0">
+-		<getopt mixed="-6, --inet6-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv6 addresses only</shortdesc>
+-	</parameter>
+ 	<parameter name="ip" unique="0" required="0" obsoletes="ipaddr">
+ 		<getopt mixed="-a, --ip=[ip]" />
+ 		<content type="string"  />
+diff --git a/tests/data/metadata/fence_imm.xml b/tests/data/metadata/fence_imm.xml
+index 22cb54e7..e22e4723 100644
+--- a/tests/data/metadata/fence_imm.xml
++++ b/tests/data/metadata/fence_imm.xml
+@@ -32,16 +32,6 @@
+ 		<content type="string"  />
+ 		<shortdesc lang="en">Hexadecimal-encoded Kg key for IPMIv2 authentication</shortdesc>
+ 	</parameter>
+-	<parameter name="inet4_only" unique="0" required="0">
+-		<getopt mixed="-4, --inet4-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv4 addresses only</shortdesc>
+-	</parameter>
+-	<parameter name="inet6_only" unique="0" required="0">
+-		<getopt mixed="-6, --inet6-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv6 addresses only</shortdesc>
+-	</parameter>
+ 	<parameter name="ip" unique="0" required="0" obsoletes="ipaddr">
+ 		<getopt mixed="-a, --ip=[ip]" />
+ 		<content type="string"  />
+diff --git a/tests/data/metadata/fence_intelmodular.xml b/tests/data/metadata/fence_intelmodular.xml
+index 4f2e8c49..5e0d3b19 100644
+--- a/tests/data/metadata/fence_intelmodular.xml
++++ b/tests/data/metadata/fence_intelmodular.xml
+@@ -15,16 +15,6 @@ Note: Since firmware update version 2.7, SNMP v2 write support is removed, and r
+ 		<content type="string"  />
+ 		<shortdesc lang="en">Set the community string</shortdesc>
+ 	</parameter>
+-	<parameter name="inet4_only" unique="0" required="0">
+-		<getopt mixed="-4, --inet4-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv4 addresses only</shortdesc>
+-	</parameter>
+-	<parameter name="inet6_only" unique="0" required="0">
+-		<getopt mixed="-6, --inet6-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv6 addresses only</shortdesc>
+-	</parameter>
+ 	<parameter name="ip" unique="0" required="1" obsoletes="ipaddr">
+ 		<getopt mixed="-a, --ip=[ip]" />
+ 		<content type="string"  />
+diff --git a/tests/data/metadata/fence_ipdu.xml b/tests/data/metadata/fence_ipdu.xml
+index 0b615852..546e372c 100644
+--- a/tests/data/metadata/fence_ipdu.xml
++++ b/tests/data/metadata/fence_ipdu.xml
+@@ -13,16 +13,6 @@
+ 		<content type="string" default="private"  />
+ 		<shortdesc lang="en">Set the community string</shortdesc>
+ 	</parameter>
+-	<parameter name="inet4_only" unique="0" required="0">
+-		<getopt mixed="-4, --inet4-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv4 addresses only</shortdesc>
+-	</parameter>
+-	<parameter name="inet6_only" unique="0" required="0">
+-		<getopt mixed="-6, --inet6-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv6 addresses only</shortdesc>
+-	</parameter>
+ 	<parameter name="ip" unique="0" required="1" obsoletes="ipaddr">
+ 		<getopt mixed="-a, --ip=[ip]" />
+ 		<content type="string"  />
+diff --git a/tests/data/metadata/fence_ipmilan.xml b/tests/data/metadata/fence_ipmilan.xml
+index b9ce66f8..3e13d288 100644
+--- a/tests/data/metadata/fence_ipmilan.xml
++++ b/tests/data/metadata/fence_ipmilan.xml
+@@ -32,16 +32,6 @@
+ 		<content type="string"  />
+ 		<shortdesc lang="en">Hexadecimal-encoded Kg key for IPMIv2 authentication</shortdesc>
+ 	</parameter>
+-	<parameter name="inet4_only" unique="0" required="0">
+-		<getopt mixed="-4, --inet4-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv4 addresses only</shortdesc>
+-	</parameter>
+-	<parameter name="inet6_only" unique="0" required="0">
+-		<getopt mixed="-6, --inet6-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv6 addresses only</shortdesc>
+-	</parameter>
+ 	<parameter name="ip" unique="0" required="0" obsoletes="ipaddr">
+ 		<getopt mixed="-a, --ip=[ip]" />
+ 		<content type="string"  />
+diff --git a/tests/data/metadata/fence_netio.xml b/tests/data/metadata/fence_netio.xml
+index e6350ed4..79d27af3 100644
+--- a/tests/data/metadata/fence_netio.xml
++++ b/tests/data/metadata/fence_netio.xml
+@@ -8,16 +8,6 @@
+ 		<content type="string" default="reboot"  />
+ 		<shortdesc lang="en">Fencing action</shortdesc>
+ 	</parameter>
+-	<parameter name="inet4_only" unique="0" required="0">
+-		<getopt mixed="-4, --inet4-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv4 addresses only</shortdesc>
+-	</parameter>
+-	<parameter name="inet6_only" unique="0" required="0">
+-		<getopt mixed="-6, --inet6-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv6 addresses only</shortdesc>
+-	</parameter>
+ 	<parameter name="ip" unique="0" required="1" obsoletes="ipaddr">
+ 		<getopt mixed="-a, --ip=[ip]" />
+ 		<content type="string"  />
+diff --git a/tests/data/metadata/fence_powerman.xml b/tests/data/metadata/fence_powerman.xml
+index f0499d86..ce72e002 100644
+--- a/tests/data/metadata/fence_powerman.xml
++++ b/tests/data/metadata/fence_powerman.xml
+@@ -8,16 +8,6 @@
+ 		<content type="string" default="reboot"  />
+ 		<shortdesc lang="en">Fencing action</shortdesc>
+ 	</parameter>
+-	<parameter name="inet4_only" unique="0" required="0">
+-		<getopt mixed="-4, --inet4-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv4 addresses only</shortdesc>
+-	</parameter>
+-	<parameter name="inet6_only" unique="0" required="0">
+-		<getopt mixed="-6, --inet6-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv6 addresses only</shortdesc>
+-	</parameter>
+ 	<parameter name="ip" unique="0" required="0" obsoletes="ipaddr">
+ 		<getopt mixed="-a, --ip=[ip]" />
+ 		<content type="string"  />
+diff --git a/tests/data/metadata/fence_pve.xml b/tests/data/metadata/fence_pve.xml
+index b727a7e8..5d744903 100644
+--- a/tests/data/metadata/fence_pve.xml
++++ b/tests/data/metadata/fence_pve.xml
+@@ -8,16 +8,6 @@
+ 		<content type="string" default="reboot"  />
+ 		<shortdesc lang="en">Fencing action</shortdesc>
+ 	</parameter>
+-	<parameter name="inet4_only" unique="0" required="0">
+-		<getopt mixed="-4, --inet4-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv4 addresses only</shortdesc>
+-	</parameter>
+-	<parameter name="inet6_only" unique="0" required="0">
+-		<getopt mixed="-6, --inet6-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv6 addresses only</shortdesc>
+-	</parameter>
+ 	<parameter name="ip" unique="0" required="1" obsoletes="ipaddr">
+ 		<getopt mixed="-a, --ip=[ip]" />
+ 		<content type="string"  />
+diff --git a/tests/data/metadata/fence_raritan.xml b/tests/data/metadata/fence_raritan.xml
+index c75783fd..565eebc7 100644
+--- a/tests/data/metadata/fence_raritan.xml
++++ b/tests/data/metadata/fence_raritan.xml
+@@ -8,16 +8,6 @@
+ 		<content type="string" default="reboot"  />
+ 		<shortdesc lang="en">Fencing action</shortdesc>
+ 	</parameter>
+-	<parameter name="inet4_only" unique="0" required="0">
+-		<getopt mixed="-4, --inet4-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv4 addresses only</shortdesc>
+-	</parameter>
+-	<parameter name="inet6_only" unique="0" required="0">
+-		<getopt mixed="-6, --inet6-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv6 addresses only</shortdesc>
+-	</parameter>
+ 	<parameter name="ip" unique="0" required="1" obsoletes="ipaddr">
+ 		<getopt mixed="-a, --ip=[ip]" />
+ 		<content type="string"  />
+diff --git a/tests/data/metadata/fence_redfish.xml b/tests/data/metadata/fence_redfish.xml
+index e1c18584..91b483b7 100644
+--- a/tests/data/metadata/fence_redfish.xml
++++ b/tests/data/metadata/fence_redfish.xml
+@@ -8,16 +8,6 @@
+ 		<content type="string" default="reboot"  />
+ 		<shortdesc lang="en">Fencing action</shortdesc>
+ 	</parameter>
+-	<parameter name="inet4_only" unique="0" required="0">
+-		<getopt mixed="-4, --inet4-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv4 addresses only</shortdesc>
+-	</parameter>
+-	<parameter name="inet6_only" unique="0" required="0">
+-		<getopt mixed="-6, --inet6-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv6 addresses only</shortdesc>
+-	</parameter>
+ 	<parameter name="ip" unique="0" required="0" obsoletes="ipaddr">
+ 		<getopt mixed="-a, --ip=[ip]" />
+ 		<content type="string"  />
+diff --git a/tests/data/metadata/fence_rhevm.xml b/tests/data/metadata/fence_rhevm.xml
+index 2b6b02b2..73c9906f 100644
+--- a/tests/data/metadata/fence_rhevm.xml
++++ b/tests/data/metadata/fence_rhevm.xml
+@@ -8,16 +8,6 @@
+ 		<content type="string" default="reboot"  />
+ 		<shortdesc lang="en">Fencing action</shortdesc>
+ 	</parameter>
+-	<parameter name="inet4_only" unique="0" required="0">
+-		<getopt mixed="-4, --inet4-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv4 addresses only</shortdesc>
+-	</parameter>
+-	<parameter name="inet6_only" unique="0" required="0">
+-		<getopt mixed="-6, --inet6-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv6 addresses only</shortdesc>
+-	</parameter>
+ 	<parameter name="ip" unique="0" required="1" obsoletes="ipaddr">
+ 		<getopt mixed="-a, --ip=[ip]" />
+ 		<content type="string"  />
+diff --git a/tests/data/metadata/fence_sanbox2.xml b/tests/data/metadata/fence_sanbox2.xml
+index 9832841e..7e20c8ce 100644
+--- a/tests/data/metadata/fence_sanbox2.xml
++++ b/tests/data/metadata/fence_sanbox2.xml
+@@ -18,16 +18,6 @@
+ 		<content type="string" default="[&apos; #&gt; &apos;]"  />
+ 		<shortdesc lang="en">Force Python regex for command prompt</shortdesc>
+ 	</parameter>
+-	<parameter name="inet4_only" unique="0" required="0">
+-		<getopt mixed="-4, --inet4-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv4 addresses only</shortdesc>
+-	</parameter>
+-	<parameter name="inet6_only" unique="0" required="0">
+-		<getopt mixed="-6, --inet6-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv6 addresses only</shortdesc>
+-	</parameter>
+ 	<parameter name="ip" unique="0" required="1" obsoletes="ipaddr">
+ 		<getopt mixed="-a, --ip=[ip]" />
+ 		<content type="string"  />
+diff --git a/tests/data/metadata/fence_tripplite_snmp.xml b/tests/data/metadata/fence_tripplite_snmp.xml
+index 22d3db5d..d3769133 100644
+--- a/tests/data/metadata/fence_tripplite_snmp.xml
++++ b/tests/data/metadata/fence_tripplite_snmp.xml
+@@ -14,16 +14,6 @@
+ 		<content type="string" default="private"  />
+ 		<shortdesc lang="en">Set the community string</shortdesc>
+ 	</parameter>
+-	<parameter name="inet4_only" unique="0" required="0">
+-		<getopt mixed="-4, --inet4-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv4 addresses only</shortdesc>
+-	</parameter>
+-	<parameter name="inet6_only" unique="0" required="0">
+-		<getopt mixed="-6, --inet6-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv6 addresses only</shortdesc>
+-	</parameter>
+ 	<parameter name="ip" unique="0" required="1" obsoletes="ipaddr">
+ 		<getopt mixed="-a, --ip=[ip]" />
+ 		<content type="string"  />
+diff --git a/tests/data/metadata/fence_vmware_rest.xml b/tests/data/metadata/fence_vmware_rest.xml
+index 1e1f790f..5b497a6a 100644
+--- a/tests/data/metadata/fence_vmware_rest.xml
++++ b/tests/data/metadata/fence_vmware_rest.xml
+@@ -8,16 +8,6 @@
+ 		<content type="string" default="reboot"  />
+ 		<shortdesc lang="en">Fencing action</shortdesc>
+ 	</parameter>
+-	<parameter name="inet4_only" unique="0" required="0">
+-		<getopt mixed="-4, --inet4-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv4 addresses only</shortdesc>
+-	</parameter>
+-	<parameter name="inet6_only" unique="0" required="0">
+-		<getopt mixed="-6, --inet6-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv6 addresses only</shortdesc>
+-	</parameter>
+ 	<parameter name="ip" unique="0" required="1" obsoletes="ipaddr">
+ 		<getopt mixed="-a, --ip=[ip]" />
+ 		<content type="string"  />
+diff --git a/tests/data/metadata/fence_vmware_soap.xml b/tests/data/metadata/fence_vmware_soap.xml
+index 46d29116..da6a1002 100644
+--- a/tests/data/metadata/fence_vmware_soap.xml
++++ b/tests/data/metadata/fence_vmware_soap.xml
+@@ -10,16 +10,6 @@ Name of virtual machine (-n / port) has to be used in inventory path format (e.g
+ 		<content type="string" default="reboot"  />
+ 		<shortdesc lang="en">Fencing action</shortdesc>
+ 	</parameter>
+-	<parameter name="inet4_only" unique="0" required="0">
+-		<getopt mixed="-4, --inet4-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv4 addresses only</shortdesc>
+-	</parameter>
+-	<parameter name="inet6_only" unique="0" required="0">
+-		<getopt mixed="-6, --inet6-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv6 addresses only</shortdesc>
+-	</parameter>
+ 	<parameter name="ip" unique="0" required="1" obsoletes="ipaddr">
+ 		<getopt mixed="-a, --ip=[ip]" />
+ 		<content type="string"  />
+diff --git a/tests/data/metadata/fence_vmware_vcloud.xml b/tests/data/metadata/fence_vmware_vcloud.xml
+index 69269a2d..505eaf2b 100644
+--- a/tests/data/metadata/fence_vmware_vcloud.xml
++++ b/tests/data/metadata/fence_vmware_vcloud.xml
+@@ -8,16 +8,6 @@
+ 		<content type="string" default="reboot"  />
+ 		<shortdesc lang="en">Fencing action</shortdesc>
+ 	</parameter>
+-	<parameter name="inet4_only" unique="0" required="0">
+-		<getopt mixed="-4, --inet4-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv4 addresses only</shortdesc>
+-	</parameter>
+-	<parameter name="inet6_only" unique="0" required="0">
+-		<getopt mixed="-6, --inet6-only" />
+-		<content type="boolean"  />
+-		<shortdesc lang="en">Forces agent to use IPv6 addresses only</shortdesc>
+-	</parameter>
+ 	<parameter name="ip" unique="0" required="1" obsoletes="ipaddr">
+ 		<getopt mixed="-a, --ip=[ip]" />
+ 		<content type="string"  />

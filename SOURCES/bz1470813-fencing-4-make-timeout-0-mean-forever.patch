@@ -1,0 +1,22 @@
+From 083ecce0e7b6cd41eef026c8a1ba986f8814a7d9 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Thu, 5 Nov 2020 11:53:55 +0100
+Subject: [PATCH] fencing: fix run_command() to allow timeout=0 to mean forever
+
+---
+ lib/fencing.py.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lib/fencing.py.py b/lib/fencing.py.py
+index fa34f13a..9654f57b 100644
+--- a/lib/fencing.py.py
++++ b/lib/fencing.py.py
+@@ -1062,7 +1062,7 @@ def run_command(options, command, timeout=None, env=None, log_command=None):
+ 
+ 	thread = threading.Thread(target=process.wait)
+ 	thread.start()
+-	thread.join(timeout)
++	thread.join(timeout if timeout else None)
+ 	if thread.is_alive():
+ 		process.kill()
+ 		fail(EC_TIMED_OUT, stop=(int(options.get("retry", 0)) < 1))

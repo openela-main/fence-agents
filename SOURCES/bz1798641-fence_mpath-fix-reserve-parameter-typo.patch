@@ -1,0 +1,22 @@
+From 0d3ff341c5dcff7ded0274ae20460895f35c13d6 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Thu, 13 Feb 2020 15:40:24 +0100
+Subject: [PATCH] fence_mpath: fix --reserve parameter typo
+
+---
+ agents/mpath/fence_mpath.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/agents/mpath/fence_mpath.py b/agents/mpath/fence_mpath.py
+index 73517851..a3d9fe23 100644
+--- a/agents/mpath/fence_mpath.py
++++ b/agents/mpath/fence_mpath.py
+@@ -106,7 +106,7 @@ def register_dev(options, dev):
+ 	return not bool(run_cmd(options, cmd)["err"])
+ 
+ def reserve_dev(options, dev):
+-	cmd = options["--mpathpersist-path"] + " -o --reserv --prout-type=5 --param-rk=" + options["--plug"] + " -d " + dev
++	cmd = options["--mpathpersist-path"] + " -o --reserve --prout-type=5 --param-rk=" + options["--plug"] + " -d " + dev
+ 	return not bool(run_cmd(options, cmd)["err"])
+ 
+ def get_reservation_key(options, dev):

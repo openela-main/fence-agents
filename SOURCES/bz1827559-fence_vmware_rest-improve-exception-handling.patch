@@ -1,0 +1,44 @@
+From 020f48a309bcad659dc493960d2b39e8e1243085 Mon Sep 17 00:00:00 2001
+From: Thomas Abraham <tabraham@suse.com>
+Date: Mon, 20 Apr 2020 20:28:43 -0400
+Subject: [PATCH] fence_vmware_rest: improve exception handling in
+ send_command()
+
+If an exception occurs, simply raise it. pycurl's perform() method can
+generate a pycurl.error object, which does not support indexing and
+attempting to do so will generate an exception that hides the original
+exception.
+
+Also, don't assume that the remote will return a JSON formatted response.
+If it doesn't, a exception will occur accessing result which will not
+raise the intended exception.
+---
+ agents/vmware_rest/fence_vmware_rest.py | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/agents/vmware_rest/fence_vmware_rest.py b/agents/vmware_rest/fence_vmware_rest.py
+index d07bc10d..1505ffe6 100644
+--- a/agents/vmware_rest/fence_vmware_rest.py
++++ b/agents/vmware_rest/fence_vmware_rest.py
+@@ -124,7 +124,7 @@ def send_command(conn, command, method="GET"):
+ 	try:
+ 		conn.perform()
+ 	except Exception as e:
+-		raise Exception(e[1])
++		raise(e)
+ 
+ 	rc = conn.getinfo(pycurl.HTTP_CODE)
+ 	result = web_buffer.getvalue().decode("UTF-8")
+@@ -135,7 +135,11 @@ def send_command(conn, command, method="GET"):
+ 		result = json.loads(result)
+ 
+ 	if rc != 200:
+-		raise Exception("{}: {}".format(rc, result["value"]["messages"][0]["default_message"]))
++		if len(result) > 0:
++			raise Exception("{}: {}".format(rc, 
++					result["value"]["messages"][0]["default_message"]))
++		else:
++			raise Exception("Remote returned {} for request to {}".format(rc, url))
+ 
+ 	logging.debug("url: {}".format(url))
+ 	logging.debug("method: {}".format(method))

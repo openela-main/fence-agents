@@ -1,0 +1,22 @@
+From 9758f8c83c44ad6949d4411042c59bcf9365f67e Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Tue, 24 Mar 2020 15:31:13 +0100
+Subject: [PATCH] fence_aws: fix Python 3 encoding issue
+
+---
+ agents/aws/fence_aws.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/agents/aws/fence_aws.py b/agents/aws/fence_aws.py
+index ed55f390..17c2fedb 100644
+--- a/agents/aws/fence_aws.py
++++ b/agents/aws/fence_aws.py
+@@ -20,7 +20,7 @@
+ def get_instance_id():
+ 	try:
+ 		r = requests.get('http://169.254.169.254/latest/meta-data/instance-id')
+-		return r.content
++		return r.content.decode("UTF-8")
+ 	except HTTPError as http_err:
+ 		logger.error('HTTP error occurred while trying to access EC2 metadata server: %s', http_err)
+ 	except Exception as err:

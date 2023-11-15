@@ -1,0 +1,25 @@
+From 7c1348d53aa8080f2fcfc344a2f4a2372739a62c Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Tue, 6 Aug 2019 13:06:13 +0200
+Subject: [PATCH] fence_ilo_ssh*: add timeout warning in metadata/manpage
+
+---
+ agents/ilo_ssh/fence_ilo_ssh.py        | 5 ++++-
+ 5 files changed, 16 insertions(+), 5 deletions(-)
+
+diff --git a/agents/ilo_ssh/fence_ilo_ssh.py b/agents/ilo_ssh/fence_ilo_ssh.py
+index 88f13d17..a27e3418 100644
+--- a/agents/ilo_ssh/fence_ilo_ssh.py
++++ b/agents/ilo_ssh/fence_ilo_ssh.py
+@@ -51,7 +51,10 @@ def main():
+ 	docs = {}
+ 	docs["shortdesc"] = "Fence agent for HP iLO over SSH"
+ 	docs["longdesc"] = "fence_ilo_ssh is a fence agent that connects to iLO device. It logs into \
+-device via ssh and reboot a specified outlet. "
++device via ssh and reboot a specified outlet.\
++\n.P\n\
++WARNING: The monitor-action is prone to timeouts. Use the fence_ilo-equivalent \
++to avoid this issue."
+ 	docs["vendorurl"] = "http://www.hp.com"
+ 	docs["symlink"] = [("fence_ilo3_ssh", "Fence agent for HP iLO3 over SSH"),
+ 		("fence_ilo4_ssh", "Fence agent for HP iLO4 over SSH"),

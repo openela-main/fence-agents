@@ -1,0 +1,70 @@
+diff --color -uNr a/agents/gce/fence_gce.py b/agents/gce/fence_gce.py
+--- a/agents/gce/fence_gce.py	2021-06-11 14:57:01.138390529 +0200
++++ b/agents/gce/fence_gce.py	2021-06-11 15:12:45.829855806 +0200
+@@ -1,6 +1,7 @@
+ #!@PYTHON@ -tt
+ 
+ import atexit
++import httplib2
+ import logging
+ import os
+ import sys
+@@ -18,6 +19,7 @@
+ from fencing import fail_usage, run_delay, all_opt, atexit_handler, check_input, process_input, show_docs, fence_action
+ try:
+   import googleapiclient.discovery
++  import socks
+   try:
+     from google.oauth2.credentials import Credentials as GoogleCredentials
+   except:
+@@ -189,13 +191,30 @@
+ 		"required" : "0",
+ 		"order" : 9
+ 	}
++	all_opt["proxyhost"] = {
++		"getopt" : ":",
++		"longopt" : "proxyhost",
++		"help" : "--proxyhost=[proxy_host]       The proxy host to use, if one is needed to access the internet (Example: 10.122.0.33)",
++		"shortdesc" : "If a proxy is used for internet access, the proxy host should be specified.",
++		"required" : "0",
++		"order" : 10
++	}
++	all_opt["proxyport"] = {
++		"getopt" : ":",
++		"type" : "integer",
++		"longopt" : "proxyport",
++		"help" : "--proxyport=[proxy_port]       The proxy port to use, if one is needed to access the internet (Example: 3127)",
++		"shortdesc" : "If a proxy is used for internet access, the proxy port should be specified.",
++		"required" : "0",
++		"order" : 11
++	}
+ 
+ 
+ def main():
+ 	conn = None
+ 
+ 	device_opt = ["port", "no_password", "zone", "project", "stackdriver-logging",
+-		"method", "serviceaccount"]
++		"method", "serviceaccount", "proxyhost", "proxyport"]
+ 
+ 	atexit.register(atexit_handler)
+ 
+@@ -259,7 +278,17 @@
+ 				credentials = GoogleCredentials.get_application_default()
+ 			logging.debug("using application default credentials")
+ 
+-		conn = googleapiclient.discovery.build('compute', 'v1', credentials=credentials)
++		if options.get("--proxyhost") and options.get("--proxyport"):
++			proxy_info = httplib2.ProxyInfo(
++				proxy_type=socks.PROXY_TYPE_HTTP,
++				proxy_host=options.get("--proxyhost"),
++				proxy_port=int(options.get("--proxyport")))
++			http = credentials.authorize(httplib2.Http(proxy_info=proxy_info))
++			conn = googleapiclient.discovery.build(
++				'compute', 'v1', http=http, cache_discovery=False)
++		else:
++			conn = googleapiclient.discovery.build(
++				'compute', 'v1', credentials=credentials, cache_discovery=False)
+ 	except Exception as err:
+ 		fail_usage("Failed: Create GCE compute v1 connection: {}".format(str(err)))
+ 

@@ -1,0 +1,176 @@
+From 199b1efee0ba1f01c27ca689a15465cf4a258ee6 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Mon, 22 Jan 2018 11:27:28 +0100
+Subject: [PATCH] fence_mpath: add watchdog support
+
+---
+ agents/Makefile.am                  | 11 ++++++++
+ agents/mpath/fence_mpath.py         | 50 ++++++++++++++++++++++++++++++++++---
+ configure.ac                        |  6 +++++
+ make/fencebuild.mk                  |  2 +-
+ tests/data/metadata/fence_mpath.xml |  2 +-
+ 5 files changed, 66 insertions(+), 5 deletions(-)
+
+diff --git a/agents/Makefile.am b/agents/Makefile.am
+index 2524a3ab..833d2af5 100644
+--- a/agents/Makefile.am
++++ b/agents/Makefile.am
+@@ -50,6 +50,11 @@ zvm_fence_zvm_SOURCES		= zvm/fence_zvm.c
+ zvm_fence_zvm_CFLAGS		= -D_GNU_SOURCE -Izvm
+ endif
+ 
++if BUILD_FENCE_MPATH
++mpathdatadir			= $(CLUSTERDATA)
++mpathdata_SCRIPTS		= mpath/fence_mpath_check mpath/fence_mpath_check_hardreboot
++endif
++
+ if BUILD_FENCE_SCSI
+ scsidatadir			= $(CLUSTERDATA)
+ scsidata_SCRIPTS		= scsi/fence_scsi_check scsi/fence_scsi_check_hardreboot
+@@ -72,6 +77,12 @@ manual/fence_ack_manual: manual/fence_ack_manual.in
+ 		-e 's#@clustervarrun@#${CLUSTERVARRUN}#g' \
+ 	> $@
+ 
++mpath/fence_mpath_check: mpath/fence_mpath
++	cp $^ $@
++
++mpath/fence_mpath_check_hardreboot: mpath/fence_mpath
++	cp $^ $@
++
+ scsi/fence_scsi_check: scsi/fence_scsi
+ 	cp $^ $@
+ 
+diff --git a/agents/mpath/fence_mpath.py b/agents/mpath/fence_mpath.py
+index ac5bc794..d9ac2ef5 100644
+--- a/agents/mpath/fence_mpath.py
++++ b/agents/mpath/fence_mpath.py
+@@ -143,25 +143,63 @@ def dev_write(options, dev):
+ 		store_fh.write(dev + "\t" + options["--key"] + "\n")
+ 	store_fh.close()
+ 
+-def dev_read(options):
++def dev_read(options, fail=True):
+ 	dev_key = {}
+ 	file_path = options["--store-path"] + "/mpath.devices"
+ 	try:
+ 		store_fh = open(file_path, "r")
+ 	except IOError:
+-		fail_usage("Failed: Cannot open file \"" + file_path + "\"")
++		if fail:
++			fail_usage("Failed: Cannot open file \"" + file_path + "\"")
++		else:
++			return None
+ 	# get not empty lines from file
+ 	for (device, key) in [line.strip().split() for line in store_fh if line.strip()]:
+ 		dev_key[device] = key
+ 	store_fh.close()
+ 	return dev_key
+ 
++def mpath_check_get_verbose():
++	try:
++		f = open("/etc/sysconfig/watchdog", "r")
++	except IOError:
++		return False
++	match = re.search(r"^\s*verbose=yes", "".join(f.readlines()), re.MULTILINE)
++	f.close()
++	return bool(match)
++
++def mpath_check(hardreboot=False):
++	if len(sys.argv) >= 3 and sys.argv[1] == "repair":
++		return int(sys.argv[2])
++	options = {}
++	options["--mpathpersist-path"] = "/usr/sbin/mpathpersist"
++	options["--store-path"] = "/var/run/cluster"
++	options["--power-timeout"] = "5"
++	if mpath_check_get_verbose():
++		logging.getLogger().setLevel(logging.DEBUG)
++	devs = dev_read(options, fail=False)
++	if not devs:
++		logging.error("No devices found")
++		return 0
++	for dev, key in list(devs.items()):
++		if key in get_registration_keys(options, dev):
++			logging.debug("key " + key + " registered with device " + dev)
++			return 0
++		else:
++			logging.debug("key " + key + " not registered with device " + dev)
++	logging.debug("key " + key + " registered with any devices")
++
++	if hardreboot == True:
++		libc = ctypes.cdll['libc.so.6']
++		libc.reboot(0x1234567)
++	return 2
++
+ def define_new_opts():
+ 	all_opt["devices"] = {
+ 		"getopt" : "d:",
+ 		"longopt" : "devices",
+ 		"help" : "-d, --devices=[devices]        List of devices to use for current operation",
+-		"required" : "1",
++		"required" : "0",
+ 		"shortdesc" : "List of devices to use for current operation. Devices can \
+ be comma-separated list of device-mapper multipath devices (eg. /dev/mapper/3600508b400105df70000e00000ac0000 or /dev/mapper/mpath1). \
+ Each device must support SCSI-3 persistent reservations.",
+@@ -205,6 +243,12 @@ def main():
+ 
+ 	define_new_opts()
+ 
++	# fence_mpath_check
++	if os.path.basename(sys.argv[0]) == "fence_mpath_check":
++		sys.exit(mpath_check())
++	elif os.path.basename(sys.argv[0]) == "fence_mpath_check_hardreboot":
++		sys.exit(mpath_check(hardreboot=True))
++
+ 	options = check_input(device_opt, process_input(device_opt), other_conditions=True)
+ 
+ 	docs = {}
+diff --git a/configure.ac b/configure.ac
+index e8b24211..24b857b3 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -148,6 +148,11 @@ if echo "$AGENTS_LIST" | grep -q -E "all|manual"; then
+ 	AGENTS_LIST=$(echo "$AGENTS_LIST" | sed -E "s/manual( |$)//")
+ fi
+ 
++FENCE_MPATH=0
++if echo "$AGENTS_LIST" | grep -q -E "all|mpath"; then
++	FENCE_MPATH=1
++fi
++
+ FENCE_SCSI=0
+ if echo "$AGENTS_LIST" | grep -q -E "all|scsi"; then
+ 	FENCE_SCSI=1
+@@ -312,6 +317,7 @@ AC_SUBST([SNMPBIN])
+ AC_SUBST([AGENTS_LIST])
+ AM_CONDITIONAL(BUILD_FENCE_KDUMP, test $FENCE_KDUMP -eq 1)
+ AM_CONDITIONAL(BUILD_FENCE_MANUAL, test $FENCE_MANUAL -eq 1)
++AM_CONDITIONAL(BUILD_FENCE_MPATH, test $FENCE_MPATH -eq 1)
+ AM_CONDITIONAL(BUILD_FENCE_SCSI, test $FENCE_SCSI -eq 1)
+ AM_CONDITIONAL(BUILD_FENCE_ZVM, test $FENCE_ZVM -eq 1)
+ AM_CONDITIONAL(BUILD_XENAPILIB, test $XENAPILIB -eq 1)
+diff --git a/make/fencebuild.mk b/make/fencebuild.mk
+index e08d5200..6a7c6f63 100644
+--- a/make/fencebuild.mk
++++ b/make/fencebuild.mk
+@@ -51,7 +51,7 @@ $(TARGET):
+ 	$(call gen_agent_from_py)
+ 
+ clean: clean-man
+-	rm -f $(CLEAN_TARGET:%.8=%) $(CLEAN_TARGET_ADDITIONAL) $(scsidata_SCRIPTS) */*.pyc *.pyc */*.wiki
++	rm -f $(CLEAN_TARGET:%.8=%) $(CLEAN_TARGET_ADDITIONAL) $(mpathdata_SCRIPTS) $(scsidata_SCRIPTS) */*.pyc */*.wiki
+ 
+ 	if [ "$(abs_builddir)" = "$(abs_top_builddir)/lib" ]; then \
+ 		rm -f $(TARGET); \
+diff --git a/tests/data/metadata/fence_mpath.xml b/tests/data/metadata/fence_mpath.xml
+index f384e50b..bbe9ad2b 100644
+--- a/tests/data/metadata/fence_mpath.xml
++++ b/tests/data/metadata/fence_mpath.xml
+@@ -9,7 +9,7 @@ The fence_mpath agent works by having a unique key for each node that has to be
+ 		<content type="string" default="off"  />
+ 		<shortdesc lang="en">Fencing action</shortdesc>
+ 	</parameter>
+-	<parameter name="devices" unique="0" required="1">
++	<parameter name="devices" unique="0" required="0">
+ 		<getopt mixed="-d, --devices=[devices]" />
+ 		<content type="string"  />
+ 		<shortdesc lang="en">List of devices to use for current operation. Devices can be comma-separated list of device-mapper multipath devices (eg. /dev/mapper/3600508b400105df70000e00000ac0000 or /dev/mapper/mpath1). Each device must support SCSI-3 persistent reservations.</shortdesc>

@@ -1,0 +1,1489 @@
+From 3c377e48d96fbe80a5be5e9fd1a15c4b3a7d25e4 Mon Sep 17 00:00:00 2001
+From: Reid wahl <nrwahl@protonmail.com>
+Date: Mon, 6 Jul 2020 03:58:42 -0700
+Subject: [PATCH 1/2] fencing: Add verbose_level option
+
+Currently, `verbose` is a boolean, all-or-nothing option. It would be
+useful to be able to set more granular verbosity levels when debugging
+an issue.
+
+This patch adds a `verbose_level` option to allow setting higher
+verbosities. This option can be set explicitly (e.g.,
+`--verbose-level=3`). Alternatively, multiple `verbose` flags (e.g.,
+`-vvv`) can be passed on the command line; `verbose_level` is set to
+the number of `-v` flags.
+
+If both an explicit `verbose_level` and one or more `-v` options are
+set, the `verbose_level` takes precedence and overrides any `-v` flags.
+If `verbose_level > 0` and there are no `-v` flags, the `verbose`
+option is enabled implicitly.
+
+Later patches will enable individual fence agents to use the new
+verbosity levels.
+
+Related to: RHBZ#1853973
+---
+ lib/fencing.py.py                             | 58 ++++++++++++++++---
+ tests/data/metadata/fence_aliyun.xml          |  7 ++-
+ tests/data/metadata/fence_alom.xml            |  7 ++-
+ tests/data/metadata/fence_amt.xml             |  7 ++-
+ tests/data/metadata/fence_amt_ws.xml          |  7 ++-
+ tests/data/metadata/fence_apc.xml             |  7 ++-
+ tests/data/metadata/fence_apc_snmp.xml        |  7 ++-
+ tests/data/metadata/fence_aws.xml             |  7 ++-
+ tests/data/metadata/fence_azure_arm.xml       |  7 ++-
+ tests/data/metadata/fence_bladecenter.xml     |  7 ++-
+ tests/data/metadata/fence_brocade.xml         |  7 ++-
+ tests/data/metadata/fence_cisco_mds.xml       |  7 ++-
+ tests/data/metadata/fence_cisco_ucs.xml       |  7 ++-
+ tests/data/metadata/fence_compute.xml         |  7 ++-
+ tests/data/metadata/fence_docker.xml          |  7 ++-
+ tests/data/metadata/fence_drac.xml            |  7 ++-
+ tests/data/metadata/fence_drac5.xml           |  7 ++-
+ tests/data/metadata/fence_dummy.xml           |  7 ++-
+ tests/data/metadata/fence_eaton_snmp.xml      |  7 ++-
+ tests/data/metadata/fence_emerson.xml         |  7 ++-
+ tests/data/metadata/fence_eps.xml             |  7 ++-
+ tests/data/metadata/fence_evacuate.xml        |  7 ++-
+ tests/data/metadata/fence_gce.xml             |  7 ++-
+ tests/data/metadata/fence_hds_cb.xml          |  7 ++-
+ tests/data/metadata/fence_heuristics_ping.xml |  7 ++-
+ tests/data/metadata/fence_hpblade.xml         |  7 ++-
+ tests/data/metadata/fence_ibmblade.xml        |  7 ++-
+ tests/data/metadata/fence_idrac.xml           |  7 ++-
+ tests/data/metadata/fence_ifmib.xml           |  7 ++-
+ tests/data/metadata/fence_ilo.xml             |  7 ++-
+ tests/data/metadata/fence_ilo2.xml            |  7 ++-
+ tests/data/metadata/fence_ilo3.xml            |  7 ++-
+ tests/data/metadata/fence_ilo3_ssh.xml        |  7 ++-
+ tests/data/metadata/fence_ilo4.xml            |  7 ++-
+ tests/data/metadata/fence_ilo4_ssh.xml        |  7 ++-
+ tests/data/metadata/fence_ilo_moonshot.xml    |  7 ++-
+ tests/data/metadata/fence_ilo_mp.xml          |  7 ++-
+ tests/data/metadata/fence_ilo_ssh.xml         |  7 ++-
+ tests/data/metadata/fence_imm.xml             |  7 ++-
+ tests/data/metadata/fence_intelmodular.xml    |  7 ++-
+ tests/data/metadata/fence_ipdu.xml            |  7 ++-
+ tests/data/metadata/fence_ipmilan.xml         |  7 ++-
+ tests/data/metadata/fence_ironic.xml          |  7 ++-
+ tests/data/metadata/fence_ldom.xml            |  7 ++-
+ tests/data/metadata/fence_lpar.xml            |  7 ++-
+ tests/data/metadata/fence_mpath.xml           |  7 ++-
+ tests/data/metadata/fence_netio.xml           |  7 ++-
+ tests/data/metadata/fence_openstack.xml       |  7 ++-
+ tests/data/metadata/fence_ovh.xml             |  7 ++-
+ tests/data/metadata/fence_powerman.xml        |  7 ++-
+ tests/data/metadata/fence_pve.xml             |  7 ++-
+ tests/data/metadata/fence_raritan.xml         |  7 ++-
+ tests/data/metadata/fence_rcd_serial.xml      |  7 ++-
+ tests/data/metadata/fence_redfish.xml         |  7 ++-
+ tests/data/metadata/fence_rhevm.xml           |  7 ++-
+ tests/data/metadata/fence_rsa.xml             |  7 ++-
+ tests/data/metadata/fence_rsb.xml             |  7 ++-
+ tests/data/metadata/fence_sanbox2.xml         |  7 ++-
+ tests/data/metadata/fence_sbd.xml             |  7 ++-
+ tests/data/metadata/fence_scsi.xml            |  7 ++-
+ tests/data/metadata/fence_tripplite_snmp.xml  |  7 ++-
+ tests/data/metadata/fence_vbox.xml            |  7 ++-
+ tests/data/metadata/fence_virsh.xml           |  7 ++-
+ tests/data/metadata/fence_vmware.xml          |  7 ++-
+ tests/data/metadata/fence_vmware_rest.xml     |  7 ++-
+ tests/data/metadata/fence_vmware_soap.xml     |  7 ++-
+ tests/data/metadata/fence_vmware_vcloud.xml   |  7 ++-
+ tests/data/metadata/fence_wti.xml             |  7 ++-
+ tests/data/metadata/fence_xenapi.xml          |  7 ++-
+ tests/data/metadata/fence_zvmip.xml           |  7 ++-
+ 73 files changed, 482 insertions(+), 80 deletions(-)
+
+diff --git a/lib/fencing.py.py b/lib/fencing.py.py
+index 4b54aa7c..63b13036 100644
+--- a/lib/fencing.py.py
++++ b/lib/fencing.py.py
+@@ -38,27 +38,40 @@
+ 		"help" : "-h, --help                     Display this help and exit",
+ 		"required" : "0",
+ 		"shortdesc" : "Display help and exit",
+-		"order" : 54},
++		"order" : 55},
+ 	"version" : {
+ 		"getopt" : "V",
+ 		"longopt" : "version",
+ 		"help" : "-V, --version                  Display version information and exit",
+ 		"required" : "0",
+ 		"shortdesc" : "Display version information and exit",
+-		"order" : 53},
++		"order" : 54},
+ 	"verbose" : {
+ 		"getopt" : "v",
+ 		"longopt" : "verbose",
+-		"help" : "-v, --verbose                  Verbose mode",
++		"help" : "-v, --verbose                  Verbose mode. "
++			"Multiple -v flags can be stacked on the command line "
++			"(e.g., -vvv) to increase verbosity.",
+ 		"required" : "0",
+ 		"order" : 51},
++	"verbose_level" : {
++		"getopt" : ":",
++		"longopt" : "verbose-level",
++		"type" : "integer",
++		"help" : "--verbose-level                "
++			"Level of debugging detail in output. Defaults to the "
++			"number of --verbose flags specified on the command "
++			"line, or to 1 if verbose=1 in a stonith device "
++			"configuration (i.e., on stdin).",
++                "required" : "0",
++		"order" : 52},
+ 	"debug" : {
+ 		"getopt" : "D:",
+ 		"longopt" : "debug-file",
+ 		"help" : "-D, --debug-file=[debugfile]   Debugging to output file",
+ 		"required" : "0",
+ 		"shortdesc" : "Write debug information to given file",
+-		"order" : 52},
++		"order" : 53},
+ 	"delay" : {
+ 		"getopt" : ":",
+ 		"longopt" : "delay",
+@@ -454,9 +467,10 @@
+ 
+ # options which are added automatically if 'key' is encountered ("default" is always added)
+ DEPENDENCY_OPT = {
+-		"default" : ["help", "debug", "verbose", "version", "action", "agent", \
+-			"power_timeout", "shell_timeout", "login_timeout", "power_wait", "retry_on", \
+-			"delay", "quiet"],
++		"default" : ["help", "debug", "verbose", "verbose_level",
++			 "version", "action", "agent", "power_timeout",
++			 "shell_timeout", "login_timeout", "power_wait",
++			 "retry_on", "delay", "quiet"],
+ 		"passwd" : ["passwd_script"],
+ 		"sudo" : ["sudo_path"],
+ 		"secure" : ["identity_file", "ssh_options", "ssh_path", "inet4_only", "inet6_only"],
+@@ -683,6 +697,26 @@ def check_input(device_opt, opt, other_conditions = False):
+ 	if options["--action"] in ["metadata", "manpage"] or any(k in options for k in ("--help", "--version")):
+ 		return options
+ 
++	try:
++		options["--verbose-level"] = int(options["--verbose-level"])
++	except ValueError:
++		options["--verbose-level"] = -1
++
++	if options["--verbose-level"] < 0:
++		logging.warning("Parse error: Option 'verbose_level' must "
++				"be an integer greater than or equal to 0. "
++				"Setting verbose_level to 0.")
++		options["--verbose-level"] = 0
++
++	if options["--verbose-level"] == 0 and "--verbose" in options:
++		logging.warning("Parse error: Ignoring option 'verbose' "
++				"because it conflicts with verbose_level=0")
++		del options["--verbose"]
++
++	if options["--verbose-level"] > 0:
++		# Ensure verbose key exists
++		options["--verbose"] = 1
++	
+ 	if "--verbose" in options:
+ 		logging.getLogger().setLevel(logging.DEBUG)
+ 
+@@ -1409,6 +1443,9 @@ def _parse_input_stdin(avail_opt):
+ 			opt["--"+all_opt[name]["longopt"]] = "1"
+ 		else:
+ 			logging.warning("Parse error: Ignoring option '%s' because it does not have value\n", name)
++
++	opt.setdefault("--verbose-level", opt.get("--verbose", 0))
++
+ 	return opt
+ 
+ def _parse_input_cmdline(avail_opt):
+@@ -1428,10 +1465,15 @@ def _parse_input_cmdline(avail_opt):
+ 
+ 	# Short and long getopt names are changed to consistent "--" + long name (e.g. --username)
+ 	long_opts = {}
+-	for arg_name in list(dict(entered_opt).keys()):
++	verbose_count = 0
++	for arg_name in [k for (k, v) in entered_opt]:
+ 		all_key = [key for (key, value) in list(filtered_opts.items()) \
+ 			if "--" + value.get("longopt", "") == arg_name or "-" + value.get("getopt", "").rstrip(":") == arg_name][0]
+ 		long_opts["--" + filtered_opts[all_key]["longopt"]] = dict(entered_opt)[arg_name]
++		if all_key == "verbose":
++			verbose_count += 1
++
++	long_opts.setdefault("--verbose-level", verbose_count)
+ 
+ 	# This test is specific because it does not apply to input on stdin
+ 	if "port_as_ip" in avail_opt and not "--port-as-ip" in long_opts and "--plug" in long_opts:
+diff --git a/tests/data/metadata/fence_aliyun.xml b/tests/data/metadata/fence_aliyun.xml
+index 2de3a8aa..8f236806 100644
+--- a/tests/data/metadata/fence_aliyun.xml
++++ b/tests/data/metadata/fence_aliyun.xml
+@@ -46,7 +46,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_alom.xml b/tests/data/metadata/fence_alom.xml
+index d6bb3d5b..ef6c06c3 100644
+--- a/tests/data/metadata/fence_alom.xml
++++ b/tests/data/metadata/fence_alom.xml
+@@ -111,7 +111,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_amt.xml b/tests/data/metadata/fence_amt.xml
+index 5f0adc98..ee174852 100644
+--- a/tests/data/metadata/fence_amt.xml
++++ b/tests/data/metadata/fence_amt.xml
+@@ -80,7 +80,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_amt_ws.xml b/tests/data/metadata/fence_amt_ws.xml
+index 86f36f6c..9c223c8d 100644
+--- a/tests/data/metadata/fence_amt_ws.xml
++++ b/tests/data/metadata/fence_amt_ws.xml
+@@ -80,7 +80,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_apc.xml b/tests/data/metadata/fence_apc.xml
+index 7330d8bc..efad9db8 100644
+--- a/tests/data/metadata/fence_apc.xml
++++ b/tests/data/metadata/fence_apc.xml
+@@ -116,7 +116,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_apc_snmp.xml b/tests/data/metadata/fence_apc_snmp.xml
+index 7f1c616c..a1947672 100644
+--- a/tests/data/metadata/fence_apc_snmp.xml
++++ b/tests/data/metadata/fence_apc_snmp.xml
+@@ -121,7 +121,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_aws.xml b/tests/data/metadata/fence_aws.xml
+index 12f67322..527fc86c 100644
+--- a/tests/data/metadata/fence_aws.xml
++++ b/tests/data/metadata/fence_aws.xml
+@@ -49,7 +49,12 @@ For instructions see: https://boto3.readthedocs.io/en/latest/guide/quickstart.ht
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_azure_arm.xml b/tests/data/metadata/fence_azure_arm.xml
+index 7ea672af..42c9952f 100644
+--- a/tests/data/metadata/fence_azure_arm.xml
++++ b/tests/data/metadata/fence_azure_arm.xml
+@@ -106,7 +106,12 @@ When using network fencing the reboot-action will cause a quick-return once the
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_bladecenter.xml b/tests/data/metadata/fence_bladecenter.xml
+index 0762e43f..f2ee28b1 100644
+--- a/tests/data/metadata/fence_bladecenter.xml
++++ b/tests/data/metadata/fence_bladecenter.xml
+@@ -111,7 +111,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_brocade.xml b/tests/data/metadata/fence_brocade.xml
+index ef2b9833..f3287503 100644
+--- a/tests/data/metadata/fence_brocade.xml
++++ b/tests/data/metadata/fence_brocade.xml
+@@ -111,7 +111,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_cisco_mds.xml b/tests/data/metadata/fence_cisco_mds.xml
+index 15d7798c..a0e62cba 100644
+--- a/tests/data/metadata/fence_cisco_mds.xml
++++ b/tests/data/metadata/fence_cisco_mds.xml
+@@ -120,7 +120,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_cisco_ucs.xml b/tests/data/metadata/fence_cisco_ucs.xml
+index 848e72f8..f4543f4b 100644
+--- a/tests/data/metadata/fence_cisco_ucs.xml
++++ b/tests/data/metadata/fence_cisco_ucs.xml
+@@ -96,7 +96,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_compute.xml b/tests/data/metadata/fence_compute.xml
+index 2f183268..a5ce53cd 100644
+--- a/tests/data/metadata/fence_compute.xml
++++ b/tests/data/metadata/fence_compute.xml
+@@ -131,7 +131,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_docker.xml b/tests/data/metadata/fence_docker.xml
+index 3285314c..6e3306d4 100644
+--- a/tests/data/metadata/fence_docker.xml
++++ b/tests/data/metadata/fence_docker.xml
+@@ -84,7 +84,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_drac.xml b/tests/data/metadata/fence_drac.xml
+index 2184ee0c..451ee504 100644
+--- a/tests/data/metadata/fence_drac.xml
++++ b/tests/data/metadata/fence_drac.xml
+@@ -81,7 +81,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_drac5.xml b/tests/data/metadata/fence_drac5.xml
+index 069f7b00..564008ab 100644
+--- a/tests/data/metadata/fence_drac5.xml
++++ b/tests/data/metadata/fence_drac5.xml
+@@ -120,7 +120,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_dummy.xml b/tests/data/metadata/fence_dummy.xml
+index 873c565b..ec4d5b46 100644
+--- a/tests/data/metadata/fence_dummy.xml
++++ b/tests/data/metadata/fence_dummy.xml
+@@ -31,7 +31,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_eaton_snmp.xml b/tests/data/metadata/fence_eaton_snmp.xml
+index 3dd92dd2..1ec07c68 100644
+--- a/tests/data/metadata/fence_eaton_snmp.xml
++++ b/tests/data/metadata/fence_eaton_snmp.xml
+@@ -120,7 +120,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_emerson.xml b/tests/data/metadata/fence_emerson.xml
+index f6886469..fbdcbcde 100644
+--- a/tests/data/metadata/fence_emerson.xml
++++ b/tests/data/metadata/fence_emerson.xml
+@@ -120,7 +120,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_eps.xml b/tests/data/metadata/fence_eps.xml
+index 26e75477..47cad6f0 100644
+--- a/tests/data/metadata/fence_eps.xml
++++ b/tests/data/metadata/fence_eps.xml
+@@ -83,7 +83,12 @@ Agent basically works by connecting to hidden page and pass appropriate argument
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_evacuate.xml b/tests/data/metadata/fence_evacuate.xml
+index 95da0e1b..f32b48eb 100644
+--- a/tests/data/metadata/fence_evacuate.xml
++++ b/tests/data/metadata/fence_evacuate.xml
+@@ -126,7 +126,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_gce.xml b/tests/data/metadata/fence_gce.xml
+index 79b82ebb..3b8a24a4 100644
+--- a/tests/data/metadata/fence_gce.xml
++++ b/tests/data/metadata/fence_gce.xml
+@@ -56,7 +56,12 @@ For instructions see: https://cloud.google.com/compute/docs/tutorials/python-gui
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_hds_cb.xml b/tests/data/metadata/fence_hds_cb.xml
+index 71cfd8ed..5529472d 100644
+--- a/tests/data/metadata/fence_hds_cb.xml
++++ b/tests/data/metadata/fence_hds_cb.xml
+@@ -111,7 +111,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_heuristics_ping.xml b/tests/data/metadata/fence_heuristics_ping.xml
+index 3dbceeb2..53e3bb05 100644
+--- a/tests/data/metadata/fence_heuristics_ping.xml
++++ b/tests/data/metadata/fence_heuristics_ping.xml
+@@ -56,7 +56,12 @@ This is not a fence agent by itself! Its only purpose is to enable/disable anoth
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_hpblade.xml b/tests/data/metadata/fence_hpblade.xml
+index 6cdc73ed..bbb51668 100644
+--- a/tests/data/metadata/fence_hpblade.xml
++++ b/tests/data/metadata/fence_hpblade.xml
+@@ -111,7 +111,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_ibmblade.xml b/tests/data/metadata/fence_ibmblade.xml
+index 5084b3a0..6585c4fb 100644
+--- a/tests/data/metadata/fence_ibmblade.xml
++++ b/tests/data/metadata/fence_ibmblade.xml
+@@ -120,7 +120,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_idrac.xml b/tests/data/metadata/fence_idrac.xml
+index 55d9ced3..efecc720 100644
+--- a/tests/data/metadata/fence_idrac.xml
++++ b/tests/data/metadata/fence_idrac.xml
+@@ -123,7 +123,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_ifmib.xml b/tests/data/metadata/fence_ifmib.xml
+index c07a6e1f..93bd8aa3 100644
+--- a/tests/data/metadata/fence_ifmib.xml
++++ b/tests/data/metadata/fence_ifmib.xml
+@@ -122,7 +122,12 @@ It was written with managed ethernet switches in mind, in order to fence iSCSI S
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_ilo.xml b/tests/data/metadata/fence_ilo.xml
+index 44b3c43a..7ed91061 100644
+--- a/tests/data/metadata/fence_ilo.xml
++++ b/tests/data/metadata/fence_ilo.xml
+@@ -107,7 +107,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_ilo2.xml b/tests/data/metadata/fence_ilo2.xml
+index e9cae6d2..5527cf21 100644
+--- a/tests/data/metadata/fence_ilo2.xml
++++ b/tests/data/metadata/fence_ilo2.xml
+@@ -107,7 +107,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_ilo3.xml b/tests/data/metadata/fence_ilo3.xml
+index 2a99e0a4..b5db044c 100644
+--- a/tests/data/metadata/fence_ilo3.xml
++++ b/tests/data/metadata/fence_ilo3.xml
+@@ -123,7 +123,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_ilo3_ssh.xml b/tests/data/metadata/fence_ilo3_ssh.xml
+index e46d607c..a3c8f11c 100644
+--- a/tests/data/metadata/fence_ilo3_ssh.xml
++++ b/tests/data/metadata/fence_ilo3_ssh.xml
+@@ -124,7 +124,12 @@ WARNING: The monitor-action is prone to timeouts. Use the fence_ilo-equivalent t
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_ilo4.xml b/tests/data/metadata/fence_ilo4.xml
+index 68790266..210b05d2 100644
+--- a/tests/data/metadata/fence_ilo4.xml
++++ b/tests/data/metadata/fence_ilo4.xml
+@@ -123,7 +123,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_ilo4_ssh.xml b/tests/data/metadata/fence_ilo4_ssh.xml
+index a2c4614a..9b993dd5 100644
+--- a/tests/data/metadata/fence_ilo4_ssh.xml
++++ b/tests/data/metadata/fence_ilo4_ssh.xml
+@@ -124,7 +124,12 @@ WARNING: The monitor-action is prone to timeouts. Use the fence_ilo-equivalent t
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_ilo_moonshot.xml b/tests/data/metadata/fence_ilo_moonshot.xml
+index 00e43840..1e31424a 100644
+--- a/tests/data/metadata/fence_ilo_moonshot.xml
++++ b/tests/data/metadata/fence_ilo_moonshot.xml
+@@ -111,7 +111,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_ilo_mp.xml b/tests/data/metadata/fence_ilo_mp.xml
+index 2bba33dc..b825cd32 100644
+--- a/tests/data/metadata/fence_ilo_mp.xml
++++ b/tests/data/metadata/fence_ilo_mp.xml
+@@ -111,7 +111,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_ilo_ssh.xml b/tests/data/metadata/fence_ilo_ssh.xml
+index 1c8145b8..df87fd5f 100644
+--- a/tests/data/metadata/fence_ilo_ssh.xml
++++ b/tests/data/metadata/fence_ilo_ssh.xml
+@@ -124,7 +124,12 @@ WARNING: The monitor-action is prone to timeouts. Use the fence_ilo-equivalent t
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_imm.xml b/tests/data/metadata/fence_imm.xml
+index e22e4723..d00ad7fa 100644
+--- a/tests/data/metadata/fence_imm.xml
++++ b/tests/data/metadata/fence_imm.xml
+@@ -123,7 +123,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_intelmodular.xml b/tests/data/metadata/fence_intelmodular.xml
+index 5e0d3b19..ed5afcb8 100644
+--- a/tests/data/metadata/fence_intelmodular.xml
++++ b/tests/data/metadata/fence_intelmodular.xml
+@@ -122,7 +122,12 @@ Note: Since firmware update version 2.7, SNMP v2 write support is removed, and r
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_ipdu.xml b/tests/data/metadata/fence_ipdu.xml
+index 546e372c..78575c7c 100644
+--- a/tests/data/metadata/fence_ipdu.xml
++++ b/tests/data/metadata/fence_ipdu.xml
+@@ -120,7 +120,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_ipmilan.xml b/tests/data/metadata/fence_ipmilan.xml
+index 3e13d288..d4c23f73 100644
+--- a/tests/data/metadata/fence_ipmilan.xml
++++ b/tests/data/metadata/fence_ipmilan.xml
+@@ -123,7 +123,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_ironic.xml b/tests/data/metadata/fence_ironic.xml
+index 5775f285..84beaffc 100644
+--- a/tests/data/metadata/fence_ironic.xml
++++ b/tests/data/metadata/fence_ironic.xml
+@@ -76,7 +76,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_ldom.xml b/tests/data/metadata/fence_ldom.xml
+index b3c53458..4bb38571 100644
+--- a/tests/data/metadata/fence_ldom.xml
++++ b/tests/data/metadata/fence_ldom.xml
+@@ -113,7 +113,12 @@ Very useful parameter is -c (or cmd_prompt in stdin mode). This must be set to s
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_lpar.xml b/tests/data/metadata/fence_lpar.xml
+index 16d43a78..7ddc2c45 100644
+--- a/tests/data/metadata/fence_lpar.xml
++++ b/tests/data/metadata/fence_lpar.xml
+@@ -125,7 +125,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_mpath.xml b/tests/data/metadata/fence_mpath.xml
+index f5e60823..83d69f6c 100644
+--- a/tests/data/metadata/fence_mpath.xml
++++ b/tests/data/metadata/fence_mpath.xml
+@@ -37,7 +37,12 @@ The fence_mpath agent works by having a unique key for each node that has to be
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_netio.xml b/tests/data/metadata/fence_netio.xml
+index 79d27af3..b409bde7 100644
+--- a/tests/data/metadata/fence_netio.xml
++++ b/tests/data/metadata/fence_netio.xml
+@@ -71,7 +71,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_openstack.xml b/tests/data/metadata/fence_openstack.xml
+index 22517657..645cd655 100644
+--- a/tests/data/metadata/fence_openstack.xml
++++ b/tests/data/metadata/fence_openstack.xml
+@@ -101,7 +101,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_ovh.xml b/tests/data/metadata/fence_ovh.xml
+index b2767cc0..e8160bf7 100644
+--- a/tests/data/metadata/fence_ovh.xml
++++ b/tests/data/metadata/fence_ovh.xml
+@@ -61,7 +61,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_powerman.xml b/tests/data/metadata/fence_powerman.xml
+index ce72e002..3bf56882 100644
+--- a/tests/data/metadata/fence_powerman.xml
++++ b/tests/data/metadata/fence_powerman.xml
+@@ -41,7 +41,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_pve.xml b/tests/data/metadata/fence_pve.xml
+index 5d744903..1c83f2ef 100644
+--- a/tests/data/metadata/fence_pve.xml
++++ b/tests/data/metadata/fence_pve.xml
+@@ -94,7 +94,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_raritan.xml b/tests/data/metadata/fence_raritan.xml
+index 565eebc7..537cb141 100644
+--- a/tests/data/metadata/fence_raritan.xml
++++ b/tests/data/metadata/fence_raritan.xml
+@@ -71,7 +71,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_rcd_serial.xml b/tests/data/metadata/fence_rcd_serial.xml
+index c22f78de..b2a20cb7 100644
+--- a/tests/data/metadata/fence_rcd_serial.xml
++++ b/tests/data/metadata/fence_rcd_serial.xml
+@@ -29,7 +29,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_redfish.xml b/tests/data/metadata/fence_redfish.xml
+index 91b483b7..32ea402e 100644
+--- a/tests/data/metadata/fence_redfish.xml
++++ b/tests/data/metadata/fence_redfish.xml
+@@ -106,7 +106,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_rhevm.xml b/tests/data/metadata/fence_rhevm.xml
+index 73c9906f..deb326c3 100644
+--- a/tests/data/metadata/fence_rhevm.xml
++++ b/tests/data/metadata/fence_rhevm.xml
+@@ -115,7 +115,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_rsa.xml b/tests/data/metadata/fence_rsa.xml
+index f9a55f82..51009427 100644
+--- a/tests/data/metadata/fence_rsa.xml
++++ b/tests/data/metadata/fence_rsa.xml
+@@ -111,7 +111,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_rsb.xml b/tests/data/metadata/fence_rsb.xml
+index 022835be..7d8575d1 100644
+--- a/tests/data/metadata/fence_rsb.xml
++++ b/tests/data/metadata/fence_rsb.xml
+@@ -111,7 +111,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_sanbox2.xml b/tests/data/metadata/fence_sanbox2.xml
+index 7e20c8ce..bf07f360 100644
+--- a/tests/data/metadata/fence_sanbox2.xml
++++ b/tests/data/metadata/fence_sanbox2.xml
+@@ -81,7 +81,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_sbd.xml b/tests/data/metadata/fence_sbd.xml
+index 6095a74b..db52b49a 100644
+--- a/tests/data/metadata/fence_sbd.xml
++++ b/tests/data/metadata/fence_sbd.xml
+@@ -39,7 +39,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_scsi.xml b/tests/data/metadata/fence_scsi.xml
+index d0818b0d..ceb79de5 100644
+--- a/tests/data/metadata/fence_scsi.xml
++++ b/tests/data/metadata/fence_scsi.xml
+@@ -54,7 +54,12 @@ When used as a watchdog device you can define e.g. retry=1, retry-sleep=2 and ve
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_tripplite_snmp.xml b/tests/data/metadata/fence_tripplite_snmp.xml
+index d3769133..becc0d18 100644
+--- a/tests/data/metadata/fence_tripplite_snmp.xml
++++ b/tests/data/metadata/fence_tripplite_snmp.xml
+@@ -121,7 +121,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_vbox.xml b/tests/data/metadata/fence_vbox.xml
+index 3b53c7d2..045fbe9e 100644
+--- a/tests/data/metadata/fence_vbox.xml
++++ b/tests/data/metadata/fence_vbox.xml
+@@ -113,7 +113,12 @@ By default, vbox needs to log in as a user that is a member of the vboxusers gro
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_virsh.xml b/tests/data/metadata/fence_virsh.xml
+index 864986d0..2ab09c33 100644
+--- a/tests/data/metadata/fence_virsh.xml
++++ b/tests/data/metadata/fence_virsh.xml
+@@ -113,7 +113,12 @@ By default, virsh needs root account to do properly work. So you must allow ssh
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_vmware.xml b/tests/data/metadata/fence_vmware.xml
+index 48fc408b..14b504ed 100644
+--- a/tests/data/metadata/fence_vmware.xml
++++ b/tests/data/metadata/fence_vmware.xml
+@@ -124,7 +124,12 @@ After you have successfully installed VI Perl Toolkit or VIX API, you should be
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_vmware_rest.xml b/tests/data/metadata/fence_vmware_rest.xml
+index 830b6a21..41b09ba2 100644
+--- a/tests/data/metadata/fence_vmware_rest.xml
++++ b/tests/data/metadata/fence_vmware_rest.xml
+@@ -102,7 +102,12 @@ NOTE: If there's more than 1000 VMs there is a filter parameter to work around t
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_vmware_soap.xml b/tests/data/metadata/fence_vmware_soap.xml
+index da6a1002..ee385adf 100644
+--- a/tests/data/metadata/fence_vmware_soap.xml
++++ b/tests/data/metadata/fence_vmware_soap.xml
+@@ -93,7 +93,12 @@ Name of virtual machine (-n / port) has to be used in inventory path format (e.g
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_vmware_vcloud.xml b/tests/data/metadata/fence_vmware_vcloud.xml
+index 505eaf2b..21c9b77d 100644
+--- a/tests/data/metadata/fence_vmware_vcloud.xml
++++ b/tests/data/metadata/fence_vmware_vcloud.xml
+@@ -95,7 +95,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_wti.xml b/tests/data/metadata/fence_wti.xml
+index 872e4a90..8064b703 100644
+--- a/tests/data/metadata/fence_wti.xml
++++ b/tests/data/metadata/fence_wti.xml
+@@ -111,7 +111,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_xenapi.xml b/tests/data/metadata/fence_xenapi.xml
+index f6f4e46d..a1694ec5 100644
+--- a/tests/data/metadata/fence_xenapi.xml
++++ b/tests/data/metadata/fence_xenapi.xml
+@@ -61,7 +61,12 @@
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+diff --git a/tests/data/metadata/fence_zvmip.xml b/tests/data/metadata/fence_zvmip.xml
+index 408ad977..95c2ded3 100644
+--- a/tests/data/metadata/fence_zvmip.xml
++++ b/tests/data/metadata/fence_zvmip.xml
+@@ -104,7 +104,12 @@ to access the system's directory manager.
+ 	<parameter name="verbose" unique="0" required="0">
+ 		<getopt mixed="-v, --verbose" />
+ 		<content type="boolean"  />
+-		<shortdesc lang="en">Verbose mode</shortdesc>
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
+ 	</parameter>
+ 	<parameter name="debug" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-D, --debug-file=[debugfile]" />
+
+From 60544f8642c483fce74d3c146d29c3c1a8bdd021 Mon Sep 17 00:00:00 2001
+From: Reid wahl <nrwahl@protonmail.com>
+Date: Thu, 9 Jul 2020 22:17:15 -0700
+Subject: [PATCH 2/2] fence_ipmilan: Add ability to increase ipmitool verbosity
+
+Currently, the `-v` flag only causes the `ipmitool` command line and
+output to be printed.
+
+This patch allows `fence_ipmilan` to accept additional `-v` flags and
+pass them on to `ipmitool` to get more verbosity.
+
+Depends on: PR#346
+Resolves: RHBZ#1853973
+---
+ agents/ipmilan/fence_ipmilan.py | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/agents/ipmilan/fence_ipmilan.py b/agents/ipmilan/fence_ipmilan.py
+index ecd35582..ee014e79 100644
+--- a/agents/ipmilan/fence_ipmilan.py
++++ b/agents/ipmilan/fence_ipmilan.py
+@@ -92,6 +92,10 @@ def append(cls, cmd, log=None):
+ 	# --action / -o
+ 	Cmd.append(" chassis power " + action)
+ 
++	# --verbose-level
++	if options["--verbose-level"] > 1:
++		Cmd.append(" -" + "v" * (options["--verbose-level"] - 1))
++
+ 	return (Cmd.cmd, Cmd.log)
+ 
+ def define_new_opts():

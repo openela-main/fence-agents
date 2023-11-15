@@ -1,0 +1,42 @@
+From 099758a41bbb153c4a13a89de57cdcb72e1f1ea7 Mon Sep 17 00:00:00 2001
+From: Michele Baldessari <michele@acksyn.org>
+Date: Fri, 11 Oct 2019 10:39:53 +0200
+Subject: [PATCH] fence_compute: Invert the force-down/service disable order
+
+In OpenStack Train we first observed that IHA was not working via
+https://bugzilla.redhat.com/show_bug.cgi?id=1760213
+
+The reason for this is that nova has made the disabling of the compute
+service depend on the compute node being up via:
+https://review.opendev.org/#/c/654596/
+
+By first calling force-down, the subsequence service-disable API
+call won't wait for the reachability of the compute node any
+longer and the whole operation has the same outcome.
+
+Tested this on an OSP Train environment and we correctly
+got Instance HA working again and we observed the VMs being
+restarted on the available compute nodes.
+
+Co-Authored-By: Luca Miccini <lmiccini@redhat.com>
+---
+ agents/compute/fence_compute.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/agents/compute/fence_compute.py b/agents/compute/fence_compute.py
+index a94bdc46..c08a9dbe 100644
+--- a/agents/compute/fence_compute.py
++++ b/agents/compute/fence_compute.py
+@@ -117,11 +117,11 @@ def set_power_status_off(connection, options):
+ 	if status in [ "off" ]:
+ 		return
+ 
+-	connection.services.disable(options["--plug"], 'nova-compute')
+ 	try:
+ 		# Until 2.53
+ 		connection.services.force_down(
+ 			options["--plug"], "nova-compute", force_down=True)
++		connection.services.disable(options["--plug"], 'nova-compute')
+ 	except Exception as e:
+ 		# Something went wrong when we tried to force the host down.
+ 		# That could come from either an incompatible API version

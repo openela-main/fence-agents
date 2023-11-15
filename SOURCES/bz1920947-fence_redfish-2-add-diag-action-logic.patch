@@ -1,0 +1,49 @@
+From b50523850e7fe1ba73d4ff0ede193c9860eff2bc Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Fri, 7 May 2021 10:35:00 +0200
+Subject: [PATCH] fence_redfish: add missing diag logic
+
+---
+ agents/redfish/fence_redfish.py | 15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
+
+diff --git a/agents/redfish/fence_redfish.py b/agents/redfish/fence_redfish.py
+index 9a7d604d3..0f5af523c 100644
+--- a/agents/redfish/fence_redfish.py
++++ b/agents/redfish/fence_redfish.py
+@@ -42,7 +42,7 @@ def set_power_status(conn, options):
+         'off': "ForceOff",
+         'reboot': "ForceRestart",
+         'diag': "Nmi"
+-    }[options["--action"]]
++    }[options.get("original-action") or options["--action"]]
+ 
+     payload = {'ResetType': action}
+ 
+@@ -56,6 +56,8 @@ def set_power_status(conn, options):
+     response = send_post_request(options, action_uri, payload)
+     if response['ret'] is False:
+         fail_usage("Error sending power command")
++    if options.get("original-action") == "diag":
++        return True
+     return
+ 
+ def send_get_request(options, uri):
+@@ -159,7 +161,16 @@ def main():
+         else:
+             options["--systems-uri"] = sysresult["uri"]
+ 
+-    result = fence_action(None, options, set_power_status, get_power_status, None)
++    reboot_fn = None
++    if options["--action"] == "diag":
++        # Diag is a special action that can't be verified so we will reuse reboot functionality
++        # to minimize impact on generic library
++        options["original-action"] = options["--action"]
++        options["--action"] = "reboot"
++        options["--method"] = "cycle"
++        reboot_fn = set_power_status
++
++    result = fence_action(None, options, set_power_status, get_power_status, None, reboot_fn)
+     sys.exit(result)
+ 
+ if __name__ == "__main__":

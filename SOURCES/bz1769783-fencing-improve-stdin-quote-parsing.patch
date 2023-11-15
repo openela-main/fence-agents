@@ -1,0 +1,23 @@
+From 82626dbdb12519e95a5df70ae6ae21bc17112f43 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Wed, 13 Feb 2019 13:28:25 +0100
+Subject: [PATCH] fencing: improve stdin parse function
+
+- Remove quotes around stdin parameters for consistency with CLI
+parameters and to be able to quote number and time parameters
+---
+ lib/fencing.py.py | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/lib/fencing.py.py b/lib/fencing.py.py
+index 287cd01f..8cd0a813 100644
+--- a/lib/fencing.py.py
++++ b/lib/fencing.py.py
+@@ -1389,6 +1389,7 @@ def _parse_input_stdin(avail_opt):
+ 
+ 		(name, value) = (line + "=").split("=", 1)
+ 		value = value[:-1]
++		value = re.sub("^\"(.*)\"$", "\\1", value)
+ 
+ 		if name.replace("-", "_") in mapping_longopt_names:
+ 			name = mapping_longopt_names[name.replace("-", "_")]

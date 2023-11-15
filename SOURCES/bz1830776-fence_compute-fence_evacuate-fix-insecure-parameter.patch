@@ -1,0 +1,122 @@
+From 8920d2fc7993453e7ad05f807f6ec51745b408a5 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Mon, 4 May 2020 16:53:55 +0200
+Subject: [PATCH] fence_compute/fence_evacuate: fix --insecure parameter
+
+---
+ agents/compute/fence_compute.py        | 10 +++++++---
+ agents/evacuate/fence_evacuate.py      | 10 +++++++---
+ tests/data/metadata/fence_compute.xml  |  2 +-
+ tests/data/metadata/fence_evacuate.xml |  2 +-
+ 4 files changed, 16 insertions(+), 8 deletions(-)
+
+diff --git a/agents/compute/fence_compute.py b/agents/compute/fence_compute.py
+index d0e012e6..f53b97da 100644
+--- a/agents/compute/fence_compute.py
++++ b/agents/compute/fence_compute.py
+@@ -281,7 +281,7 @@ def create_nova_connection(options):
+ 
+ 	loader = loading.get_plugin_loader('password')
+ 	keystone_auth = loader.load_from_options(**kwargs)
+-	keystone_session = session.Session(auth=keystone_auth, verify=(not options["--insecure"]))
++	keystone_session = session.Session(auth=keystone_auth, verify=not "--insecure" in options)
+ 
+ 	nova_versions = [ "2.11", "2" ]
+ 	for version in nova_versions:
+@@ -307,7 +307,7 @@ def create_nova_connection(options):
+ 					     None, # Password
+ 					     None, # Tenant
+ 					     None, # Auth URL
+-					     insecure=options["--insecure"],
++					     insecure="--insecure" in options,
+ 					     region_name=options["--region-name"],
+ 					     endpoint_type=options["--endpoint-type"],
+ 					     session=keystone_session, auth=keystone_auth,
+@@ -395,7 +395,6 @@ def define_new_opts():
+ 		"help" : "--insecure                     Explicitly allow agent to perform \"insecure\" TLS (https) requests",
+ 		"required" : "0",
+ 		"shortdesc" : "Allow Insecure TLS Requests",
+-		"default" : "False",
+ 		"order": 2,
+ 	}
+ 	all_opt["domain"] = {
+@@ -484,6 +483,11 @@ def main():
+ 		options["--domain"] = options["--compute-domain"]
+ 		del options["--domain"]
+ 
++	# Disable insecure-certificate-warning message
++	if "--insecure" in options:
++		import urllib3
++		urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
++
+ 	logging.debug("Running "+options["--action"])
+ 	connection = create_nova_connection(options)
+ 
+diff --git a/agents/evacuate/fence_evacuate.py b/agents/evacuate/fence_evacuate.py
+index 60bb130e..88837dd8 100644
+--- a/agents/evacuate/fence_evacuate.py
++++ b/agents/evacuate/fence_evacuate.py
+@@ -217,7 +217,7 @@ def create_nova_connection(options):
+ 
+ 	loader = loading.get_plugin_loader('password')
+ 	keystone_auth = loader.load_from_options(**kwargs)
+-	keystone_session = session.Session(auth=keystone_auth, verify=(not options["--insecure"]))
++	keystone_session = session.Session(auth=keystone_auth, verify=not "--insecure" in options)
+ 
+ 	versions = [ "2.11", "2" ]
+ 	for version in versions:
+@@ -244,7 +244,7 @@ def create_nova_connection(options):
+ 					     None, # Password
+ 					     None, # Tenant
+ 					     None, # Auth URL
+-					     insecure=options["--insecure"],
++					     insecure="--insecure" in options,
+ 					     region_name=options["--region-name"],
+ 					     endpoint_type=options["--endpoint-type"],
+ 					     session=keystone_session, auth=keystone_auth,
+@@ -332,7 +332,6 @@ def define_new_opts():
+ 		"help" : "--insecure                                     Explicitly allow agent to perform \"insecure\" TLS (https) requests",
+ 		"required" : "0",
+ 		"shortdesc" : "Allow Insecure TLS Requests",
+-		"default" : "False",
+ 		"order": 2,
+ 	}
+ 	all_opt["domain"] = {
+@@ -397,6 +396,11 @@ def main():
+ 		del options["--domain"]
+ 
+ 
++	# Disable insecure-certificate-warning message
++	if "--insecure" in options:
++		import urllib3
++		urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
++
+ 	connection = create_nova_connection(options)
+ 
+ 	# Un-evacuating a server doesn't make sense
+diff --git a/tests/data/metadata/fence_compute.xml b/tests/data/metadata/fence_compute.xml
+index 99d56af0..2f183268 100644
+--- a/tests/data/metadata/fence_compute.xml
++++ b/tests/data/metadata/fence_compute.xml
+@@ -70,7 +70,7 @@
+ 	</parameter>
+ 	<parameter name="insecure" unique="0" required="0">
+ 		<getopt mixed="--insecure" />
+-		<content type="boolean" default="False"  />
++		<content type="boolean"  />
+ 		<shortdesc lang="en">Allow Insecure TLS Requests</shortdesc>
+ 	</parameter>
+ 	<parameter name="project-domain" unique="0" required="0" deprecated="1">
+diff --git a/tests/data/metadata/fence_evacuate.xml b/tests/data/metadata/fence_evacuate.xml
+index 8c720b80..95da0e1b 100644
+--- a/tests/data/metadata/fence_evacuate.xml
++++ b/tests/data/metadata/fence_evacuate.xml
+@@ -70,7 +70,7 @@
+ 	</parameter>
+ 	<parameter name="insecure" unique="0" required="0">
+ 		<getopt mixed="--insecure" />
+-		<content type="boolean" default="False"  />
++		<content type="boolean"  />
+ 		<shortdesc lang="en">Allow Insecure TLS Requests</shortdesc>
+ 	</parameter>
+ 	<parameter name="project-domain" unique="0" required="0" deprecated="1">

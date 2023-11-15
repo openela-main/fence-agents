@@ -1,0 +1,198 @@
+From bf32059e26f6a7d019df0f7949ce66adf997bc21 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Fri, 8 Feb 2019 14:16:31 +0100
+Subject: [PATCH] log exceptions to be more detailed when failing
+
+---
+ agents/apc/fence_apc.py                   |  6 ++++--
+ agents/cisco_ucs/fence_cisco_ucs.py       |  3 ++-
+ agents/eps/fence_eps.py                   |  3 ++-
+ agents/ilo_moonshot/fence_ilo_moonshot.py |  3 ++-
+ agents/lpar/fence_lpar.py                 |  6 ++++--
+ agents/ovh/fence_ovh.py                   |  3 ++-
+ agents/sanbox2/fence_sanbox2.py           | 12 ++++++++----
+ agents/vmware_soap/fence_vmware_soap.py   |  9 ++++++---
+ 8 files changed, 30 insertions(+), 15 deletions(-)
+
+diff --git a/agents/apc/fence_apc.py b/agents/apc/fence_apc.py
+index 24a5a4232..dd0287f83 100644
+--- a/agents/apc/fence_apc.py
++++ b/agents/apc/fence_apc.py
+@@ -90,7 +90,8 @@ def get_power_status(conn, options):
+ 		try:
+ 			(_, status) = outlets[options["--plug"]]
+ 			return status.lower().strip()
+-		except KeyError:
++		except KeyError as e:
++			logging.error("Failed: {}".format(str(e)))
+ 			fail(EC_STATUS)
+ 
+ def set_power_status(conn, options):
+@@ -199,7 +200,8 @@ def get_power_status5(conn, options):
+ 		try:
+ 			(_, status) = outlets[options["--plug"]]
+ 			return status.lower().strip()
+-		except KeyError:
++		except KeyError as e:
++			logging.error("Failed: {}".format(str(e)))
+ 			fail(EC_STATUS)
+ 
+ def set_power_status5(conn, options):
+diff --git a/agents/cisco_ucs/fence_cisco_ucs.py b/agents/cisco_ucs/fence_cisco_ucs.py
+index ec3117548..2280dbbc7 100644
+--- a/agents/cisco_ucs/fence_cisco_ucs.py
++++ b/agents/cisco_ucs/fence_cisco_ucs.py
+@@ -174,7 +174,8 @@ def main():
+ 		if result == None:
+ 			## Cookie is absenting in response
+ 			fail(EC_LOGIN_DENIED)
+-	except Exception:
++	except Exception as e:
++		logging.error("Failed: {}".format(str(e)))
+ 		fail(EC_LOGIN_DENIED)
+ 
+ 	options_global["cookie"] = result.group(1)
+diff --git a/agents/eps/fence_eps.py b/agents/eps/fence_eps.py
+index 74c89b95b..f0df86231 100644
+--- a/agents/eps/fence_eps.py
++++ b/agents/eps/fence_eps.py
+@@ -56,7 +56,8 @@ def eps_run_command(options, params):
+ 		conn.close()
+ 	except socket.timeout:
+ 		fail(EC_TIMED_OUT)
+-	except socket.error:
++	except socket.error as e:
++		logging.error("Failed: {}".format(str(e)))
+ 		fail(EC_LOGIN_DENIED)
+ 
+ 	return result
+diff --git a/agents/ilo_moonshot/fence_ilo_moonshot.py b/agents/ilo_moonshot/fence_ilo_moonshot.py
+index a066a9c91..6f5cca320 100644
+--- a/agents/ilo_moonshot/fence_ilo_moonshot.py
++++ b/agents/ilo_moonshot/fence_ilo_moonshot.py
+@@ -21,7 +21,8 @@ def get_power_status(conn, options):
+ 		try:
+ 			(_, status) = nodes[options["--plug"]]
+ 			return status.lower()
+-		except KeyError:
++		except KeyError as e:
++			logging.error("Failed: {}".format(str(e)))
+ 			fail(EC_STATUS)
+ 
+ def set_power_status(conn, options):
+diff --git a/agents/lpar/fence_lpar.py b/agents/lpar/fence_lpar.py
+index a16103733..66cb65e41 100644
+--- a/agents/lpar/fence_lpar.py
++++ b/agents/lpar/fence_lpar.py
+@@ -37,7 +37,8 @@ def get_power_status(conn, options):
+ 		try:
+ 			status = re.compile("^" + options["--plug"] + ",(.*?),.*$",
+ 					re.IGNORECASE | re.MULTILINE).search(conn.before).group(1)
+-		except AttributeError:
++		except AttributeError as e:
++			logging.error("Failed: {}".format(str(e)))
+ 			fail(EC_STATUS_HMC)
+ 	elif options["--hmc-version"] in ["4", "IVM"]:
+ 		conn.send("lssyscfg -r lpar -m "+ options["--managed"] +
+@@ -49,7 +50,8 @@ def get_power_status(conn, options):
+ 
+ 		try:
+ 			status = re.compile(",state=(.*?),", re.IGNORECASE).search(conn.before).group(1)
+-		except AttributeError:
++		except AttributeError as e:
++			logging.error("Failed: {}".format(str(e)))
+ 			fail(EC_STATUS_HMC)
+ 
+ 	return _normalize_status(status)
+diff --git a/agents/ovh/fence_ovh.py b/agents/ovh/fence_ovh.py
+index f5403c54d..2b7eb864f 100644
+--- a/agents/ovh/fence_ovh.py
++++ b/agents/ovh/fence_ovh.py
+@@ -66,7 +66,8 @@ def soap_login(options):
+ 	try:
+ 		soap = Client(url, doctor=d)
+ 		session = soap.service.login(options["--username"], options["--password"], 'en', 0)
+-	except Exception:
++	except Exception as e:
++		logging.error("Failed: {}".format(str(e)))
+ 		fail(EC_LOGIN_DENIED)
+ 
+ 	options["session"] = session
+diff --git a/agents/sanbox2/fence_sanbox2.py b/agents/sanbox2/fence_sanbox2.py
+index 679d1d983..179fe0e8b 100644
+--- a/agents/sanbox2/fence_sanbox2.py
++++ b/agents/sanbox2/fence_sanbox2.py
+@@ -28,7 +28,8 @@ def get_power_status(conn, options):
+ 			conn.send_eol("admin end")
+ 			conn.send_eol("exit")
+ 			conn.close()
+-		except Exception:
++		except Exception as e:
++			logging.error("Failed: {}".format(str(e)))
+ 			pass
+ 		fail(EC_TIMED_OUT)
+ 
+@@ -54,7 +55,8 @@ def set_power_status(conn, options):
+ 			conn.send_eol("admin end")
+ 			conn.send_eol("exit")
+ 			conn.close()
+-		except Exception:
++		except Exception as e:
++			logging.error("Failed: {}".format(str(e)))
+ 			pass
+ 		fail(EC_TIMED_OUT)
+ 
+@@ -66,7 +68,8 @@ def set_power_status(conn, options):
+ 			conn.send_eol("admin end")
+ 			conn.send_eol("exit")
+ 			conn.close()
+-		except Exception:
++		except Exception as e:
++			logging.error("Failed: {}".format(str(e)))
+ 			pass
+ 		fail(EC_TIMED_OUT)
+ 
+@@ -91,7 +94,8 @@ def get_list_devices(conn, options):
+ 			conn.send_eol("admin end")
+ 			conn.send_eol("exit")
+ 			conn.close()
+-		except Exception:
++		except Exception as e:
++			logging.error("Failed: {}".format(str(e)))
+ 			pass
+ 		fail(EC_TIMED_OUT)
+ 
+diff --git a/agents/vmware_soap/fence_vmware_soap.py b/agents/vmware_soap/fence_vmware_soap.py
+index f2ab68b02..a7f08b3d6 100644
+--- a/agents/vmware_soap/fence_vmware_soap.py
++++ b/agents/vmware_soap/fence_vmware_soap.py
+@@ -68,7 +68,8 @@ def soap_login(options):
+ 		conn.service.Login(mo_SessionManager, options["--username"], options["--password"])
+ 	except requests.exceptions.SSLError as ex:
+ 		fail_usage("Server side certificate verification failed: %s" % ex)
+-	except Exception:
++	except Exception as e:
++		logging.error("Server side certificate verification failed: {}".format(str(e)))
+ 		fail(EC_LOGIN_DENIED)
+ 
+ 	options["ServiceContent"] = ServiceContent
+@@ -126,7 +127,8 @@ def get_power_status(conn, options):
+ 
+ 	try:
+ 		raw_machines = conn.service.RetrievePropertiesEx(mo_PropertyCollector, propFilterSpec)
+-	except Exception:
++	except Exception as e:
++		logging.error("Failed: {}".format(str(e)))
+ 		fail(EC_STATUS)
+ 
+ 	(machines, uuid, mappingToUUID) = process_results(raw_machines, {}, {}, {})
+@@ -135,7 +137,8 @@ def get_power_status(conn, options):
+ 	while hasattr(raw_machines, 'token'):
+ 		try:
+ 			raw_machines = conn.service.ContinueRetrievePropertiesEx(mo_PropertyCollector, raw_machines.token)
+-		except Exception:
++		except Exception as e:
++			logging.error("Failed: {}".format(str(e)))
+ 			fail(EC_STATUS)
+ 		(more_machines, more_uuid, more_mappingToUUID) = process_results(raw_machines, {}, {}, {})
+ 		machines.update(more_machines)

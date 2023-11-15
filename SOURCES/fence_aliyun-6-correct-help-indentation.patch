@@ -1,0 +1,31 @@
+From 588f935b1f79c8355d461fe9f8597151fbcd7fa2 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Thu, 30 Aug 2018 09:11:58 +0200
+Subject: [PATCH] fence_aliyun: correct indentation for *key in help
+
+---
+ agents/aliyun/fence_aliyun.py | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/agents/aliyun/fence_aliyun.py b/agents/aliyun/fence_aliyun.py
+index 2cda6b7f..7d04c5bb 100644
+--- a/agents/aliyun/fence_aliyun.py
++++ b/agents/aliyun/fence_aliyun.py
+@@ -106,7 +106,7 @@ def define_new_opts():
+ 	all_opt["access_key"] = {
+ 		"getopt" : "a:",
+ 		"longopt" : "access-key",
+-		"help" : "-a, --access-key=[name]         Access Key",
++		"help" : "-a, --access-key=[name]        Access Key",
+ 		"shortdesc" : "Access Key.",
+ 		"required" : "0",
+ 		"order" : 3
+@@ -114,7 +114,7 @@ def define_new_opts():
+ 	all_opt["secret_key"] = {
+ 		"getopt" : "s:",
+ 		"longopt" : "secret-key",
+-		"help" : "-s, --secret-key=[name]         Secret Key",
++		"help" : "-s, --secret-key=[name]        Secret Key",
+ 		"shortdesc" : "Secret Key.",
+ 		"required" : "0",
+ 		"order" : 4

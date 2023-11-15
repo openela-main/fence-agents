@@ -1,0 +1,51 @@
+From 559771f2c5a638f7e14ec9c0ef1068c86ee9d40e Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Tue, 26 Nov 2019 14:09:14 +0100
+Subject: [PATCH] fence_redfish/fence_vmware_soap: suppress warnings correctly
+ with new python-requests
+
+python-requests doesnt suppress warnings anymore, so it needs to be done in urllib3: https://stackoverflow.com/questions/27981545/suppress-insecurerequestwarning-unverified-https-request-is-being-made-in-pytho/28002687#28002687
+---
+ agents/redfish/fence_redfish.py         | 4 ++--
+ agents/vmware_soap/fence_vmware_soap.py | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/agents/redfish/fence_redfish.py b/agents/redfish/fence_redfish.py
+index 390a4827..c7c6492c 100644
+--- a/agents/redfish/fence_redfish.py
++++ b/agents/redfish/fence_redfish.py
+@@ -12,7 +12,6 @@
+ import atexit
+ sys.path.append("@FENCEAGENTSLIBDIR@")
+ 
+-from requests.packages.urllib3.exceptions import InsecureRequestWarning
+ from fencing import *
+ from fencing import fail_usage, run_delay
+ 
+@@ -143,7 +142,8 @@ def main():
+ 
+     # Disable insecure-certificate-warning message
+     if "--ssl-insecure" in opt:
+-        requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
++        import urllib3
++        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+ 
+     # backwards compatibility for <ip>:<port>
+     if options["--ip"].count(":") == 1:
+diff --git a/agents/vmware_soap/fence_vmware_soap.py b/agents/vmware_soap/fence_vmware_soap.py
+index dd1a4ed6..53e8d8f4 100644
+--- a/agents/vmware_soap/fence_vmware_soap.py
++++ b/agents/vmware_soap/fence_vmware_soap.py
+@@ -37,10 +37,10 @@ def soap_login(options):
+ 	if "--ssl" in options or "--ssl-secure" in options or "--ssl-insecure" in options:
+ 		if "--ssl-insecure" in options:
+ 			import ssl
+-			from requests.packages.urllib3.exceptions import InsecureRequestWarning
++			import urllib3
+ 			if hasattr(ssl, '_create_unverified_context'):
+ 				ssl._create_default_https_context = ssl._create_unverified_context
+-			requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
++			urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+ 			verify = False
+ 		else:
+ 			verify = True

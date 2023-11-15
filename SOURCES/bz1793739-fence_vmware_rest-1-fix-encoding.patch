@@ -1,0 +1,23 @@
+From 06cba4aa30322f410b0b2fec5785be39d0953433 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Wed, 12 Feb 2020 14:21:54 +0100
+Subject: [PATCH] fence_vmware_rest: fix encoding to avoid issues with UTF-8
+ encoded comments
+
+---
+ agents/vmware_rest/fence_vmware_rest.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/agents/vmware_rest/fence_vmware_rest.py b/agents/vmware_rest/fence_vmware_rest.py
+index cd99b4ac..d07bc10d 100644
+--- a/agents/vmware_rest/fence_vmware_rest.py
++++ b/agents/vmware_rest/fence_vmware_rest.py
+@@ -127,7 +127,7 @@ def send_command(conn, command, method="GET"):
+ 		raise Exception(e[1])
+ 
+ 	rc = conn.getinfo(pycurl.HTTP_CODE)
+-	result = web_buffer.getvalue().decode()
++	result = web_buffer.getvalue().decode("UTF-8")
+ 
+ 	web_buffer.close()
+ 

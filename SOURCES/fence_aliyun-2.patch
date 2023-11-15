@@ -1,0 +1,58 @@
+From 8db45537fb470624a754ea1243cc4f349a9b413d Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Tue, 24 Jul 2018 13:10:41 +0200
+Subject: [PATCH] fence_aliyun: fix CI and add Python detection
+
+---
+ agents/aliyun/fence_aliyun.py        | 19 ++++++++++---------
+ tests/data/metadata/fence_aliyun.xml |  1 +
+ 2 files changed, 11 insertions(+), 9 deletions(-)
+
+diff --git a/agents/aliyun/fence_aliyun.py b/agents/aliyun/fence_aliyun.py
+index 0f24b83e..aa6c0acf 100644
+--- a/agents/aliyun/fence_aliyun.py
++++ b/agents/aliyun/fence_aliyun.py
+@@ -1,14 +1,14 @@
+-#!/usr/bin/python -tt
++#!@PYTHON@ -tt
+ 
+-try:
+-	import sys, re
+-	import logging
+-	import atexit
+-	import json
+-	sys.path.append("@FENCEAGENTSLIBDIR@")
+-	from fencing import *
+-	from fencing import fail, fail_usage, EC_TIMED_OUT, run_delay
++import sys, re
++import logging
++import atexit
++import json
++sys.path.append("@FENCEAGENTSLIBDIR@")
++from fencing import *
++from fencing import fail, fail_usage, EC_TIMED_OUT, run_delay
+ 
++try:
+ 	from aliyunsdkcore import client
+ 
+ 	from aliyunsdkecs.request.v20140526.DescribeInstancesRequest import DescribeInstancesRequest
+@@ -17,6 +17,7 @@
+ 	from aliyunsdkecs.request.v20140526.RebootInstanceRequest import RebootInstanceRequest
+ except ImportError:
+ 	pass
++
+ def _send_request(conn, request):
+ 	request.set_accept_format('json')
+ 	try:
+diff --git a/tests/data/metadata/fence_aliyun.xml b/tests/data/metadata/fence_aliyun.xml
+index 1db692ee..b41d82bf 100644
+--- a/tests/data/metadata/fence_aliyun.xml
++++ b/tests/data/metadata/fence_aliyun.xml
+@@ -108,6 +108,7 @@
+ 	<action name="list-status" />
+ 	<action name="monitor" />
+ 	<action name="metadata" />
++	<action name="manpage" />
+ 	<action name="validate-all" />
+ </actions>
+ </resource-agent>

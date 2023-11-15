@@ -1,0 +1,38 @@
+From 4cf6887e98c712b99f741dbfe54932c60e93741b Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Tue, 3 Nov 2020 14:30:12 +0100
+Subject: [PATCH] fencing: fix to make timeout(s)=0 be treated as forever for
+ agents using pexpect
+
+---
+ lib/fencing.py.py | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/lib/fencing.py.py b/lib/fencing.py.py
+index 4639a9a5..fa34f13a 100644
+--- a/lib/fencing.py.py
++++ b/lib/fencing.py.py
+@@ -500,10 +500,13 @@ def __init__(self, options, command, **kwargs):
+ 		self.opt = options
+ 
+ 	def log_expect(self, pattern, timeout):
+-		result = self.expect(pattern, timeout)
++		result = self.expect(pattern, timeout if timeout != 0 else None)
+ 		logging.debug("Received: %s", self.before + self.after)
+ 		return result
+ 
++	def read_nonblocking(self, size, timeout):
++		return pexpect.spawn.read_nonblocking(self, size=100, timeout=timeout if timeout != 0 else None)
++
+ 	def send(self, message):
+ 		logging.debug("Sent: %s", message)
+ 		return pexpect.spawn.send(self, message)
+@@ -516,7 +519,7 @@ def frun(command, timeout=30, withexitstatus=False, events=None,
+ 	 extra_args=None, logfile=None, cwd=None, env=None, **kwargs):
+ 	if sys.version_info[0] > 2:
+ 		kwargs.setdefault('encoding', 'utf-8')
+-	return pexpect.run(command, timeout=timeout,
++	return pexpect.run(command, timeout=timeout if timeout != 0 else None,
+ 			   withexitstatus=withexitstatus, events=events,
+ 			   extra_args=extra_args, logfile=logfile, cwd=cwd,
+ 			   env=env, **kwargs)

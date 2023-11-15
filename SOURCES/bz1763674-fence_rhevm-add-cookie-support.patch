@@ -1,0 +1,109 @@
+From b885e0f65af626154096a49554e9765e18bfbbd9 Mon Sep 17 00:00:00 2001
+From: Frank Toth <ftoth1@bloomberg.net>
+Date: Wed, 16 Oct 2019 13:58:50 +0800
+Subject: [PATCH 1/3] Added cookie file management to properly reuse session
+ and do not create new one every time.
+
+---
+ agents/rhevm/fence_rhevm.py | 15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
+
+diff --git a/agents/rhevm/fence_rhevm.py b/agents/rhevm/fence_rhevm.py
+index 9e4650cd..defa35e6 100644
+--- a/agents/rhevm/fence_rhevm.py
++++ b/agents/rhevm/fence_rhevm.py
+@@ -117,7 +117,12 @@ def send_command(opt, command, method="GET"):
+ 		conn.setopt(pycurl.HTTPAUTH, pycurl.HTTPAUTH_BASIC)
+ 		conn.setopt(pycurl.USERPWD, opt["--username"] + ":" + opt["--password"])
+ 		if "--use-cookies" in opt:
+-			conn.setopt(pycurl.COOKIEFILE, "")
++			if "--cookie-file" in opt:
++				cookie_file = opt["--cookie-file"]
++			else:
++				cookie_file = "/tmp/fence_rhevm_" + opt["--ip"] + "_" + opt["--username"] + "_cookie.dat"
++			conn.setopt(pycurl.COOKIEFILE, cookie_file)
++			conn.setopt(pycurl.COOKIEJAR, cookie_file)
+ 
+ 	conn.setopt(pycurl.TIMEOUT, int(opt["--shell-timeout"]))
+ 	if "--ssl" in opt or "--ssl-secure" in opt:
+@@ -166,6 +171,14 @@ def define_new_opts():
+ 		"required" : "0",
+ 		"shortdesc" : "Reuse cookies for authentication",
+ 		"order" : 1}
++	all_opt["cookie_file"] = {
++		"getopt" : ":",
++		"longopt" : "cookie-file",
++		"help" : "--cookie-file                  Path to cookie file for authentication\n"
++                        "\t\t\t\t  (Default: /tmp/fence_rhevm_ip_username_cookie.dat)",
++		"required" : "0",
++		"shortdesc" : "Path to cookie file for authentication",
++		"order" : 2}
+ 	all_opt["api_version"] = {
+ 		"getopt" : ":",
+ 		"longopt" : "api-version",
+
+From 874344acbfee5f774b320e384a46e1ce953a34ce Mon Sep 17 00:00:00 2001
+From: Frank Toth <ftoth1@bloomberg.net>
+Date: Wed, 16 Oct 2019 23:41:50 +0800
+Subject: [PATCH 2/3] Added cookie_file to device_opt array. Use
+ tempfile.gettempdir() to get the TMP dir instead of hardcoded /tmp
+
+---
+ agents/rhevm/fence_rhevm.py | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/agents/rhevm/fence_rhevm.py b/agents/rhevm/fence_rhevm.py
+index defa35e6..25aecbe5 100644
+--- a/agents/rhevm/fence_rhevm.py
++++ b/agents/rhevm/fence_rhevm.py
+@@ -4,6 +4,7 @@
+ import pycurl, io
+ import logging
+ import atexit
++import tempfile
+ sys.path.append("@FENCEAGENTSLIBDIR@")
+ from fencing import *
+ from fencing import fail, EC_FETCH_VM_UUID, run_delay
+@@ -120,7 +121,7 @@ def send_command(opt, command, method="GET"):
+ 			if "--cookie-file" in opt:
+ 				cookie_file = opt["--cookie-file"]
+ 			else:
+-				cookie_file = "/tmp/fence_rhevm_" + opt["--ip"] + "_" + opt["--username"] + "_cookie.dat"
++				cookie_file = tempfile.gettempdir() + "/fence_rhevm_" + opt["--ip"] + "_" + opt["--username"] + "_cookie.dat"
+ 			conn.setopt(pycurl.COOKIEFILE, cookie_file)
+ 			conn.setopt(pycurl.COOKIEJAR, cookie_file)
+ 
+@@ -215,6 +216,7 @@ def main():
+ 		"web",
+ 		"port",
+ 		"use_cookies",
++		"cookie_file",
+ 		"api_version",
+ 		"api_path",
+ 		"disable_http_filter",
+
+From 196513cfc0edfd28f483a00b4adfa230b666a47d Mon Sep 17 00:00:00 2001
+From: Frank Toth <ftoth1@bloomberg.net>
+Date: Fri, 18 Oct 2019 05:16:18 +0200
+Subject: [PATCH 3/3] After 'make xml-upload'
+
+---
+ tests/data/metadata/fence_rhevm.xml | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/tests/data/metadata/fence_rhevm.xml b/tests/data/metadata/fence_rhevm.xml
+index c56cf64b..2b6b02b2 100644
+--- a/tests/data/metadata/fence_rhevm.xml
++++ b/tests/data/metadata/fence_rhevm.xml
+@@ -103,6 +103,11 @@
+ 		<content type="string" default="auto"  />
+ 		<shortdesc lang="en">Version of RHEV API (default: auto)</shortdesc>
+ 	</parameter>
++	<parameter name="cookie_file" unique="0" required="0">
++		<getopt mixed="--cookie-file" />
++		<content type="string"  />
++		<shortdesc lang="en">Path to cookie file for authentication</shortdesc>
++	</parameter>
+ 	<parameter name="api_path" unique="0" required="0">
+ 		<getopt mixed="--api-path=[path]" />
+ 		<shortdesc lang="en">The path part of the API URL</shortdesc>

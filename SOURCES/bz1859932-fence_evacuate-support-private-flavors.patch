@@ -1,0 +1,26 @@
+From 18ef1622475db947aef70042523f4a176c4155bd Mon Sep 17 00:00:00 2001
+From: Luca Miccini <lmiccini@redhat.com>
+Date: Thu, 23 Jul 2020 14:33:38 +0200
+Subject: [PATCH] [fence_evacuate] Enable evacuation of instances using private
+ flavors
+
+This commit extends the flavor.list() api call in the fence_evacuate
+agent to fetch private flavors that could be tagged with the 'evacuable'
+attribute, allowing instance-ha to be enabled on a per tenant basis.
+---
+ agents/evacuate/fence_evacuate.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/agents/evacuate/fence_evacuate.py b/agents/evacuate/fence_evacuate.py
+index 88837dd8..53d6fd15 100644
+--- a/agents/evacuate/fence_evacuate.py
++++ b/agents/evacuate/fence_evacuate.py
+@@ -87,7 +87,7 @@ def _is_server_evacuable(server, evac_flavors, evac_images):
+ 
+ def _get_evacuable_flavors(connection):
+ 	result = []
+-	flavors = connection.flavors.list()
++	flavors = connection.flavors.list(is_public=None)
+ 	# Since the detailed view for all flavors doesn't provide the extra specs,
+ 	# we need to call each of the flavor to get them.
+ 	for flavor in flavors:

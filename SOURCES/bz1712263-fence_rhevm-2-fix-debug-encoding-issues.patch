@@ -1,0 +1,31 @@
+From 965924fe8bf7dcd0bc15fb0e9265ab49bb8a5dd8 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Mon, 20 May 2019 15:49:39 +0200
+Subject: [PATCH] fence_rhevm: fix debug encoding issues
+
+Tested with UTF-8 encoded comment in result, which caused this issue,
+and added to command and url in case they are in UTF-8 decoded state.
+---
+ agents/rhevm/fence_rhevm.py | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/agents/rhevm/fence_rhevm.py b/agents/rhevm/fence_rhevm.py
+index 6012c423..9e4650cd 100644
+--- a/agents/rhevm/fence_rhevm.py
++++ b/agents/rhevm/fence_rhevm.py
+@@ -144,9 +144,9 @@ def send_command(opt, command, method="GET"):
+ 
+ 	result = web_buffer.getvalue().decode("UTF-8")
+ 
+-	logging.debug("url: %s\n", url)
+-	logging.debug("command: %s\n", command)
+-	logging.debug("result: %s\n", result)
++	logging.debug("url: %s\n", url.encode("UTF-8"))
++	logging.debug("command: %s\n", command.encode("UTF-8"))
++	logging.debug("result: %s\n", result.encode("UTF-8"))
+ 
+ 	return result
+ 
+-- 
+2.21.0
+
