@@ -1,0 +1,32 @@
+--- a/lib/azure_fence.py.py	2023-07-03 11:40:44.083882319 +0200
++++ b/lib/azure_fence.py.py	2023-07-03 11:40:38.178784811 +0200
+@@ -317,12 +317,11 @@
+     from azure.mgmt.compute import ComputeManagementClient
+ 
+     cloud_environment = get_azure_cloud_environment(config)
++    if cloud_environment and config.Cloud.lower() == "stack" and not config.MetadataEndpoint:
++            fail_usage("metadata-endpoint not specified")
+     credentials = get_azure_credentials(config)
+ 
+     if cloud_environment:
+-        if (config.Cloud.lower() == "stack") and not config.MetadataEndpoint:
+-                fail_usage("metadata-endpoint not specified")
+-
+         compute_client = ComputeManagementClient(
+             credentials,
+             config.SubscriptionId,
+@@ -339,12 +338,11 @@
+     from azure.mgmt.network import NetworkManagementClient
+ 
+     cloud_environment = get_azure_cloud_environment(config)
++    if cloud_environment and config.Cloud.lower() == "stack" and not config.MetadataEndpoint:
++            fail_usage("metadata-endpoint not specified")
+     credentials = get_azure_credentials(config)
+ 
+     if cloud_environment:
+-        if (config.Cloud.lower() == "stack") and not config.MetadataEndpoint:
+-                fail_usage("metadata-endpoint not specified")
+-
+         network_client = NetworkManagementClient(
+             credentials,
+             config.SubscriptionId,

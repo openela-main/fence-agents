@@ -87,7 +87,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.2.1
-Release: 112%{?alphatag:.%{alphatag}}%{?dist}
+Release: 121%{?alphatag:.%{alphatag}}%{?dist}
 License: GPLv2+ and LGPLv2+
 Group: System Environment/Base
 URL: https://github.com/ClusterLabs/fence-agents
@@ -267,6 +267,17 @@ Patch124: bz2136076-fence_ibm_powervs-improve-defaults.patch
 Patch125: bz2160478-fence_scsi-fix-validate-all.patch
 Patch126: bz2152105-fencing-1-add-plug_separator.patch
 Patch127: bz2152105-fencing-2-update-DEPENDENCY_OPT.patch
+Patch128: bz2183158-fence_aws-1-add-skip-race-check-parameter.patch
+Patch129: bz2183158-fence_aws-2-fail-when-power-action-request-fails.patch
+Patch130: bz2187329-fence_scsi-1-detect-devices-in-shared-vgs.patch
+Patch131: bz2187329-fence_scsi-2-support-space-separated-devices.patch
+Patch132: bz2211460-fence_azure-arm-1-stack-hub-support.patch
+Patch133: bz2211460-fence_azure-arm-2-metadata-endpoint-error-message.patch
+Patch134: bz2155453-fence_ibm_powervs-performance-improvements.patch
+
+### HA support libs/utils ###
+Patch1000: bz2218234-1-aws-fix-bundled-dateutil-CVE-2007-4559.patch
+Patch1001: bz2218234-2-kubevirt-fix-bundled-dateutil-CVE-2007-4559.patch
 
 %if 0%{?fedora} || 0%{?rhel} > 7
 %global supportedagents amt_ws apc apc_snmp bladecenter brocade cisco_mds cisco_ucs compute drac5 eaton_snmp emerson eps evacuate hds_cb hpblade ibmblade ibm_powervs ibm_vpc ifmib ilo ilo_moonshot ilo_mp ilo_ssh intelmodular ipdu ipmilan kdump kubevirt lpar mpath redfish rhevm rsa rsb sbd scsi vmware_rest vmware_soap wti
@@ -472,6 +483,13 @@ BuildRequires: python3-google-api-client python3-pip python3-wheel python3-jinja
 %patch125 -p1
 %patch126 -p1
 %patch127 -p1
+%patch128 -p1 -F2
+%patch129 -p1
+%patch130 -p1
+%patch131 -p1
+%patch132 -p1
+%patch133 -p1
+%patch134 -p1
 
 # prevent compilation of something that won't get used anyway
 sed -i.orig 's|FENCE_ZVM=1|FENCE_ZVM=0|' configure.ac
@@ -576,11 +594,21 @@ popd
 %{__python3} -m pip install --user --no-index --find-links %{_sourcedir} jmespath
 %{__python3} -m pip install --target %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}/aws --no-index --find-links %{_sourcedir} botocore
 %{__python3} -m pip install --target %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}/aws --no-index --find-links %{_sourcedir} requests
+
+# regular patch doesnt work in install-section
+# Patch1000
+pushd %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{_sourcedir}/bz2218234-1-aws-fix-bundled-dateutil-CVE-2007-4559.patch
+popd
 %endif
 
 # kubevirt
 %{__python3} -m pip install --target %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}/kubevirt --no-index --find-links %{_sourcedir} openshift
 rm -rf %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}/kubevirt/rsa*
+# Patch1001
+pushd %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{_sourcedir}/bz2218234-2-kubevirt-fix-bundled-dateutil-CVE-2007-4559.patch
+popd
 
 ## tree fix up
 # fix libfence permissions
@@ -1469,6 +1497,27 @@ Fence agent for IBM z/VM over IP.
 %endif
 
 %changelog
+* Thu Aug  3 2023 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-121
+- bundled dateutil: fix tarfile CVE-2007-4559
+  Resolves: rhbz#2218234
+
+* Tue Jul 11 2023 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-119
+- fence_ibm_powervs: performance improvements
+  Resolves: rhbz#2155453
+
+* Mon Jul  3 2023 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-118
+- fence_azure_arm: add Stack Hub support
+  Resolves: rhbz#2211460
+
+* Thu May  4 2023 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-115
+- fence_scsi: detect devices in shared VGs
+  Resolves: rhbz#2187329
+
+* Wed May  3 2023 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-114
+- fence_aws: add --skip-race-check parameter to allow running outside
+  of AWS network
+  Resolves: rhbz#2183158
+
 * Thu Jan 26 2023 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-112
 - fence_vmware_soap: set login_timeout lower than default
   pcmk_monitor_timeout (20s) to remove tmp dirs
