@@ -1,0 +1,75 @@
+From 2c9ee29d1e28dbdd5e305156ae70451e31d976c0 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Thu, 4 Jun 2020 14:43:15 +0200
+Subject: [PATCH 1/2] fence_azure_arm: log metadata when debugging
+
+---
+ lib/azure_fence.py.py | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/lib/azure_fence.py.py b/lib/azure_fence.py.py
+index 7bb43adc..4e44ca9d 100644
+--- a/lib/azure_fence.py.py
++++ b/lib/azure_fence.py.py
+@@ -41,6 +41,7 @@ def get_from_metadata(parameter):
+     import requests
+     try:
+         r = requests.get('http://169.254.169.254/metadata/instance?api-version=2017-08-01', headers = {"Metadata":"true"})
++        logging.debug("metadata: " + str(r.json()))
+         return str(r.json()["compute"][parameter])
+     except:
+         logging.warning("Not able to use metadata service. Am I running in Azure?")
+
+From e3e3199cbf35855c6ab512ac06d7249df94eb3e7 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Thu, 4 Jun 2020 14:43:52 +0200
+Subject: [PATCH 2/2] fence_azure_arm: fixes to make MSI support work
+
+---
+ agents/azure_arm/fence_azure_arm.py     | 3 ++-
+ tests/data/metadata/fence_azure_arm.xml | 4 ++--
+ 2 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/agents/azure_arm/fence_azure_arm.py b/agents/azure_arm/fence_azure_arm.py
+index be0d4034..6b1a3770 100755
+--- a/agents/azure_arm/fence_azure_arm.py
++++ b/agents/azure_arm/fence_azure_arm.py
+@@ -184,7 +184,7 @@ def main():
+     compute_client = None
+     network_client = None
+ 
+-    device_opt = ["login", "passwd", "port", "resourceGroup", "tenantId", "subscriptionId", "network-fencing", "msi", "cloud"]
++    device_opt = ["login", "no_login", "no_password", "passwd", "port", "resourceGroup", "tenantId", "subscriptionId", "network-fencing", "msi", "cloud"]
+ 
+     atexit.register(atexit_handler)
+ 
+@@ -222,6 +222,7 @@ def main():
+ 
+     try:
+         config = azure_fence.get_azure_config(options)
++        options["--resourceGroup"] = config.RGName
+         compute_client = azure_fence.get_azure_compute_client(config)
+         if "--network-fencing" in options:
+             network_client = azure_fence.get_azure_network_client(config)
+diff --git a/tests/data/metadata/fence_azure_arm.xml b/tests/data/metadata/fence_azure_arm.xml
+index 97ecfdba..7ea672af 100644
+--- a/tests/data/metadata/fence_azure_arm.xml
++++ b/tests/data/metadata/fence_azure_arm.xml
+@@ -23,7 +23,7 @@ When using network fencing the reboot-action will cause a quick-return once the
+ 		<content type="string" default="reboot"  />
+ 		<shortdesc lang="en">Fencing action</shortdesc>
+ 	</parameter>
+-	<parameter name="login" unique="0" required="1" deprecated="1">
++	<parameter name="login" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-l, --username=[appid]" />
+ 		<content type="string"  />
+ 		<shortdesc lang="en">Application ID</shortdesc>
+@@ -58,7 +58,7 @@ When using network fencing the reboot-action will cause a quick-return once the
+ 		<content type="string"  />
+ 		<shortdesc lang="en">Physical plug number on device, UUID or identification of machine</shortdesc>
+ 	</parameter>
+-	<parameter name="username" unique="0" required="1" obsoletes="login">
++	<parameter name="username" unique="0" required="0" obsoletes="login">
+ 		<getopt mixed="-l, --username=[appid]" />
+ 		<content type="string"  />
+ 		<shortdesc lang="en">Application ID</shortdesc>

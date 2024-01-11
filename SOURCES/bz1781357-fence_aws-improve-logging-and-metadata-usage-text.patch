@@ -1,0 +1,130 @@
+From 7ac16fb281fa8cfc51a31f672014c614c81aec82 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Fri, 31 Jan 2020 15:53:47 +0100
+Subject: [PATCH] fence_aws: improve logging and metadata/usage text
+
+---
+ agents/aws/fence_aws.py           | 36 +++++++++++++++++++------------
+ tests/data/metadata/fence_aws.xml |  6 +++---
+ 2 files changed, 25 insertions(+), 17 deletions(-)
+
+diff --git a/agents/aws/fence_aws.py b/agents/aws/fence_aws.py
+index 647b66fc..74321e8e 100644
+--- a/agents/aws/fence_aws.py
++++ b/agents/aws/fence_aws.py
+@@ -5,7 +5,7 @@
+ import atexit
+ sys.path.append("@FENCEAGENTSLIBDIR@")
+ from fencing import *
+-from fencing import fail, fail_usage, EC_TIMED_OUT, run_delay
++from fencing import fail, fail_usage, run_delay, EC_STATUS
+ 
+ import boto3
+ from botocore.exceptions import ClientError, EndpointConnectionError, NoRegionError
+@@ -19,6 +19,8 @@ def get_nodes_list(conn, options):
+ 		fail_usage("Failed: Incorrect Access Key or Secret Key.")
+ 	except EndpointConnectionError:
+ 		fail_usage("Failed: Incorrect Region.")
++	except Exception as e:
++		logging.error("Failed to get node list: %s", e)
+ 
+ 	return result
+ 
+@@ -38,20 +40,26 @@ def get_power_status(conn, options):
+ 	except EndpointConnectionError:
+ 		fail_usage("Failed: Incorrect Region.")
+ 	except IndexError:
+-		return "fail"
++		fail(EC_STATUS)
++	except Exception as e:
++		logging.error("Failed to get power status: %s", e)
++		fail(EC_STATUS)
+ 
+ def set_power_status(conn, options):
+-	if (options["--action"]=="off"):
+-		conn.instances.filter(InstanceIds=[options["--plug"]]).stop(Force=True)
+-	elif (options["--action"]=="on"):
+-		conn.instances.filter(InstanceIds=[options["--plug"]]).start()
+-
++	try:
++		if (options["--action"]=="off"):
++			conn.instances.filter(InstanceIds=[options["--plug"]]).stop(Force=True)
++		elif (options["--action"]=="on"):
++			conn.instances.filter(InstanceIds=[options["--plug"]]).start()
++	except Exception as e:
++		logging.error("Failed to power %s %s: %s", \
++				options["--action"], options["--plug"], e)
+ 
+ def define_new_opts():
+ 	all_opt["region"] = {
+ 		"getopt" : "r:",
+ 		"longopt" : "region",
+-		"help" : "-r, --region=[name]            Region, e.g. us-east-1",
++		"help" : "-r, --region=[region]           Region, e.g. us-east-1",
+ 		"shortdesc" : "Region.",
+ 		"required" : "0",
+ 		"order" : 2
+@@ -59,7 +67,7 @@ def define_new_opts():
+ 	all_opt["access_key"] = {
+ 		"getopt" : "a:",
+ 		"longopt" : "access-key",
+-		"help" : "-a, --access-key=[name]         Access Key",
++		"help" : "-a, --access-key=[key]         Access Key",
+ 		"shortdesc" : "Access Key.",
+ 		"required" : "0",
+ 		"order" : 3
+@@ -67,7 +75,7 @@ def define_new_opts():
+ 	all_opt["secret_key"] = {
+ 		"getopt" : "s:",
+ 		"longopt" : "secret-key",
+-		"help" : "-s, --secret-key=[name]         Secret Key",
++		"help" : "-s, --secret-key=[key]         Secret Key",
+ 		"shortdesc" : "Secret Key.",
+ 		"required" : "0",
+ 		"order" : 4
+@@ -107,16 +115,16 @@ def main():
+ 			conn = boto3.resource('ec2', region_name=region,
+ 					      aws_access_key_id=access_key,
+ 					      aws_secret_access_key=secret_key)
+-		except:
+-			fail_usage("Failed: Unable to connect to AWS. Check your configuration.")
++		except Exception as e:
++			fail_usage("Failed: Unable to connect to AWS: " + str(e))
+ 	else:
+ 		# If setup with "aws configure" or manually in
+ 		# ~/.aws/credentials
+ 		try:
+ 			conn = boto3.resource('ec2')
+-		except:
++		except Exception as e:
+ 			# If any of region/access/secret are missing
+-			fail_usage("Failed: Unable to connect to AWS. Check your configuration.")
++			fail_usage("Failed: Unable to connect to AWS: " + str(e))
+ 
+ 	# Operate the fencing device
+ 	result = fence_action(conn, options, set_power_status, get_power_status, get_nodes_list)
+diff --git a/tests/data/metadata/fence_aws.xml b/tests/data/metadata/fence_aws.xml
+index 4dea4418..5e5d5d99 100644
+--- a/tests/data/metadata/fence_aws.xml
++++ b/tests/data/metadata/fence_aws.xml
+@@ -22,17 +22,17 @@ For instructions see: https://boto3.readthedocs.io/en/latest/guide/quickstart.ht
+ 		<shortdesc lang="en">Physical plug number on device, UUID or identification of machine</shortdesc>
+ 	</parameter>
+ 	<parameter name="region" unique="0" required="0">
+-		<getopt mixed="-r, --region=[name]" />
++		<getopt mixed="-r, --region=[region]" />
+ 		<content type="string"  />
+ 		<shortdesc lang="en">Region.</shortdesc>
+ 	</parameter>
+ 	<parameter name="access_key" unique="0" required="0">
+-		<getopt mixed="-a, --access-key=[name]" />
++		<getopt mixed="-a, --access-key=[key]" />
+ 		<content type="string"  />
+ 		<shortdesc lang="en">Access Key.</shortdesc>
+ 	</parameter>
+ 	<parameter name="secret_key" unique="0" required="0">
+-		<getopt mixed="-s, --secret-key=[name]" />
++		<getopt mixed="-s, --secret-key=[key]" />
+ 		<content type="string"  />
+ 		<shortdesc lang="en">Secret Key.</shortdesc>
+ 	</parameter>

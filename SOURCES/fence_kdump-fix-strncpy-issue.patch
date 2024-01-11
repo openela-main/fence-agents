@@ -1,0 +1,36 @@
+From ac83d8ce3d8dd868b0e887528e7c269cee4dcac8 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Tue, 31 Jul 2018 15:57:38 +0200
+Subject: [PATCH] fence_kdump: fix strncpy issue
+
+---
+ agents/kdump/fence_kdump.c      | 2 +-
+ agents/kdump/fence_kdump_send.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/agents/kdump/fence_kdump.c b/agents/kdump/fence_kdump.c
+index e2f3cd80..768a9344 100644
+--- a/agents/kdump/fence_kdump.c
++++ b/agents/kdump/fence_kdump.c
+@@ -351,7 +351,7 @@ get_options_node (fence_kdump_opts_t *opts)
+     hints.ai_protocol = IPPROTO_UDP;
+     hints.ai_flags = AI_NUMERICSERV;
+ 
+-    strncpy (node->name, opts->nodename, sizeof (node->name));
++    strncpy (node->name, opts->nodename, sizeof (node->name) - 1);
+     snprintf (node->port, sizeof (node->port), "%d", opts->ipport);
+ 
+     node->info = NULL;
+diff --git a/agents/kdump/fence_kdump_send.c b/agents/kdump/fence_kdump_send.c
+index d668bed3..638f8c97 100644
+--- a/agents/kdump/fence_kdump_send.c
++++ b/agents/kdump/fence_kdump_send.c
+@@ -116,7 +116,7 @@ get_options_node (fence_kdump_opts_t *opts)
+     hints.ai_protocol = IPPROTO_UDP;
+     hints.ai_flags = AI_NUMERICSERV;
+ 
+-    strncpy (node->name, opts->nodename, sizeof (node->name));
++    strncpy (node->name, opts->nodename, sizeof (node->name) - 1);
+     snprintf (node->port, sizeof (node->port), "%d", opts->ipport);
+ 
+     node->info = NULL;

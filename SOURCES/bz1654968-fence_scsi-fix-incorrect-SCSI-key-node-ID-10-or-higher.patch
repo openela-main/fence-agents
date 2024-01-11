@@ -1,0 +1,24 @@
+From f77297b654586bf539e78957f26cae1d22c6f081 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Fri, 2 Nov 2018 09:24:56 +0100
+Subject: [PATCH] fence_scsi: fix incorrect SCSI key when node ID is 10 or
+ higher
+
+  The last four digits of the SCSI key will be zero padded digit between 0000-0009.
+---
+ agents/scsi/fence_scsi.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/agents/scsi/fence_scsi.py b/agents/scsi/fence_scsi.py
+index 2180d0c9..79ada4fa 100644
+--- a/agents/scsi/fence_scsi.py
++++ b/agents/scsi/fence_scsi.py
+@@ -191,7 +191,7 @@ def get_cluster_id(options):
+ def get_node_id(options):
+ 	cmd = options["--corosync-cmap-path"] + " nodelist"
+ 
+-	match = re.search(r".(\d).ring._addr \(str\) = " + options["--plug"] + "\n", run_cmd(options, cmd)["out"])
++	match = re.search(r".(\d+).ring._addr \(str\) = " + options["--plug"] + "\n", run_cmd(options, cmd)["out"])
+ 	return match.group(1) if match else fail_usage("Failed: unable to parse output of corosync-cmapctl or node does not exist")
+ 
+ 

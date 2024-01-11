@@ -1,0 +1,41 @@
+From 116fb7d1253ac31a8f174187dfe9f4a0c6546ade Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Fri, 7 Sep 2018 15:56:56 +0200
+Subject: [PATCH] fence_vmware_soap: cleanup when receiving SIGTERM
+
+---
+ agents/vmware_soap/fence_vmware_soap.py | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/agents/vmware_soap/fence_vmware_soap.py b/agents/vmware_soap/fence_vmware_soap.py
+index b90edc9b..dd1a4ed6 100644
+--- a/agents/vmware_soap/fence_vmware_soap.py
++++ b/agents/vmware_soap/fence_vmware_soap.py
+@@ -3,7 +3,7 @@
+ import sys
+ import shutil, tempfile, suds
+ import logging, requests
+-import atexit
++import atexit, signal
+ sys.path.append("@FENCEAGENTSLIBDIR@")
+ 
+ from suds.client import Client
+@@ -211,6 +211,9 @@ def logout():
+ 	except Exception:
+ 		pass
+ 
++def signal_handler(signum, frame):
++	raise Exception("Signal \"%d\" received which has triggered an exit of the process." % signum)
++
+ def main():
+ 	global options_global
+ 	global conn_global
+@@ -219,6 +222,8 @@ def main():
+ 	atexit.register(atexit_handler)
+ 	atexit.register(logout)
+ 
++	signal.signal(signal.SIGTERM, signal_handler)
++
+ 	options_global = check_input(device_opt, process_input(device_opt))
+ 
+ 	##

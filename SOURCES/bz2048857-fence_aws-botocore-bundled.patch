@@ -1,0 +1,11 @@
+--- a/agents/aws/fence_aws.py	2022-02-09 10:51:19.579385154 +0100
++++ b/agents/aws/fence_aws.py	2022-02-09 10:51:47.148478185 +0100
+@@ -7,6 +7,8 @@
+ from fencing import *
+ from fencing import fail, fail_usage, run_delay, EC_STATUS, SyslogLibHandler
+ 
++sys.path.insert(0, '/usr/lib/fence-agents/bundled/aws')
++
+ import requests
+ import boto3
+ from requests import HTTPError

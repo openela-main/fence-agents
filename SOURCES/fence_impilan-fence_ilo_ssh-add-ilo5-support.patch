@@ -1,0 +1,33 @@
+diff -uNr a/agents/ilo_ssh/fence_ilo_ssh.py b/agents/ilo_ssh/fence_ilo_ssh.py
+--- a/agents/ilo_ssh/fence_ilo_ssh.py	2018-06-18 12:14:35.000000000 +0200
++++ b/agents/ilo_ssh/fence_ilo_ssh.py	2018-06-28 12:26:14.274615003 +0200
+@@ -54,7 +54,8 @@
+ device via ssh and reboot a specified outlet. "
+ 	docs["vendorurl"] = "http://www.hp.com"
+ 	docs["symlink"] = [("fence_ilo3_ssh", "Fence agent for HP iLO3 over SSH"),
+-		("fence_ilo4_ssh", "Fence agent for HP iLO4 over SSH")]
++		("fence_ilo4_ssh", "Fence agent for HP iLO4 over SSH"),
++		("fence_ilo5_ssh", "Fence agent for HP iLO5 over SSH")]
+ 	show_docs(options, docs)
+ 
+ 	options["eol"] = "\r"
+diff -uNr a/agents/ipmilan/fence_ipmilan.py b/agents/ipmilan/fence_ipmilan.py
+--- a/agents/ipmilan/fence_ipmilan.py	2018-06-18 12:14:35.000000000 +0200
++++ b/agents/ipmilan/fence_ipmilan.py	2018-06-28 12:26:14.275614990 +0200
+@@ -169,6 +169,8 @@
+ 		all_opt["lanplus"]["default"] = "1"
+ 	elif os.path.basename(sys.argv[0]) == "fence_ilo4":
+ 		all_opt["lanplus"]["default"] = "1"
++	elif os.path.basename(sys.argv[0]) == "fence_ilo5":
++		all_opt["lanplus"]["default"] = "1"
+ 
+ 	all_opt["ipport"]["default"] = "623"
+ 	all_opt["method"]["help"] = "-m, --method=[method]          Method to fence (onoff|cycle) (Default: cycle)\n" \
+@@ -187,6 +189,7 @@
+ 	docs["vendorurl"] = ""
+ 	docs["symlink"] = [("fence_ilo3", "Fence agent for HP iLO3"),
+ 		("fence_ilo4", "Fence agent for HP iLO4"),
++		("fence_ilo5", "Fence agent for HP iLO5"),
+ 		("fence_imm", "Fence agent for IBM Integrated Management Module"),
+ 		("fence_idrac", "Fence agent for Dell iDRAC")]
+ 	show_docs(options, docs)

@@ -1,0 +1,25 @@
+From 8e801d513b9a500ac0d717476aadc1cdabc0a92e Mon Sep 17 00:00:00 2001
+From: Helen Koike <helen.koike@collabora.com>
+Date: Thu, 19 Jul 2018 13:13:53 -0300
+Subject: [PATCH] fence_gce: filter call to aggregatedList
+
+Don't list all the instances in the project, filter only the one we are
+interested in.
+---
+ agents/gce/fence_gce.py | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/agents/gce/fence_gce.py b/agents/gce/fence_gce.py
+index 3eca0139..93cd1180 100644
+--- a/agents/gce/fence_gce.py
++++ b/agents/gce/fence_gce.py
+@@ -112,7 +112,8 @@ def get_instance(conn, project, zone, instance):
+ 
+ 
+ def get_zone(conn, project, instance):
+-	request = conn.instances().aggregatedList(project=project)
++	fl = 'name="%s"' % instance
++	request = conn.instances().aggregatedList(project=project, filter=fl)
+ 	while request is not None:
+ 		response = request.execute()
+ 		zones = response.get('items', {})

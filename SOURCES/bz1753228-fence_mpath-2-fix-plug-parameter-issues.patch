@@ -1,0 +1,73 @@
+From 868c494d17952eecc6736683c6df04aa9d3a3199 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Fri, 20 Sep 2019 12:06:55 +0200
+Subject: [PATCH] fence_mpath: fix fail_usage() issue and a couple of other
+ minor issues w/the newly added plug/port parameter
+
+---
+ agents/mpath/fence_mpath.py         | 12 +++++++-----
+ tests/data/metadata/fence_mpath.xml | 10 +++++-----
+ 2 files changed, 12 insertions(+), 10 deletions(-)
+
+diff --git a/agents/mpath/fence_mpath.py b/agents/mpath/fence_mpath.py
+index 25aeb052..73517851 100644
+--- a/agents/mpath/fence_mpath.py
++++ b/agents/mpath/fence_mpath.py
+@@ -213,7 +213,7 @@ def define_new_opts():
+ 		"longopt" : "key",
+ 		"help" : "-k, --key=[key]                Replaced by -n, --plug",
+ 		"required" : "0",
+-		"shortdesc" : "Replaced by -n, --plug",
++		"shortdesc" : "Replaced by port/-n/--plug",
+ 		"order": 1
+ 	}
+ 	all_opt["mpathpersist_path"] = {
+@@ -244,7 +244,8 @@ def main():
+ 
+ 	define_new_opts()
+ 
+-	all_opt["port"]["help"] = "Key to use for the current operation"
++	all_opt["port"]["required"] = "0"
++	all_opt["port"]["help"] = "-n, --plug=[key]               Key to use for the current operation"
+ 	all_opt["port"]["shortdesc"] = "Key to use for the current operation. \
+ This key should be unique to a node and have to be written in \
+ /etc/multipath.conf. For the \"on\" action, the key specifies the key use to \
+@@ -266,9 +267,10 @@ def main():
+ 	if "--key" in options:
+ 		options["--plug"] = options["--key"]
+ 		del options["--key"]
+-	elif options["--action"] in ["off", "on", "reboot", "status"] \
+-	     and "--plug" not in options:
+-		fail_usage("Failed: You have to enter plug number or machine identification", stop)
++	elif "--help" not in options and options["--action"] in ["off", "on", \
++	     "reboot", "status", "validate-all"] and "--plug" not in options:
++		stop_after_error = False if options["--action"] == "validate-all" else True
++		fail_usage("Failed: You have to enter plug number or machine identification", stop_after_error)
+ 
+ 	docs = {}
+ 	docs["shortdesc"] = "Fence agent for multipath persistent reservation"
+diff --git a/tests/data/metadata/fence_mpath.xml b/tests/data/metadata/fence_mpath.xml
+index fe9378df..f5e60823 100644
+--- a/tests/data/metadata/fence_mpath.xml
++++ b/tests/data/metadata/fence_mpath.xml
+@@ -17,15 +17,15 @@ The fence_mpath agent works by having a unique key for each node that has to be
+ 	<parameter name="key" unique="0" required="0">
+ 		<getopt mixed="-k, --key=[key]" />
+ 		<content type="string"  />
+-		<shortdesc lang="en">Replaced by -n, --plug</shortdesc>
++		<shortdesc lang="en">Replaced by port/-n/--plug</shortdesc>
+ 	</parameter>
+-	<parameter name="plug" unique="0" required="1" obsoletes="port">
+-		<getopt mixed="Key to use for the current operation" />
++	<parameter name="plug" unique="0" required="0" obsoletes="port">
++		<getopt mixed="-n, --plug=[key]" />
+ 		<content type="string"  />
+ 		<shortdesc lang="en">Key to use for the current operation. This key should be unique to a node and have to be written in /etc/multipath.conf. For the "on" action, the key specifies the key use to register the local node. For the "off" action, this key specifies the key to be removed from the device(s).</shortdesc>
+ 	</parameter>
+-	<parameter name="port" unique="0" required="1" deprecated="1">
+-		<getopt mixed="Key to use for the current operation" />
++	<parameter name="port" unique="0" required="0" deprecated="1">
++		<getopt mixed="-n, --plug=[key]" />
+ 		<content type="string"  />
+ 		<shortdesc lang="en">Key to use for the current operation. This key should be unique to a node and have to be written in /etc/multipath.conf. For the "on" action, the key specifies the key use to register the local node. For the "off" action, this key specifies the key to be removed from the device(s).</shortdesc>
+ 	</parameter>

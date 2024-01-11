@@ -1,0 +1,77 @@
+From 708d0a8e4e45d4f4a6bee67f0a9ebc0ff573e1ff Mon Sep 17 00:00:00 2001
+From: Kumabuchi Kenji <k.kumabuchi+curvygrin@gmail.com>
+Date: Fri, 25 Oct 2019 16:34:40 +0900
+Subject: [PATCH] fix shortopt in fence-compute / fence_evacuate help messages
+
+Signed-off-by: Kumabuchi Kenji <k.kumabuchi+curvygrin@gmail.com>
+---
+ agents/compute/fence_compute.py        | 2 +-
+ agents/evacuate/fence_evacuate.py      | 2 +-
+ tests/data/metadata/fence_compute.xml  | 4 ++--
+ tests/data/metadata/fence_evacuate.xml | 4 ++--
+ 4 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/agents/compute/fence_compute.py b/agents/compute/fence_compute.py
+index c08a9dbe..d0e012e6 100644
+--- a/agents/compute/fence_compute.py
++++ b/agents/compute/fence_compute.py
+@@ -365,7 +365,7 @@ def define_new_opts():
+ 	all_opt["project-domain"] = {
+ 		"getopt" : "P:",
+ 		"longopt" : "project-domain",
+-		"help" : "-d, --project-domain=[name]    Keystone v3 Project Domain",
++		"help" : "-P, --project-domain=[name]    Keystone v3 Project Domain",
+ 		"required" : "0",
+ 		"shortdesc" : "Keystone v3 Project Domain",
+ 		"default" : "Default",
+diff --git a/agents/evacuate/fence_evacuate.py b/agents/evacuate/fence_evacuate.py
+index 76e78b87..60bb130e 100644
+--- a/agents/evacuate/fence_evacuate.py
++++ b/agents/evacuate/fence_evacuate.py
+@@ -302,7 +302,7 @@ def define_new_opts():
+ 	all_opt["project-domain"] = {
+ 		"getopt" : "P:",
+ 		"longopt" : "project-domain",
+-		"help" : "-d, --project-domain=[name]    Keystone v3 Project Domain",
++		"help" : "-P, --project-domain=[name]    Keystone v3 Project Domain",
+ 		"required" : "0",
+ 		"shortdesc" : "Keystone v3 Project Domain",
+ 		"default" : "Default",
+diff --git a/tests/data/metadata/fence_compute.xml b/tests/data/metadata/fence_compute.xml
+index abc276ca..99d56af0 100644
+--- a/tests/data/metadata/fence_compute.xml
++++ b/tests/data/metadata/fence_compute.xml
+@@ -74,12 +74,12 @@
+ 		<shortdesc lang="en">Allow Insecure TLS Requests</shortdesc>
+ 	</parameter>
+ 	<parameter name="project-domain" unique="0" required="0" deprecated="1">
+-		<getopt mixed="-d, --project-domain=[name]" />
++		<getopt mixed="-P, --project-domain=[name]" />
+ 		<content type="string" default="Default"  />
+ 		<shortdesc lang="en">Keystone v3 Project Domain</shortdesc>
+ 	</parameter>
+ 	<parameter name="project_domain" unique="0" required="0" obsoletes="project-domain">
+-		<getopt mixed="-d, --project-domain=[name]" />
++		<getopt mixed="-P, --project-domain=[name]" />
+ 		<content type="string" default="Default"  />
+ 		<shortdesc lang="en">Keystone v3 Project Domain</shortdesc>
+ 	</parameter>
+diff --git a/tests/data/metadata/fence_evacuate.xml b/tests/data/metadata/fence_evacuate.xml
+index 7decb05c..8c720b80 100644
+--- a/tests/data/metadata/fence_evacuate.xml
++++ b/tests/data/metadata/fence_evacuate.xml
+@@ -74,12 +74,12 @@
+ 		<shortdesc lang="en">Allow Insecure TLS Requests</shortdesc>
+ 	</parameter>
+ 	<parameter name="project-domain" unique="0" required="0" deprecated="1">
+-		<getopt mixed="-d, --project-domain=[name]" />
++		<getopt mixed="-P, --project-domain=[name]" />
+ 		<content type="string" default="Default"  />
+ 		<shortdesc lang="en">Keystone v3 Project Domain</shortdesc>
+ 	</parameter>
+ 	<parameter name="project_domain" unique="0" required="0" obsoletes="project-domain">
+-		<getopt mixed="-d, --project-domain=[name]" />
++		<getopt mixed="-P, --project-domain=[name]" />
+ 		<content type="string" default="Default"  />
+ 		<shortdesc lang="en">Keystone v3 Project Domain</shortdesc>
+ 	</parameter>

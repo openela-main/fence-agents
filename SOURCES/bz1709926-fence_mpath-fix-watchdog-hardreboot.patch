@@ -1,0 +1,21 @@
+From e5c6c2e134fd397ffe3319adc7afb8b633a251b2 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Tue, 14 May 2019 16:44:59 +0200
+Subject: [PATCH] fence_mpath: import ctypes to fix watchdog hardreboot
+
+---
+ agents/mpath/fence_mpath.py | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/agents/mpath/fence_mpath.py b/agents/mpath/fence_mpath.py
+index d9ac2ef54..e4f598361 100644
+--- a/agents/mpath/fence_mpath.py
++++ b/agents/mpath/fence_mpath.py
+@@ -6,6 +6,7 @@
+ import os
+ import logging
+ import atexit
++import ctypes
+ sys.path.append("@FENCEAGENTSLIBDIR@")
+ from fencing import fail_usage, run_command, atexit_handler, check_input, process_input, show_docs
+ from fencing import fence_action, all_opt, run_delay

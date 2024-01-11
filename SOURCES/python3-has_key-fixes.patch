@@ -1,0 +1,74 @@
+From 29f93ed6f7f79cad801bf08ad9172c8a62183435 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Tue, 14 Aug 2018 12:33:41 +0200
+Subject: [PATCH] fence_compute/fence_evacuate/fence_rhevm: dont use has_key
+ (not supported in Python 3)
+
+---
+ agents/compute/fence_compute.py   | 4 ++--
+ agents/evacuate/fence_evacuate.py | 4 ++--
+ agents/rhevm/fence_rhevm.py       | 4 ++--
+ 3 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/agents/compute/fence_compute.py b/agents/compute/fence_compute.py
+index ec2d093c..254e2670 100644
+--- a/agents/compute/fence_compute.py
++++ b/agents/compute/fence_compute.py
+@@ -311,7 +311,7 @@ def create_nova_connection(options):
+ 					     region_name=options["--region-name"],
+ 					     endpoint_type=options["--endpoint-type"],
+ 					     session=keystone_session, auth=keystone_auth,
+-					     http_log_debug=options.has_key("--verbose"))
++					     http_log_debug="--verbose" in options)
+ 		else:
+ 			# OSP >= 11
+ 			# ArgSpec(args=['version'], varargs='args', keywords='kwargs', defaults=None)
+@@ -319,7 +319,7 @@ def create_nova_connection(options):
+ 					     region_name=options["--region-name"],
+ 					     endpoint_type=options["--endpoint-type"],
+ 					     session=keystone_session, auth=keystone_auth,
+-					     http_log_debug=options.has_key("--verbose"))
++					     http_log_debug="--verbose" in options)
+ 
+ 		try:
+ 			nova.hypervisors.list()
+diff --git a/agents/evacuate/fence_evacuate.py b/agents/evacuate/fence_evacuate.py
+index 615dede7..6818c44f 100644
+--- a/agents/evacuate/fence_evacuate.py
++++ b/agents/evacuate/fence_evacuate.py
+@@ -245,7 +245,7 @@ def create_nova_connection(options):
+ 					     region_name=options["--region-name"],
+ 					     endpoint_type=options["--endpoint-type"],
+ 					     session=keystone_session, auth=keystone_auth,
+-					     http_log_debug=options.has_key("--verbose"))
++					     http_log_debug="--verbose" in options)
+ 		else:
+ 			# OSP >= 11
+ 			# ArgSpec(args=['version'], varargs='args', keywords='kwargs', defaults=None)
+@@ -253,7 +253,7 @@ def create_nova_connection(options):
+ 					     region_name=options["--region-name"],
+ 					     endpoint_type=options["--endpoint-type"],
+ 					     session=keystone_session, auth=keystone_auth,
+-					     http_log_debug=options.has_key("--verbose"))
++					     http_log_debug="--verbose" in options)
+ 
+ 		try:
+ 			nova.hypervisors.list()
+diff --git a/agents/rhevm/fence_rhevm.py b/agents/rhevm/fence_rhevm.py
+index 0594e66b..c06b7c39 100644
+--- a/agents/rhevm/fence_rhevm.py
++++ b/agents/rhevm/fence_rhevm.py
+@@ -74,11 +74,11 @@ def send_command(opt, command, method="GET"):
+ 		url = "https:"
+ 	else:
+ 		url = "http:"
+-	if opt.has_key("--api-path"):
++	if "--api-path" in opt:
+ 		api_path = opt["--api-path"]
+ 	else:
+ 		api_path = "/ovirt-engine/api"
+-	if opt.has_key("--disable-http-filter"):
++	if "--disable-http-filter" in opt:
+ 		http_filter = 'false'
+ 	else:
+ 		http_filter = 'true'

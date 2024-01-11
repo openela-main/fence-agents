@@ -1,0 +1,22 @@
+From 753e126d0b642159b3e936de76a814f753f0d918 Mon Sep 17 00:00:00 2001
+From: Jeffrey Cutter <jcutter@redhat.com>
+Date: Mon, 16 Nov 2020 14:29:30 -0500
+Subject: [PATCH] fence_redfish: Fix typo in help.
+
+---
+ agents/redfish/fence_redfish.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/agents/redfish/fence_redfish.py b/agents/redfish/fence_redfish.py
+index c7c6492c6..1b259576e 100644
+--- a/agents/redfish/fence_redfish.py
++++ b/agents/redfish/fence_redfish.py
+@@ -102,7 +102,7 @@ def define_new_opts():
+     all_opt["redfish-uri"] = {
+         "getopt" : ":",
+         "longopt" : "redfish-uri",
+-        "help" : "--redfish-uri=[uri]            Base or starting Redifsh URI",
++        "help" : "--redfish-uri=[uri]            Base or starting Redfish URI",
+         "required" : "0",
+         "default" : "/redfish/v1",
+         "shortdesc" : "Base or starting Redfish URI",

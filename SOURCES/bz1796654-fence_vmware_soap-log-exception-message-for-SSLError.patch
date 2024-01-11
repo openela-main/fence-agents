@@ -1,0 +1,23 @@
+From 39e96371ab9ab1318db004c0ddbb1049d1c0f474 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Thu, 11 Jun 2020 10:25:34 +0200
+Subject: [PATCH] fence_vmware_soap: log exception message for SSLError
+ exception
+
+---
+ agents/vmware_soap/fence_vmware_soap.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/agents/vmware_soap/fence_vmware_soap.py b/agents/vmware_soap/fence_vmware_soap.py
+index 53e8d8f4..f2ab68b0 100644
+--- a/agents/vmware_soap/fence_vmware_soap.py
++++ b/agents/vmware_soap/fence_vmware_soap.py
+@@ -67,7 +67,7 @@ def soap_login(options):
+ 
+ 		conn.service.Login(mo_SessionManager, options["--username"], options["--password"])
+ 	except requests.exceptions.SSLError as ex:
+-		fail_usage("Server side certificate verification failed")
++		fail_usage("Server side certificate verification failed: %s" % ex)
+ 	except Exception:
+ 		fail(EC_LOGIN_DENIED)
+ 

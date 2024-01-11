@@ -1,0 +1,35 @@
+From a3d8ce78ed5687954847560f77daafe6474de33f Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Tue, 2 Nov 2021 09:44:33 +0100
+Subject: [PATCH] fence_kubevirt: set default power-timeout to 40s
+
+---
+ agents/kubevirt/fence_kubevirt.py      | 6 ++++++
+ tests/data/metadata/fence_kubevirt.xml | 2 +-
+ 2 files changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/agents/kubevirt/fence_kubevirt.py b/agents/kubevirt/fence_kubevirt.py
+index 61ffcaa09..8392b75a0 100755
+--- a/agents/kubevirt/fence_kubevirt.py
++++ b/agents/kubevirt/fence_kubevirt.py
+@@ -2,6 +2,7 @@
+ 
+ import sys
+ import logging
++import atexit
+ sys.path.append("@FENCEAGENTSLIBDIR@")
+ from fencing import *
+ from fencing import fail, fail_usage, run_delay, EC_STATUS, EC_FETCH_VM_UUID
+@@ -110,7 +111,12 @@ def main():
+     conn = None
+ 
+     device_opt = ["port", "namespace", "kubeconfig", "ssl_insecure", "no_password", "apiversion"]
++
++    atexit.register(atexit_handler)
+     define_new_opts()
++
++    all_opt["power_timeout"]["default"] = "40"
++
+     options = check_input(device_opt, process_input(device_opt))
+ 
+     docs = {}

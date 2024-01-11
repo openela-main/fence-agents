@@ -1,0 +1,232 @@
+From 15635df9d12ce693f473d5ebcd5b7cacb81e2295 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Mon, 16 Jul 2018 11:14:16 +0200
+Subject: [PATCH] fence_compute/fence_evacuate: workaround for compute-domain
+ regression
+
+---
+ agents/compute/fence_compute.py        | 24 +++++++++++++++++++-----
+ agents/evacuate/fence_evacuate.py      | 24 +++++++++++++++++++-----
+ tests/data/metadata/fence_compute.xml  | 24 ++++++++++++++++++++++--
+ tests/data/metadata/fence_evacuate.xml | 24 ++++++++++++++++++++++--
+ 4 files changed, 82 insertions(+), 14 deletions(-)
+
+diff --git a/agents/compute/fence_compute.py b/agents/compute/fence_compute.py
+index ec2d093c..aac9b296 100644
+--- a/agents/compute/fence_compute.py
++++ b/agents/compute/fence_compute.py
+@@ -353,7 +353,7 @@ def define_new_opts():
+ 		"default" : "",
+ 		"order": 1,
+ 	}
+-	all_opt["user_domain"] = {
++	all_opt["user-domain"] = {
+ 		"getopt" : "u:",
+ 		"longopt" : "user-domain",
+ 		"help" : "-u, --user-domain=[name]       Keystone v3 User Domain",
+@@ -362,7 +362,7 @@ def define_new_opts():
+ 		"default" : "Default",
+ 		"order": 2,
+ 	}
+-	all_opt["project_domain"] = {
++	all_opt["project-domain"] = {
+ 		"getopt" : "P:",
+ 		"longopt" : "project-domain",
+ 		"help" : "-d, --project-domain=[name]    Keystone v3 Project Domain",
+@@ -433,6 +433,14 @@ def define_new_opts():
+ 		"default" : "False",
+ 		"order": 5,
+ 	}
++	all_opt["compute-domain"] = {
++		"getopt" : ":",
++		"longopt" : "compute-domain",
++		"help" : "--compute-domain=[string]      Replaced by --domain",
++		"required" : "0",
++		"shortdesc" : "Replaced by domain",
++		"order": 6,
++	}
+ 
+ def set_multi_power_fn(connection, options, set_power_fn, get_power_fn, retry_attempts=1):
+ 	for _ in range(retry_attempts):
+@@ -450,9 +458,10 @@ def main():
+ 	global override_status
+ 	atexit.register(atexit_handler)
+ 
+-	device_opt = ["login", "passwd", "tenant_name", "auth_url", "fabric_fencing",
+-		      "no_login", "no_password", "port", "domain", "project_domain", "user_domain",
+-		      "no_shared_storage", "endpoint_type", "record_only", "instance_filtering", "insecure", "region_name"]
++	device_opt = ["login", "passwd", "tenant_name", "auth_url", "fabric_fencing", "no_login",
++			"no_password", "port", "domain", "compute-domain", "project-domain",
++			"user-domain", "no_shared_storage", "endpoint_type", "record_only",
++			"instance_filtering", "insecure", "region_name"]
+ 	define_new_opts()
+ 	all_opt["shell_timeout"]["default"] = "180"
+ 
+@@ -470,6 +479,11 @@ def main():
+ 
+ 	run_delay(options)
+ 
++	# workaround to avoid regressions
++	if "--compute-domain" in options and options["--compute-domain"]:
++		options["--domain"] = options["--compute-domain"]
++		del options["--domain"]
++
+ 	logging.debug("Running "+options["--action"])
+ 	connection = create_nova_connection(options)
+ 
+diff --git a/agents/evacuate/fence_evacuate.py b/agents/evacuate/fence_evacuate.py
+index 615dede7..529a60dd 100644
+--- a/agents/evacuate/fence_evacuate.py
++++ b/agents/evacuate/fence_evacuate.py
+@@ -287,7 +287,7 @@ def define_new_opts():
+ 		"default" : "",
+ 		"order": 1,
+ 	}
+-	all_opt["user_domain"] = {
++	all_opt["user-domain"] = {
+ 		"getopt" : "u:",
+ 		"longopt" : "user-domain",
+ 		"help" : "-u, --user-domain=[name]       Keystone v3 User Domain",
+@@ -296,7 +296,7 @@ def define_new_opts():
+ 		"default" : "Default",
+ 		"order": 2,
+ 	}
+-	all_opt["project_domain"] = {
++	all_opt["project-domain"] = {
+ 		"getopt" : "P:",
+ 		"longopt" : "project-domain",
+ 		"help" : "-d, --project-domain=[name]    Keystone v3 Project Domain",
+@@ -358,14 +358,22 @@ def define_new_opts():
+ 		"default" : "False",
+ 		"order": 5,
+ 	}
++	all_opt["compute-domain"] = {
++		"getopt" : ":",
++		"longopt" : "compute-domain",
++		"help" : "--compute-domain=[string]      Replaced by --domain",
++		"required" : "0",
++		"shortdesc" : "Replaced by domain",
++		"order": 6,
++	}
+ 
+ def main():
+ 	atexit.register(atexit_handler)
+ 
+ 	device_opt = ["login", "passwd", "tenant_name", "auth_url",
+-		      "no_login", "no_password", "port", "domain", "project_domain",
+-		      "user_domain", "no_shared_storage", "endpoint_type",
+-		      "instance_filtering", "insecure", "region_name"]
++		      "no_login", "no_password", "port", "domain", "compute-domain",
++		      "project-domain", "user-domain", "no_shared_storage",
++		      "endpoint_type", "instance_filtering", "insecure", "region_name"]
+ 	define_new_opts()
+ 	all_opt["shell_timeout"]["default"] = "180"
+ 
+@@ -380,6 +388,12 @@ def main():
+ 
+ 	run_delay(options)
+ 
++	# workaround to avoid regressions
++	if "--compute-domain" in options and options["--compute-domain"]:
++		options["--domain"] = options["--compute-domain"]
++		del options["--domain"]
++
++
+ 	connection = create_nova_connection(options)
+ 
+ 	# Un-evacuating a server doesn't make sense
+diff --git a/tests/data/metadata/fence_compute.xml b/tests/data/metadata/fence_compute.xml
+index e1dac97c..1dcbfc54 100644
+--- a/tests/data/metadata/fence_compute.xml
++++ b/tests/data/metadata/fence_compute.xml
+@@ -73,12 +73,22 @@
+ 		<content type="boolean" default="False"  />
+ 		<shortdesc lang="en">Allow Insecure TLS Requests</shortdesc>
+ 	</parameter>
+-	<parameter name="project_domain" unique="0" required="0">
++	<parameter name="project-domain" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-d, --project-domain=[name]" />
+ 		<content type="string" default="Default"  />
+ 		<shortdesc lang="en">Keystone v3 Project Domain</shortdesc>
+ 	</parameter>
+-	<parameter name="user_domain" unique="0" required="0">
++	<parameter name="project_domain" unique="0" required="0" obsoletes="project-domain">
++		<getopt mixed="-d, --project-domain=[name]" />
++		<content type="string" default="Default"  />
++		<shortdesc lang="en">Keystone v3 Project Domain</shortdesc>
++	</parameter>
++	<parameter name="user-domain" unique="0" required="0" deprecated="1">
++		<getopt mixed="-u, --user-domain=[name]" />
++		<content type="string" default="Default"  />
++		<shortdesc lang="en">Keystone v3 User Domain</shortdesc>
++	</parameter>
++	<parameter name="user_domain" unique="0" required="0" obsoletes="user-domain">
+ 		<getopt mixed="-u, --user-domain=[name]" />
+ 		<content type="string" default="Default"  />
+ 		<shortdesc lang="en">Keystone v3 User Domain</shortdesc>
+@@ -103,6 +113,16 @@
+ 		<content type="string" default="False"  />
+ 		<shortdesc lang="en">Only record the target as needing evacuation</shortdesc>
+ 	</parameter>
++	<parameter name="compute-domain" unique="0" required="0" deprecated="1">
++		<getopt mixed="--compute-domain=[string]" />
++		<content type="string"  />
++		<shortdesc lang="en">Replaced by domain</shortdesc>
++	</parameter>
++	<parameter name="compute_domain" unique="0" required="0" obsoletes="compute-domain">
++		<getopt mixed="--compute-domain=[string]" />
++		<content type="string"  />
++		<shortdesc lang="en">Replaced by domain</shortdesc>
++	</parameter>
+ 	<parameter name="quiet" unique="0" required="0">
+ 		<getopt mixed="-q, --quiet" />
+ 		<content type="boolean"  />
+diff --git a/tests/data/metadata/fence_evacuate.xml b/tests/data/metadata/fence_evacuate.xml
+index 6f8bd0a4..4f1f6a58 100644
+--- a/tests/data/metadata/fence_evacuate.xml
++++ b/tests/data/metadata/fence_evacuate.xml
+@@ -73,12 +73,22 @@
+ 		<content type="boolean" default="False"  />
+ 		<shortdesc lang="en">Allow Insecure TLS Requests</shortdesc>
+ 	</parameter>
+-	<parameter name="project_domain" unique="0" required="0">
++	<parameter name="project-domain" unique="0" required="0" deprecated="1">
+ 		<getopt mixed="-d, --project-domain=[name]" />
+ 		<content type="string" default="Default"  />
+ 		<shortdesc lang="en">Keystone v3 Project Domain</shortdesc>
+ 	</parameter>
+-	<parameter name="user_domain" unique="0" required="0">
++	<parameter name="project_domain" unique="0" required="0" obsoletes="project-domain">
++		<getopt mixed="-d, --project-domain=[name]" />
++		<content type="string" default="Default"  />
++		<shortdesc lang="en">Keystone v3 Project Domain</shortdesc>
++	</parameter>
++	<parameter name="user-domain" unique="0" required="0" deprecated="1">
++		<getopt mixed="-u, --user-domain=[name]" />
++		<content type="string" default="Default"  />
++		<shortdesc lang="en">Keystone v3 User Domain</shortdesc>
++	</parameter>
++	<parameter name="user_domain" unique="0" required="0" obsoletes="user-domain">
+ 		<getopt mixed="-u, --user-domain=[name]" />
+ 		<content type="string" default="Default"  />
+ 		<shortdesc lang="en">Keystone v3 User Domain</shortdesc>
+@@ -98,6 +108,16 @@
+ 		<content type="boolean" default="False"  />
+ 		<shortdesc lang="en">Disable functionality for dealing with shared storage</shortdesc>
+ 	</parameter>
++	<parameter name="compute-domain" unique="0" required="0" deprecated="1">
++		<getopt mixed="--compute-domain=[string]" />
++		<content type="string"  />
++		<shortdesc lang="en">Replaced by domain</shortdesc>
++	</parameter>
++	<parameter name="compute_domain" unique="0" required="0" obsoletes="compute-domain">
++		<getopt mixed="--compute-domain=[string]" />
++		<content type="string"  />
++		<shortdesc lang="en">Replaced by domain</shortdesc>
++	</parameter>
+ 	<parameter name="quiet" unique="0" required="0">
+ 		<getopt mixed="-q, --quiet" />
+ 		<content type="boolean"  />
+-- 
+2.17.1
+

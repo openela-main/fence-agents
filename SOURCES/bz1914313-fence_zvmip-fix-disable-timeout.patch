@@ -1,0 +1,23 @@
+From 900afe24edf0f400e9f1ed9b4df66e62cfee380e Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Fri, 8 Jan 2021 16:16:59 +0100
+Subject: [PATCH] fence_zvmip: fix shell-timeout when using new disable-timeout
+ parameter
+
+---
+ agents/zvm/fence_zvmip.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/agents/zvm/fence_zvmip.py b/agents/zvm/fence_zvmip.py
+index 5b272bb9..001106a4 100644
+--- a/agents/zvm/fence_zvmip.py
++++ b/agents/zvm/fence_zvmip.py
+@@ -28,7 +28,7 @@ def open_socket(options):
+ 
+ 	conn = socket.socket()
+ 	conn.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+-	conn.settimeout(float(options["--shell-timeout"]))
++	conn.settimeout(float(options["--shell-timeout"]) or None)
+ 	try:
+ 		conn.connect(addr)
+ 	except socket.error:

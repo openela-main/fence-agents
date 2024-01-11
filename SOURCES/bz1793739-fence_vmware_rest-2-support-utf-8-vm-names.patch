@@ -1,0 +1,38 @@
+From 80aea3942aaca881349230a32b5dcc06c57de98a Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Tue, 19 May 2020 15:10:16 +0200
+Subject: [PATCH] fence_vmware_rest: support UTF-8 VM names
+
+---
+ agents/vmware_rest/fence_vmware_rest.py | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/agents/vmware_rest/fence_vmware_rest.py b/agents/vmware_rest/fence_vmware_rest.py
+index 675de246..a038a096 100644
+--- a/agents/vmware_rest/fence_vmware_rest.py
++++ b/agents/vmware_rest/fence_vmware_rest.py
+@@ -8,11 +8,14 @@
+ from fencing import *
+ from fencing import fail, run_delay, EC_LOGIN_DENIED, EC_STATUS
+ 
++if sys.version_info[0] > 2: import urllib.parse as urllib
++else: import urllib
++
+ state = {"POWERED_ON": "on", 'POWERED_OFF': "off", 'SUSPENDED': "off"}
+ 
+ def get_power_status(conn, options):
+ 	try:
+-		res = send_command(conn, "vcenter/vm?filter.names={}".format(options["--plug"]))["value"]
++		res = send_command(conn, "vcenter/vm?filter.names={}".format(urllib.quote(options["--plug"])))["value"]
+ 	except Exception as e:
+ 		logging.debug("Failed: {}".format(e))
+ 		fail(EC_STATUS)
+@@ -58,7 +61,7 @@ def get_list(conn, options):
+ 			fail(EC_STATUS)
+ 
+ 	for r in res["value"]:
+-		outlets[r["name"]] = ("", state[r["power_state"]])
++		outlets[r["name"].encode("UTF-8")] = ("", state[r["power_state"]])
+ 
+ 	return outlets
+ 
