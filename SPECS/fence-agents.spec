@@ -7,7 +7,6 @@
 ## global alphatag git0a6184070
 
 # bundles
-%global bundled_lib_dir    bundled
 # azure
 %global oauthlib		oauthlib
 %global oauthlib_version	3.2.2
@@ -60,7 +59,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.10.0
-Release: 43%{?alphatag:.%{alphatag}}%{?dist}
+Release: 55%{?alphatag:.%{alphatag}}%{?dist}
 License: GPLv2+ and LGPLv2+
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
@@ -231,6 +230,17 @@ Patch36: bz2149655-fence_virtd-update-fence_virt.conf-manpage.patch
 Patch37: bz2160480-fence_scsi-fix-validate-all.patch
 Patch38: bz2152107-fencing-1-add-plug_separator.patch
 Patch39: bz2152107-fencing-2-update-DEPENDENCY_OPT.patch
+Patch40: bz2183162-fence_aws-1-add-skip-race-check-parameter.patch
+Patch41: bz2183162-fence_aws-2-fail-when-power-action-request-fails.patch
+Patch42: bz2187327-fence_scsi-1-detect-devices-in-shared-vgs.patch
+Patch43: bz2187327-fence_scsi-2-support-space-separated-devices.patch
+Patch44: bz2211930-fence_azure-arm-stack-hub-support.patch
+Patch45: bz2221643-fence_ibm_powervs-performance-improvements.patch
+Patch46: bz2224267-fence_ipmilan-fix-typos-in-metadata.patch
+
+### HA support libs/utils ###
+Patch1000: bz2217902-1-aws-awscli-azure-fix-bundled-dateutil-CVE-2007-4559.patch
+Patch1001: bz2217902-2-kubevirt-fix-bundled-dateutil-CVE-2007-4559.patch
 
 %global supportedagents amt_ws apc apc_snmp bladecenter brocade cisco_mds cisco_ucs compute drac5 eaton_snmp emerson eps evacuate hpblade ibmblade ibm_powervs ibm_vpc ifmib ilo ilo_moonshot ilo_mp ilo_ssh intelmodular ipdu ipmilan kdump kubevirt lpar mpath redfish rhevm rsa rsb sbd scsi vmware_rest vmware_soap wti
 %ifarch x86_64
@@ -381,6 +391,13 @@ BuildRequires: %{systemd_units}
 %patch37 -p1
 %patch38 -p1
 %patch39 -p1
+%patch40 -p1
+%patch41 -p1
+%patch42 -p1
+%patch43 -p1
+%patch44 -p1
+%patch45 -p1
+%patch46 -p1
 
 # prevent compilation of something that won't get used anyway
 sed -i.orig 's|FENCE_ZVM=1|FENCE_ZVM=0|' configure.ac
@@ -411,6 +428,23 @@ sed -i -e "/^#\!\/Users/c#\!%{__python3}" support/aws/bin/jp support/aliyun/bin/
 sed -i -e "/^import awscli.clidriver/isys.path.insert(0, '/usr/lib/%{name}/support/awscli')" support/awscli/bin/aws
 %endif
 
+# regular patch doesnt work in build-section
+# Patch1000
+%ifarch x86_64
+pushd support
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{_sourcedir}/bz2217902-1-aws-awscli-azure-fix-bundled-dateutil-CVE-2007-4559.patch
+popd
+%endif
+
+# kubevirt
+%{__python3} -m pip install --user --no-index --find-links %{_sourcedir} setuptools-scm
+%{__python3} -m pip install --target support/kubevirt --no-index --find-links %{_sourcedir} openshift
+rm -rf kubevirt/rsa*
+# Patch1001
+pushd support
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{_sourcedir}/bz2217902-2-kubevirt-fix-bundled-dateutil-CVE-2007-4559.patch
+popd
+
 ./autogen.sh
 %{configure} --disable-libvirt-qmf-plugin PYTHONPATH="support/aliyun:support/aws:support/azure:support/google:support/common" \
 %if %{defined _tmpfilesdir}
@@ -439,11 +473,6 @@ install -m 0644 agents/virt/fence_virtd.service %{buildroot}/%{_unitdir}/
 %py_byte_compile %{__python3} %{buildroot}%{_datadir}/fence
 %endif
 # XXX unsure if /usr/sbin/fence_* should be compiled as well
-
-# kubevirt
-%{__python3} -m pip install --user --no-index --find-links %{_sourcedir} setuptools-scm
-%{__python3} -m pip install --target %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}/kubevirt --no-index --find-links %{_sourcedir} openshift
-rm -rf %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}/kubevirt/rsa*
 
 ## tree fix up
 # fix libfence permissions
@@ -613,6 +642,7 @@ Support libraries for Fence Agents.
 %dir %{_usr}/lib/%{name}
 %{_usr}/lib/%{name}/support
 %exclude %{_usr}/lib/%{name}/support/common
+%exclude %{_usr}/lib/%{name}/support/kubevirt
 %endif
 
 %package all
@@ -1148,7 +1178,7 @@ Fence agent for KubeVirt platform.
 %{_sbindir}/fence_kubevirt
 %{_mandir}/man8/fence_kubevirt.8*
 # bundled libraries
-/usr/lib/fence-agents/%{bundled_lib_dir}/kubevirt
+%{_usr}/lib/%{name}/support/kubevirt
 
 %package lpar
 License: GPLv2+ and LGPLv2+
@@ -1447,6 +1477,29 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
+* Thu Aug  3 2023 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-55
+- bundled dateutil: fix tarfile CVE-2007-4559
+  Resolves: rhbz#2217902
+- fence_ipmilan: fix typos in metadata
+  Resolves: rhbz#2224267
+
+* Tue Jul 11 2023 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-48
+- fence_ibm_powervs: performance improvements
+  Resolves: rhbz#2221643
+
+* Tue Jun 20 2023 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-47
+- fence_azure_arm: add Stack Hub support
+  Resolves: rhbz#2211930
+
+* Thu May  4 2023 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-46
+- fence_scsi: detect devices in shared VGs
+  Resolves: rhbz#2187327
+
+* Wed May  3 2023 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-45
+- fence_aws: add --skip-race-check parameter to allow running outside
+  of AWS network
+  Resolves: rhbz#2183162
+
 * Thu Jan 26 2023 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-43
 - fence_vmware_soap: set login_timeout lower than default
   pcmk_monitor_timeout (20s) to remove tmp dirs

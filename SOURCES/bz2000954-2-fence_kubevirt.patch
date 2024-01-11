@@ -11,7 +11,7 @@
 +from fencing import fail, fail_usage, run_delay, EC_STATUS, EC_FETCH_VM_UUID
  
  try:
-+    sys.path.insert(0, '/usr/lib/fence-agents/bundled/kubevirt')
++    sys.path.insert(0, '/usr/lib/fence-agents/support/kubevirt')
      from kubernetes.client.exceptions import ApiException
  except ImportError:
      logging.error("Couldn\'t import kubernetes.client.exceptions.ApiException - not found or not accessible")
