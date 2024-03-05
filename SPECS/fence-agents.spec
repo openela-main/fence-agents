@@ -11,7 +11,7 @@
 # alibaba
 # python-pycryptodome bundle
 %global pycryptodome		pycryptodome
-%global pycryptodome_version	3.6.4
+%global pycryptodome_version	3.20.0
 %global pycryptodome_dir	%{bundled_lib_dir}/aliyun/%{pycryptodome}
 # python-aliyun-sdk-core bundle
 %global aliyunsdkcore		aliyun-python-sdk-core
@@ -44,7 +44,7 @@
 %global kubernetes		kubernetes
 %global kubernetes_version	12.0.1
 %global certifi			certifi
-%global certifi_version		2021.10.8
+%global certifi_version		2023.7.22
 %global googleauth		google-auth
 %global googleauth_version	2.3.0
 %global cachetools		cachetools
@@ -59,10 +59,10 @@
 %global pyyaml_version		6.0
 %global six			six
 %global six_version		1.16.0
-%global urllib3			urllib3
-%global urllib3_version		1.26.7
-%global websocketclient		websocket-client
-%global websocketclient_version	1.2.1
+%global urllib3 		urllib3
+%global urllib3_version 	1.26.18
+%global websocketclient 	websocket-client
+%global websocketclient_version 1.2.1
 %global jinja2			Jinja2
 %global jinja2_version		3.0.2
 %global markupsafe		MarkupSafe
@@ -87,7 +87,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.2.1
-Release: 121%{?alphatag:.%{alphatag}}%{?dist}
+Release: 121%{?alphatag:.%{alphatag}}%{?dist}.4
 License: GPLv2+ and LGPLv2+
 Group: System Environment/Base
 URL: https://github.com/ClusterLabs/fence-agents
@@ -276,8 +276,11 @@ Patch133: bz2211460-fence_azure-arm-2-metadata-endpoint-error-message.patch
 Patch134: bz2155453-fence_ibm_powervs-performance-improvements.patch
 
 ### HA support libs/utils ###
-Patch1000: bz2218234-1-aws-fix-bundled-dateutil-CVE-2007-4559.patch
-Patch1001: bz2218234-2-kubevirt-fix-bundled-dateutil-CVE-2007-4559.patch
+# all archs
+Patch1000: bz2218234-1-kubevirt-fix-bundled-dateutil-CVE-2007-4559.patch
+Patch1001: RHEL-22179-kubevirt-fix-bundled-jinja2-CVE-2024-22195.patch
+# cloud (x86_64 only)
+Patch2000: bz2218234-2-aws-fix-bundled-dateutil-CVE-2007-4559.patch
 
 %if 0%{?fedora} || 0%{?rhel} > 7
 %global supportedagents amt_ws apc apc_snmp bladecenter brocade cisco_mds cisco_ucs compute drac5 eaton_snmp emerson eps evacuate hds_cb hpblade ibmblade ibm_powervs ibm_vpc ifmib ilo ilo_moonshot ilo_mp ilo_ssh intelmodular ipdu ipmilan kdump kubevirt lpar mpath redfish rhevm rsa rsb sbd scsi vmware_rest vmware_soap wti
@@ -594,20 +597,20 @@ popd
 %{__python3} -m pip install --user --no-index --find-links %{_sourcedir} jmespath
 %{__python3} -m pip install --target %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}/aws --no-index --find-links %{_sourcedir} botocore
 %{__python3} -m pip install --target %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}/aws --no-index --find-links %{_sourcedir} requests
-
-# regular patch doesnt work in install-section
-# Patch1000
-pushd %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}
-/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{_sourcedir}/bz2218234-1-aws-fix-bundled-dateutil-CVE-2007-4559.patch
-popd
 %endif
 
 # kubevirt
 %{__python3} -m pip install --target %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}/kubevirt --no-index --find-links %{_sourcedir} openshift
 rm -rf %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}/kubevirt/rsa*
-# Patch1001
+
+# regular patch doesnt work in build-section
 pushd %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}
-/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{_sourcedir}/bz2218234-2-kubevirt-fix-bundled-dateutil-CVE-2007-4559.patch
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1000}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=1 < %{PATCH1001}
+
+%ifarch x86_64
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2000}
+%endif
 popd
 
 ## tree fix up
@@ -1497,6 +1500,22 @@ Fence agent for IBM z/VM over IP.
 %endif
 
 %changelog
+* Mon Jan 22 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-121.4
+- bundled urllib3: fix CVE-2023-45803
+  Resolves: RHEL-21719
+- bundled pycryptodome: fix CVE-2023-52323
+  Resolves: RHEL-21727
+- bundled jinja2: fix CVE-2024-22195
+  Resolves: RHEL-22179
+
+* Fri Oct 13 2023 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-121.2
+- bundled urllib3: fix CVE-2023-43804
+  Resolves: RHEL-12434
+
+* Wed Sep 27 2023 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-121.1
+- bundled certifi: fix CVE-2023-37920
+  Resolves: RHEL-9452
+
 * Thu Aug  3 2023 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-121
 - bundled dateutil: fix tarfile CVE-2007-4559
   Resolves: rhbz#2218234
