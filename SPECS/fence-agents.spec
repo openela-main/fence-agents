@@ -33,12 +33,12 @@
 %global pyyaml_version		5.1
 %global six			six
 %global six_version		1.16.0
-%global urllib3			urllib3
-%global urllib3_version		1.26.7
-%global websocketclient		websocket-client
-%global websocketclient_version	1.2.1
+%global urllib3 		urllib3
+%global urllib3_version 	1.26.18
+%global websocketclient 	websocket-client
+%global websocketclient_version 1.2.1
 %global jinja2			Jinja2
-%global jinja2_version		3.0.2
+%global jinja2_version		3.1.3
 %global markupsafe		MarkupSafe
 %global markupsafe_version	2.0.1
 %global stringutils		string-utils
@@ -59,7 +59,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.10.0
-Release: 55%{?alphatag:.%{alphatag}}%{?dist}.2
+Release: 55%{?alphatag:.%{alphatag}}%{?dist}.3
 License: GPLv2+ and LGPLv2+
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
@@ -83,7 +83,7 @@ Source1002: aliyuncli-2.1.10-py2.py3-none-any.whl
 Source1003: cffi-1.14.5-cp39-cp39-manylinux1_x86_64.whl
 Source1004: colorama-0.3.3.tar.gz
 Source1005: jmespath-0.7.1-py2.py3-none-any.whl
-Source1006: pycryptodome-3.10.1-cp35-abi3-manylinux2010_x86_64.whl
+Source1006: pycryptodome-3.20.0.tar.gz
 Source1007: pycparser-2.20-py2.py3-none-any.whl
 # awscli
 Source1008: awscrt-0.11.13-cp39-cp39-manylinux2014_x86_64.whl
@@ -100,7 +100,7 @@ Source1017: boto3-1.17.102-py2.py3-none-any.whl
 Source1018: botocore-1.20.102-py2.py3-none-any.whl
 Source1019: python_dateutil-2.8.1-py2.py3-none-any.whl
 Source1020: s3transfer-0.4.2-py2.py3-none-any.whl
-Source1021: urllib3-1.26.6-py2.py3-none-any.whl
+Source1021: urllib3-1.26.18.tar.gz
 # azure
 Source1022: adal-1.2.7-py2.py3-none-any.whl
 Source1023: azure_common-1.1.27-py2.py3-none-any.whl
@@ -169,24 +169,23 @@ Source1078: %{pyyaml}-%{pyyaml_version}.tar.gz
 ## but gets removed to use cryptography lib instead
 Source1079: rsa-4.7.2.tar.gz
 Source1080: %{six}-%{six_version}.tar.gz
-Source1081: %{urllib3}-%{urllib3_version}.tar.gz
-Source1082: %{websocketclient}-%{websocketclient_version}.tar.gz
-Source1083: %{jinja2}-%{jinja2_version}.tar.gz
-Source1084: %{markupsafe}-%{markupsafe_version}.tar.gz
-Source1085: python-%{stringutils}-%{stringutils_version}.tar.gz
-Source1086: %{requests}-%{requests_version}.tar.gz
-Source1087: %{chrstnormalizer}-%{chrstnormalizer_version}.tar.gz
-Source1088: %{idna}-%{idna_version}.tar.gz
-Source1089: %{reqstsoauthlib}-%{reqstsoauthlib_version}.tar.gz
-Source1090: %{ruamelyaml}-%{ruamelyaml_version}.tar.gz
-Source1091: %{setuptools}-%{setuptools_version}.tar.gz
+Source1081: %{websocketclient}-%{websocketclient_version}.tar.gz
+Source1082: %{jinja2}-%{jinja2_version}.tar.gz
+Source1083: %{markupsafe}-%{markupsafe_version}.tar.gz
+Source1084: python-%{stringutils}-%{stringutils_version}.tar.gz
+Source1085: %{requests}-%{requests_version}.tar.gz
+Source1086: %{chrstnormalizer}-%{chrstnormalizer_version}.tar.gz
+Source1087: %{idna}-%{idna_version}.tar.gz
+Source1088: %{reqstsoauthlib}-%{reqstsoauthlib_version}.tar.gz
+Source1089: %{ruamelyaml}-%{ruamelyaml_version}.tar.gz
+Source1090: %{setuptools}-%{setuptools_version}.tar.gz
 ## required for installation
-Source1092: setuptools_scm-6.3.2.tar.gz
-Source1093: packaging-21.2-py3-none-any.whl
-Source1094: poetry-core-1.0.7.tar.gz
-Source1095: pyparsing-3.0.1.tar.gz
-Source1096: tomli-1.0.1.tar.gz
-Source1097: wheel-0.37.0-py2.py3-none-any.whl
+Source1091: setuptools_scm-6.3.2.tar.gz
+Source1092: packaging-21.2-py3-none-any.whl
+Source1093: poetry-core-1.0.7.tar.gz
+Source1094: pyparsing-3.0.1.tar.gz
+Source1095: tomli-1.0.1.tar.gz
+Source1096: wheel-0.37.0-py2.py3-none-any.whl
 ### END
 
 Patch0: ha-cloud-support-aliyun.patch
@@ -240,10 +239,8 @@ Patch46: bz2224267-fence_ipmilan-fix-typos-in-metadata.patch
 ### HA support libs/utils ###
 # all archs
 Patch1000: bz2217902-1-kubevirt-fix-bundled-dateutil-CVE-2007-4559.patch
-Patch1001: RHEL-12425-1-kubevirt-fix-bundled-urllib3-CVE-2023-43804.patch
 # cloud (x86_64 only)
 Patch2000: bz2217902-2-aws-awscli-azure-fix-bundled-dateutil-CVE-2007-4559.patch
-Patch2001: RHEL-12425-2-aws-awscli-azure-google-fix-bundled-urllib3-CVE-2023-43804.patch
 
 %global supportedagents amt_ws apc apc_snmp bladecenter brocade cisco_mds cisco_ucs compute drac5 eaton_snmp emerson eps evacuate hpblade ibmblade ibm_powervs ibm_vpc ifmib ilo ilo_moonshot ilo_mp ilo_ssh intelmodular ipdu ipmilan kdump kubevirt lpar mpath redfish rhevm rsa rsb sbd scsi vmware_rest vmware_soap wti
 %ifarch x86_64
@@ -439,11 +436,9 @@ rm -rf kubevirt/rsa*
 # regular patch doesnt work in build-section
 pushd support
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1000}
-/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH1001}
 
 %ifarch x86_64
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2000}
-/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH2001}
 %endif
 popd
 
@@ -576,7 +571,7 @@ Provides: bundled(aliyuncli) = 2.1.10
 Provides: bundled(python-cffi) = 1.14.5
 Provides: bundled(python-colorama) = 0.3.3
 Provides: bundled(python-jmespath) = 0.7.1
-Provides: bundled(python-pycryptodome) = 3.10.1
+Provides: bundled(python-pycryptodome) = 3.20.0
 Provides: bundled(python-pycparser) = 2.20
 # awscli
 Provides: bundled(awscli) = 2.2.15
@@ -594,7 +589,7 @@ Provides: bundled(python-boto3) = 1.17.102
 Provides: bundled(python-botocore) = 1.20.102
 Provides: bundled(python-dateutil) = 2.8.1
 Provides: bundled(python-s3transfer) = 0.4.2
-Provides: bundled(python-urllib3) = 1.26.6
+Provides: bundled(python-urllib3) = 1.26.18
 # azure
 Provides: bundled(python-adal) = 1.2.7
 Provides: bundled(python-azure-common) = 1.1.27
@@ -1479,6 +1474,14 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
+* Thu Jan 18 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-55.3
+- bundled urllib3: fix CVE-2023-45803
+  Resolves: RHEL-21714
+- bundled pycryptodome: fix CVE-2023-52323
+  Resolves: RHEL-21722
+- bundled jinja2: fix CVE-2024-22195
+  Resolves: RHEL-21736
+
 * Wed Oct 11 2023 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-55.2
 - bundled urllib3: fix CVE-2023-43804
   Resolves: RHEL-12425
