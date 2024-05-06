@@ -59,7 +59,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.10.0
-Release: 55%{?alphatag:.%{alphatag}}%{?dist}.3
+Release: 62%{?alphatag:.%{alphatag}}%{?dist}
 License: GPLv2+ and LGPLv2+
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
@@ -235,6 +235,12 @@ Patch43: bz2187327-fence_scsi-2-support-space-separated-devices.patch
 Patch44: bz2211930-fence_azure-arm-stack-hub-support.patch
 Patch45: bz2221643-fence_ibm_powervs-performance-improvements.patch
 Patch46: bz2224267-fence_ipmilan-fix-typos-in-metadata.patch
+Patch47: RHEL-5396-fence_scsi-1-fix-ISID-reg-handling.patch
+Patch48: RHEL-5396-fence_scsi-2-fix-ISID-reg-handling-off.patch
+Patch49: RHEL-14344-fence_zvmip-1-document-user-permissions.patch
+Patch50: RHEL-14030-1-all-agents-metadata-update-IO-Power-Network.patch
+Patch51: RHEL-14030-2-fence_cisco_mds-undo-metadata-change.patch
+Patch52: RHEL-14344-fence_zvmip-2-fix-manpage-formatting.patch
 
 ### HA support libs/utils ###
 # all archs
@@ -351,53 +357,59 @@ BuildRequires: %{systemd_units}
 
 %prep
 %setup -q -n %{name}-%{version}%{?rcver:%{rcver}}%{?numcomm:.%{numcomm}}%{?alphatag:-%{alphatag}}%{?dirty:-%{dirty}}
-%patch0 -p1
-%patch1 -p1
-%patch2 -p1
-%patch3 -p1
-%patch4 -p1
-%patch5 -p1
-%patch6 -p1
-%patch7 -p1
-%patch8 -p1
-%patch9 -p1
-%patch10 -p1
-%patch11 -p1
-%patch12 -p1
-%patch13 -p1
-%patch14 -p1 -F2
-%patch15 -p1 -F1
-%patch16 -p1
-%patch17 -p1
-%patch18 -p1
-%patch19 -p1
-%patch20 -p1
-%patch21 -p1
-%patch22 -p1
-%patch23 -p1
-%patch24 -p1
-%patch25 -p1
-%patch26 -p1
-%patch27 -p1
-%patch28 -p1
-%patch29 -p1
-%patch30 -p1
-%patch31 -p1
-%patch32 -p1
-%patch33 -p1
-%patch34 -p1
-%patch35 -p1
-%patch36 -p1
-%patch37 -p1
-%patch38 -p1
-%patch39 -p1
-%patch40 -p1
-%patch41 -p1
-%patch42 -p1
-%patch43 -p1
-%patch44 -p1
-%patch45 -p1
-%patch46 -p1
+%patch -p1 -P 0
+%patch -p1 -P 1
+%patch -p1 -P 2
+%patch -p1 -P 3
+%patch -p1 -P 4
+%patch -p1 -P 5
+%patch -p1 -P 6
+%patch -p1 -P 7
+%patch -p1 -P 8
+%patch -p1 -P 9
+%patch -p1 -P 10
+%patch -p1 -P 11
+%patch -p1 -P 12
+%patch -p1 -P 13
+%patch -p1 -P 14 -F2
+%patch -p1 -P 15 -F1
+%patch -p1 -P 16
+%patch -p1 -P 17
+%patch -p1 -P 18
+%patch -p1 -P 19
+%patch -p1 -P 20
+%patch -p1 -P 21
+%patch -p1 -P 22
+%patch -p1 -P 23
+%patch -p1 -P 24
+%patch -p1 -P 25
+%patch -p1 -P 26
+%patch -p1 -P 27
+%patch -p1 -P 28
+%patch -p1 -P 29
+%patch -p1 -P 30
+%patch -p1 -P 31
+%patch -p1 -P 32
+%patch -p1 -P 33
+%patch -p1 -P 34
+%patch -p1 -P 35
+%patch -p1 -P 36
+%patch -p1 -P 37
+%patch -p1 -P 38
+%patch -p1 -P 39
+%patch -p1 -P 40
+%patch -p1 -P 41
+%patch -p1 -P 42
+%patch -p1 -P 43
+%patch -p1 -P 44
+%patch -p1 -P 45
+%patch -p1 -P 46
+%patch -p1 -P 47
+%patch -p1 -P 48
+%patch -p1 -P 49
+%patch -p1 -P 50
+%patch -p1 -P 51
+%patch -p1 -P 52
 
 # prevent compilation of something that won't get used anyway
 sed -i.orig 's|FENCE_ZVM=1|FENCE_ZVM=0|' configure.ac
@@ -1474,21 +1486,32 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
-* Thu Jan 18 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-55.3
+* Thu Jan 18 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-62
 - bundled urllib3: fix CVE-2023-45803
-  Resolves: RHEL-21714
+  Resolves: RHEL-18139
 - bundled pycryptodome: fix CVE-2023-52323
-  Resolves: RHEL-21722
+  Resolves: RHEL-20917
 - bundled jinja2: fix CVE-2024-22195
-  Resolves: RHEL-21736
+  Resolves: RHEL-21345
 
-* Wed Oct 11 2023 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-55.2
+* Wed Jan  3 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-61
+- fence_zvmip: document required user permissions in metadata/manpage
+  Resolves: RHEL-14344
+
+* Mon Oct 23 2023 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-60
+- all agents: update metadata in non-I/O agents to Power or Network
+  fencing
+  Resolves: RHEL-14030
+
+* Wed Oct 11 2023 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-57
 - bundled urllib3: fix CVE-2023-43804
-  Resolves: RHEL-12425
+  Resolves: RHEL-11999
 
-* Thu Sep 28 2023 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-55.1
+* Wed Sep 27 2023 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-56
+- fence_scsi: fix registration handling if ISID conflicts
+  Resolves: RHEL-5396
 - bundled certifi: fix CVE-2023-37920
-  Resolves: RHEL-9455
+  Resolves: RHEL-9446
 
 * Thu Aug  3 2023 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-55
 - bundled dateutil: fix tarfile CVE-2007-4559
