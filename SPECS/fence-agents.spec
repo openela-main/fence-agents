@@ -87,7 +87,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.2.1
-Release: 121%{?alphatag:.%{alphatag}}%{?dist}.4
+Release: 129%{?alphatag:.%{alphatag}}%{?dist}
 License: GPLv2+ and LGPLv2+
 Group: System Environment/Base
 URL: https://github.com/ClusterLabs/fence-agents
@@ -274,11 +274,19 @@ Patch131: bz2187329-fence_scsi-2-support-space-separated-devices.patch
 Patch132: bz2211460-fence_azure-arm-1-stack-hub-support.patch
 Patch133: bz2211460-fence_azure-arm-2-metadata-endpoint-error-message.patch
 Patch134: bz2155453-fence_ibm_powervs-performance-improvements.patch
+Patch135: RHEL-14343-fence_zvmip-1-document-user-permissions.patch
+Patch136: RHEL-14031-1-all-agents-metadata-update-IO-Power-Network.patch
+Patch137: RHEL-14031-2-fence_cisco_mds-undo-metadata-change.patch
+Patch138: RHEL-5397-fence_scsi-1-fix-ISID-reg-handling.patch
+Patch139: RHEL-5397-fence_scsi-2-fix-ISID-reg-handling-off.patch
+Patch140: RHEL-5397-fence_scsi-3-fix-run_cmd.patch
+Patch141: RHEL-5397-4-fence_scsi-log-err.patch
+Patch142: RHEL-14343-fence_zvmip-2-fix-manpage-formatting.patch
 
 ### HA support libs/utils ###
 # all archs
 Patch1000: bz2218234-1-kubevirt-fix-bundled-dateutil-CVE-2007-4559.patch
-Patch1001: RHEL-22179-kubevirt-fix-bundled-jinja2-CVE-2024-22195.patch
+Patch1001: RHEL-22174-kubevirt-fix-bundled-jinja2-CVE-2024-22195.patch
 # cloud (x86_64 only)
 Patch2000: bz2218234-2-aws-fix-bundled-dateutil-CVE-2007-4559.patch
 
@@ -358,141 +366,149 @@ BuildRequires: python3-google-api-client python3-pip python3-wheel python3-jinja
 
 %prep
 %setup -q -n %{name}-%{version}
-%patch0 -p1
-%patch1 -p1
-%patch2 -p1
-%patch3 -p1
-%patch4 -p1
-%patch5 -p1
-%patch6 -p1
-%patch7 -p1
-%patch8 -p1
-%patch9 -p1
-%patch10 -p1
-%patch11 -p1
-%patch12 -p1
-%patch13 -p1
-%patch14 -p1
-%patch15 -p1
-%patch16 -p1
-%patch17 -p1
-%patch18 -p1
-%patch19 -p1
-%patch20 -p1
-%patch21 -p1
-%patch22 -p1
-%patch23 -p1
-%patch24 -p1
-%patch25 -p1
-%patch26 -p1
-%patch27 -p1
-%patch28 -p1
-%patch29 -p1
-%patch30 -p1 -F2
-%patch31 -p1 -F2
-%patch32 -p1
-%patch33 -p1
-%patch34 -p1
-%patch35 -p1
-%patch36 -p1 -F1
-%patch37 -p1
-%patch38 -p1
-%patch39 -p1
-%patch40 -p1 -F2
-%patch41 -p1
-%patch42 -p1
-%patch43 -p1
-%patch44 -p1
-%patch45 -p1
-%patch46 -p1
-%patch47 -p1
-%patch48 -p1 -F1
-%patch49 -p1
-%patch50 -p1
-%patch51 -p1
-%patch52 -p1
-%patch53 -p1
-%patch54 -p1
-%patch55 -p1
-%patch56 -p1
-%patch57 -p1
-%patch58 -p1
-%patch59 -p1
-%patch60 -p1 -F1
-%patch61 -p1
-%patch62 -p1
-%patch63 -p1
-%patch64 -p1
-%patch65 -p1 -F1
-%patch66 -p1
-%patch67 -p1
-%patch68 -p1
-%patch69 -p1
-%patch70 -p1
-%patch71 -p1
-%patch72 -p1
-%patch73 -p1
-%patch74 -p1
-%patch75 -p1
-%patch76 -p1
-%patch77 -p1
-%patch78 -p1
-%patch79 -p1
-%patch80 -p1
-%patch81 -p1
-%patch82 -p1
-%patch83 -p1
-%patch84 -p1
-%patch85 -p1
-%patch86 -p1 -F1
-%patch87 -p1
-%patch88 -p1
-%patch89 -p1
-%patch90 -p1
-%patch91 -p1
-%patch92 -p1
-%patch93 -p1
-%patch94 -p1
-%patch95 -p1
-%patch96 -p1 -F2
-%patch97 -p1
-%patch98 -p1
-%patch99 -p1
-%patch100 -p1
-%patch101 -p1
-%patch102 -p1
-%patch103 -p1
-%patch104 -p1 -F1
-%patch105 -p1
-%patch106 -p1
-%patch107 -p1
-%patch108 -p1
-%patch109 -p1
-%patch110 -p1
-%patch111 -p1
-%patch112 -p1
-%patch113 -p1
-%patch114 -p1
-%patch115 -p1
-%patch116 -p1
-%patch117 -p1
-%patch118 -p1
-%patch119 -p1
-%patch120 -p1
-%patch121 -p1
-%patch122 -p1 -F2
-%patch123 -p1
-%patch124 -p1
-%patch125 -p1
-%patch126 -p1
-%patch127 -p1
-%patch128 -p1 -F2
-%patch129 -p1
-%patch130 -p1
-%patch131 -p1
-%patch132 -p1
-%patch133 -p1
-%patch134 -p1
+%patch -p1 -P 0
+%patch -p1 -P 1
+%patch -p1 -P 2
+%patch -p1 -P 3
+%patch -p1 -P 4
+%patch -p1 -P 5
+%patch -p1 -P 6
+%patch -p1 -P 7
+%patch -p1 -P 8
+%patch -p1 -P 9
+%patch -p1 -P 10
+%patch -p1 -P 11
+%patch -p1 -P 12
+%patch -p1 -P 13
+%patch -p1 -P 14
+%patch -p1 -P 15
+%patch -p1 -P 16
+%patch -p1 -P 17
+%patch -p1 -P 18
+%patch -p1 -P 19
+%patch -p1 -P 20
+%patch -p1 -P 21
+%patch -p1 -P 22
+%patch -p1 -P 23
+%patch -p1 -P 24
+%patch -p1 -P 25
+%patch -p1 -P 26
+%patch -p1 -P 27
+%patch -p1 -P 28
+%patch -p1 -P 29
+%patch -p1 -P 30 -F2
+%patch -p1 -P 31 -F2
+%patch -p1 -P 32
+%patch -p1 -P 33
+%patch -p1 -P 34
+%patch -p1 -P 35
+%patch -p1 -P 36 -F1
+%patch -p1 -P 37
+%patch -p1 -P 38
+%patch -p1 -P 39
+%patch -p1 -P 40 -F2
+%patch -p1 -P 41
+%patch -p1 -P 42
+%patch -p1 -P 43
+%patch -p1 -P 44
+%patch -p1 -P 45
+%patch -p1 -P 46
+%patch -p1 -P 47
+%patch -p1 -P 48 -F1
+%patch -p1 -P 49
+%patch -p1 -P 50
+%patch -p1 -P 51
+%patch -p1 -P 52
+%patch -p1 -P 53
+%patch -p1 -P 54
+%patch -p1 -P 55
+%patch -p1 -P 56
+%patch -p1 -P 57
+%patch -p1 -P 58
+%patch -p1 -P 59
+%patch -p1 -P 60 -F1
+%patch -p1 -P 61
+%patch -p1 -P 62
+%patch -p1 -P 63
+%patch -p1 -P 64
+%patch -p1 -P 65 -F1
+%patch -p1 -P 66
+%patch -p1 -P 67
+%patch -p1 -P 68
+%patch -p1 -P 69
+%patch -p1 -P 70
+%patch -p1 -P 71
+%patch -p1 -P 72
+%patch -p1 -P 73
+%patch -p1 -P 74
+%patch -p1 -P 75
+%patch -p1 -P 76
+%patch -p1 -P 77
+%patch -p1 -P 78
+%patch -p1 -P 79
+%patch -p1 -P 80
+%patch -p1 -P 81
+%patch -p1 -P 82
+%patch -p1 -P 83
+%patch -p1 -P 84
+%patch -p1 -P 85
+%patch -p1 -P 86 -F1
+%patch -p1 -P 87
+%patch -p1 -P 88
+%patch -p1 -P 89
+%patch -p1 -P 90
+%patch -p1 -P 91
+%patch -p1 -P 92
+%patch -p1 -P 93
+%patch -p1 -P 94
+%patch -p1 -P 95
+%patch -p1 -P 96 -F2
+%patch -p1 -P 97
+%patch -p1 -P 98
+%patch -p1 -P 99
+%patch -p1 -P 100
+%patch -p1 -P 101
+%patch -p1 -P 102
+%patch -p1 -P 103
+%patch -p1 -P 104 -F1
+%patch -p1 -P 105
+%patch -p1 -P 106
+%patch -p1 -P 107
+%patch -p1 -P 108
+%patch -p1 -P 109
+%patch -p1 -P 110
+%patch -p1 -P 111
+%patch -p1 -P 112
+%patch -p1 -P 113
+%patch -p1 -P 114
+%patch -p1 -P 115
+%patch -p1 -P 116
+%patch -p1 -P 117
+%patch -p1 -P 118
+%patch -p1 -P 119
+%patch -p1 -P 120
+%patch -p1 -P 121
+%patch -p1 -P 122 -F2
+%patch -p1 -P 123
+%patch -p1 -P 124
+%patch -p1 -P 125
+%patch -p1 -P 126
+%patch -p1 -P 127
+%patch -p1 -P 128 -F2
+%patch -p1 -P 129
+%patch -p1 -P 130
+%patch -p1 -P 131
+%patch -p1 -P 132
+%patch -p1 -P 133
+%patch -p1 -P 134
+%patch -p1 -P 135
+%patch -p1 -P 136 -F2
+%patch -p1 -P 137
+%patch -p1 -P 138
+%patch -p1 -P 139 -F2
+%patch -p1 -P 140
+%patch -p1 -P 141
+%patch -p1 -P 142
 
 # prevent compilation of something that won't get used anyway
 sed -i.orig 's|FENCE_ZVM=1|FENCE_ZVM=0|' configure.ac
@@ -1500,21 +1516,32 @@ Fence agent for IBM z/VM over IP.
 %endif
 
 %changelog
-* Mon Jan 22 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-121.4
+* Fri Jan 19 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-129
 - bundled urllib3: fix CVE-2023-45803
-  Resolves: RHEL-21719
+  Resolves: RHEL-18132
 - bundled pycryptodome: fix CVE-2023-52323
-  Resolves: RHEL-21727
+  Resolves: RHEL-20915
 - bundled jinja2: fix CVE-2024-22195
-  Resolves: RHEL-22179
+  Resolves: RHEL-22174
 
-* Fri Oct 13 2023 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-121.2
+* Wed Jan  3 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-127
+- fence_scsi: fix registration handling if ISID conflicts
+  Resolves: RHEL-5397
+- fence_zvmip: document required user permissions in metadata/manpage
+  Resolves: RHEL-14343
+
+* Mon Oct 23 2023 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-125
+- all agents: update metadata in non-I/O agents to Power or Network
+  fencing
+  Resolves: RHEL-14031
+
+* Thu Oct 12 2023 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-123
 - bundled urllib3: fix CVE-2023-43804
-  Resolves: RHEL-12434
+  Resolves: RHEL-11988
 
-* Wed Sep 27 2023 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-121.1
+* Tue Sep 26 2023 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-122
 - bundled certifi: fix CVE-2023-37920
-  Resolves: RHEL-9452
+  Resolves: RHEL-6972
 
 * Thu Aug  3 2023 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-121
 - bundled dateutil: fix tarfile CVE-2007-4559
