@@ -59,7 +59,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.10.0
-Release: 62%{?alphatag:.%{alphatag}}%{?dist}
+Release: 62%{?alphatag:.%{alphatag}}%{?dist}.3
 License: GPLv2+ and LGPLv2+
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
@@ -135,14 +135,14 @@ Source1050: protobuf-3.17.3-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.whl
 Source1051: pyasn1-0.4.8-py2.py3-none-any.whl
 Source1052: pyasn1_modules-0.2.8-py2.py3-none-any.whl
 Source1053: pyparsing-2.4.7-py2.py3-none-any.whl
-Source1054: pyroute2-0.6.4.tar.gz
-Source1055: pyroute2.core-0.6.4.tar.gz
-Source1056: pyroute2.ethtool-0.6.4.tar.gz
-Source1057: pyroute2.ipdb-0.6.4.tar.gz
-Source1058: pyroute2.ipset-0.6.4.tar.gz
-Source1059: pyroute2.ndb-0.6.4.tar.gz
-Source1060: pyroute2.nftables-0.6.4.tar.gz
-Source1061: pyroute2.nslink-0.6.4.tar.gz
+Source1054: pyroute2-0.7.12.tar.gz
+Source1055: pyroute2.core-0.6.13.tar.gz
+Source1056: pyroute2.ethtool-0.6.13.tar.gz
+Source1057: pyroute2.ipdb-0.6.13.tar.gz
+Source1058: pyroute2.ipset-0.6.13.tar.gz
+Source1059: pyroute2.ndb-0.6.13.tar.gz
+Source1060: pyroute2.nftables-0.6.13.tar.gz
+Source1061: pyroute2.nslink-0.6.13.tar.gz
 Source1062: pytz-2021.1-py2.py3-none-any.whl
 Source1063: rsa-4.7.2-py3-none-any.whl
 Source1064: setuptools-57.0.0-py3-none-any.whl
@@ -241,10 +241,12 @@ Patch49: RHEL-14344-fence_zvmip-1-document-user-permissions.patch
 Patch50: RHEL-14030-1-all-agents-metadata-update-IO-Power-Network.patch
 Patch51: RHEL-14030-2-fence_cisco_mds-undo-metadata-change.patch
 Patch52: RHEL-14344-fence_zvmip-2-fix-manpage-formatting.patch
+Patch53: RHEL-35273-fence_eps-add-fence_epsr2-for-ePowerSwitch-R2-and-newer.patch
 
 ### HA support libs/utils ###
 # all archs
 Patch1000: bz2217902-1-kubevirt-fix-bundled-dateutil-CVE-2007-4559.patch
+Patch1001: RHEL-36482-kubevirt-fix-bundled-jinja2-CVE-2024-34064.patch
 # cloud (x86_64 only)
 Patch2000: bz2217902-2-aws-awscli-azure-fix-bundled-dateutil-CVE-2007-4559.patch
 
@@ -410,6 +412,7 @@ BuildRequires: %{systemd_units}
 %patch -p1 -P 50
 %patch -p1 -P 51
 %patch -p1 -P 52
+%patch -p1 -P 53 -F2
 
 # prevent compilation of something that won't get used anyway
 sed -i.orig 's|FENCE_ZVM=1|FENCE_ZVM=0|' configure.ac
@@ -448,6 +451,7 @@ rm -rf kubevirt/rsa*
 # regular patch doesnt work in build-section
 pushd support
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1000}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1001}
 
 %ifarch x86_64
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2000}
@@ -633,14 +637,14 @@ Provides: bundled(python-protobuf) = 3.17.3
 Provides: bundled(python-pyasn1) = 0.4.8
 Provides: bundled(python-pyasn1-modules) = 0.2.8
 Provides: bundled(python-pyparsing) = 2.4.7
-Provides: bundled(python-pyroute2) = 0.6.4
-Provides: bundled(python-pyroute2-core) = 0.6.4
-Provides: bundled(python-pyroute2-ethtool) = 0.6.4
-Provides: bundled(python-pyroute2-ipdb) = 0.6.4
-Provides: bundled(python-pyroute2-ipset) = 0.6.4
-Provides: bundled(python-pyroute2-ndb) = 0.6.4
-Provides: bundled(python-pyroute2-nftables) = 0.6.4
-Provides: bundled(python-pyroute2-nslink) = 0.6.4
+Provides: bundled(python-pyroute2) = 0.7.12
+Provides: bundled(python-pyroute2-core) = 0.6.13
+Provides: bundled(python-pyroute2-ethtool) = 0.6.13
+Provides: bundled(python-pyroute2-ipdb) = 0.6.13
+Provides: bundled(python-pyroute2-ipset) = 0.6.13
+Provides: bundled(python-pyroute2-ndb) = 0.6.13
+Provides: bundled(python-pyroute2-nftables) = 0.6.13
+Provides: bundled(python-pyroute2-nslink) = 0.6.13
 Provides: bundled(python-pytz) = 2021.1
 Provides: bundled(python-rsa) = 4.7.2
 Provides: bundled(python-setuptools) = 57.0.0
@@ -920,8 +924,8 @@ BuildArch: noarch
 Fence agent for ePowerSwitch 8M+ power switches that are accessed
 via the HTTP(s) protocol.
 %files eps
-%{_sbindir}/fence_eps
-%{_mandir}/man8/fence_eps.8*
+%{_sbindir}/fence_eps*
+%{_mandir}/man8/fence_eps*.8*
 
 %ifarch x86_64
 %package gce
@@ -1486,6 +1490,19 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
+* Thu May 16 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-62.3
+- bundled jinja2: fix CVE-2024-34064
+  Resolves: RHEL-36482
+
+* Fri May  3 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-62.2
+- fence_eps: add fence_epsr2 for ePowerSwitch R2 and newer
+  Resolves: RHEL-35273
+
+* Thu Mar 21 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-62.1
+- ha-cloud-support: upgrade bundled pyroute2 libs to fix issue in
+  gcp-vpc-move-route's stop-action
+  Resolves: RHEL-29668
+
 * Thu Jan 18 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-62
 - bundled urllib3: fix CVE-2023-45803
   Resolves: RHEL-18139
