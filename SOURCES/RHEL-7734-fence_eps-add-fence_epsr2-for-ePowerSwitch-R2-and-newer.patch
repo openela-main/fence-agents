@@ -1,0 +1,365 @@
+From 55451b6fd007e6f9a6d6860e95304b7c5c27cc1b Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Thu, 2 May 2024 15:10:16 +0200
+Subject: [PATCH 1/2] fencing: add support for docs["agent_name"] to use the
+ main agent name when generating manpages
+
+---
+ lib/fencing.py.py                 | 12 +++++++++---
+ tests/data/metadata/fence_eps.xml |  9 ++++++---
+ 2 files changed, 15 insertions(+), 6 deletions(-)
+
+diff --git a/lib/fencing.py.py b/lib/fencing.py.py
+index 511eb2689..66e2ff156 100644
+--- a/lib/fencing.py.py
++++ b/lib/fencing.py.py
+@@ -603,7 +603,7 @@ def usage(avail_opt):
+ 		if len(value["help"]) != 0:
+ 			print("   " + _join_wrap([value["help"]], first_indent=3))
+ 
+-def metadata(options, avail_opt, docs):
++def metadata(options, avail_opt, docs, agent_name=os.path.basename(sys.argv[0])):
+ 	# avail_opt has to be unique, if there are duplicities then they should be removed
+ 	sorted_list = [(key, all_opt[key]) for key in list(set(avail_opt)) if "longopt" in all_opt[key]]
+ 	# Find keys that are going to replace inconsistent names
+@@ -617,7 +617,7 @@ def metadata(options, avail_opt, docs):
+                docs["longdesc"] = re.sub(r"\\f[BPIR]|\.P|\.TP|\.br\n", r"", docs["longdesc"])
+ 
+ 	print("<?xml version=\"1.0\" ?>")
+-	print("<resource-agent name=\"" + os.path.basename(sys.argv[0]) + \
++	print("<resource-agent name=\"" + agent_name + \
+ 			"\" shortdesc=\"" + docs["shortdesc"] + "\" >")
+ 	for (symlink, desc) in docs.get("symlink", []):
+ 		print("<symlink name=\"" + symlink + "\" shortdesc=\"" + desc + "\"/>")
+@@ -928,9 +928,15 @@ def show_docs(options, docs=None):
+ 		sys.exit(0)
+ 
+ 	if options.get("--action", "") in ["metadata", "manpage"]:
++		if options["--action"] == "metadata" or "agent_name" not in docs:
++			agent_name=os.path.basename(sys.argv[0])
++		else:
++			agent_name=docs["agent_name"]
++
++
+ 		if "port_as_ip" in device_opt:
+ 			device_opt.remove("separator")
+-		metadata(options, device_opt, docs)
++		metadata(options, device_opt, docs, agent_name)
+ 		sys.exit(0)
+ 
+ 	if "--version" in options:
+diff --git a/tests/data/metadata/fence_eps.xml b/tests/data/metadata/fence_eps.xml
+index 3f9ebdc22..a3aeb1aea 100644
+--- a/tests/data/metadata/fence_eps.xml
++++ b/tests/data/metadata/fence_eps.xml
+@@ -1,9 +1,12 @@
+ <?xml version="1.0" ?>
+ <resource-agent name="fence_eps" shortdesc="Fence agent for ePowerSwitch" >
+-<longdesc>fence_eps is a Power Fencing agent which can be used with the ePowerSwitch 8M+ power switch to fence connected machines. Fence agent works ONLY on 8M+ device, because this is only one, which has support for hidden page feature. 
++<symlink name="fence_epsr2" shortdesc="Fence agent for ePowerSwitch R2 and newer"/>
++<longdesc>fence_eps is a Power Fencing agent which can be used with the ePowerSwitch 8M+ power switch to fence connected machines. It ONLY works on 8M+ devices, as they support the hidden page feature. 
+ 
+-Agent basically works by connecting to hidden page and pass appropriate arguments to GET request. This means, that hidden page feature must be enabled and properly configured.</longdesc>
+-<vendor-url>http://www.epowerswitch.com</vendor-url>
++The agent works by connecting to the hidden page and pass the appropriate arguments to GET request. This means, that the hidden page feature must be enabled and properly configured. 
++
++NOTE: In most cases you want to use fence_epsr2, as fence_eps only works with older hardware.</longdesc>
++<vendor-url>https://www.neol.com</vendor-url>
+ <parameters>
+ 	<parameter name="action" unique="0" required="1">
+ 		<getopt mixed="-o, --action=[action]" />
+
+From 639f5293e0b2c0153ea01bf37534b74f436dd630 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Tue, 13 Feb 2024 11:11:25 +0100
+Subject: [PATCH 2/2] fence_eps: add fence_epsr2 for ePowerSwitch R2 and newer
+
+---
+ agents/eps/fence_eps.py             |  46 ++++---
+ fence-agents.spec.in                |   4 +-
+ tests/data/metadata/fence_epsr2.xml | 178 ++++++++++++++++++++++++++++
+ 3 files changed, 211 insertions(+), 17 deletions(-)
+ create mode 100644 tests/data/metadata/fence_epsr2.xml
+
+diff --git a/agents/eps/fence_eps.py b/agents/eps/fence_eps.py
+index 81e439533..1e6bda099 100644
+--- a/agents/eps/fence_eps.py
++++ b/agents/eps/fence_eps.py
+@@ -3,8 +3,8 @@
+ # The Following Agent Has Been Tested On:
+ # ePowerSwitch 8M+ version 1.0.0.4
+ 
+-import sys, re
+-import base64, string, socket
++import sys, os, re
++import base64, socket
+ import logging
+ import atexit
+ sys.path.append("@FENCEAGENTSLIBDIR@")
+@@ -37,7 +37,7 @@ def eps_run_command(options, params):
+ 				options["--password"] = "" # Default is empty password
+ 
+ 			# String for Authorization header
+-			auth_str = 'Basic ' + string.strip(base64.encodestring(options["--username"]+':'+options["--password"]))
++			auth_str = 'Basic ' + str(base64.encodebytes(bytes(options["--username"]+':'+options["--password"], "utf-8")).decode("utf-8").strip())
+ 			logging.debug("Authorization: %s\n", auth_str)
+ 			conn.putheader('Authorization', auth_str)
+ 
+@@ -60,16 +60,22 @@ def eps_run_command(options, params):
+ 		logging.error("Failed: {}".format(str(e)))
+ 		fail(EC_LOGIN_DENIED)
+ 
+-	return result
++	return result.decode("utf-8", "ignore")
+ 
+ def get_power_status(conn, options):
+ 	del conn
+ 	ret_val = eps_run_command(options, "")
+ 
+ 	result = {}
+-	status = re.findall(r"p(\d{2})=(0|1)\s*\<br\>", ret_val.lower())
++	if os.path.basename(sys.argv[0]) == "fence_eps":
++		status = re.findall(r"p(\d{2})=(0|1)\s*\<br\>", ret_val.lower())
++	elif os.path.basename(sys.argv[0]) == "fence_epsr2":
++		status = re.findall(r"m0:o(\d)=(on|off)\s*", ret_val.lower())
+ 	for out_num, out_stat in status:
+-		result[out_num] = ("", (out_stat == "1" and "on" or "off"))
++		if os.path.basename(sys.argv[0]) == "fence_eps":
++			result[out_num] = ("", (out_stat == "1" and "on" or "off"))
++		elif os.path.basename(sys.argv[0]) == "fence_epsr2":
++			result[out_num] = ("", out_stat)
+ 
+ 	if not options["--action"] in ['monitor', 'list']:
+ 		if not options["--plug"] in result:
+@@ -81,7 +87,12 @@ def get_power_status(conn, options):
+ 
+ def set_power_status(conn, options):
+ 	del conn
+-	eps_run_command(options, "P%s=%s"%(options["--plug"], (options["--action"] == "on" and "1" or "0")))
++	if os.path.basename(sys.argv[0]) == "fence_eps":
++		eps_run_command(options, "P%s=%s"%(options["--plug"], (options["--action"] == "on" and "1" or "0")))
++	elif os.path.basename(sys.argv[0]) == "fence_epsr2":
++		if options["--action"] == "reboot":
++			options["--action"] = "off"
++		eps_run_command(options, "M0:O%s=%s"%(options["--plug"], options["--action"]))
+ 
+ # Define new option
+ def eps_define_new_opts():
+@@ -107,20 +118,25 @@ def main():
+ 	options = check_input(device_opt, process_input(device_opt))
+ 
+ 	docs = {}
++	docs["agent_name"] = "fence_eps"
+ 	docs["shortdesc"] = "Fence agent for ePowerSwitch"
+-	docs["longdesc"] = "fence_eps is a Power Fencing agent \
++	docs["longdesc"] = os.path.basename(sys.argv[0]) + " is a Power Fencing agent \
+ which can be used with the ePowerSwitch 8M+ power switch to fence \
+-connected machines. Fence agent works ONLY on 8M+ device, because \
+-this is only one, which has support for hidden page feature. \
++connected machines. It ONLY works on 8M+ devices, as \
++they support the hidden page feature. \
+ \n.TP\n\
+-Agent basically works by connecting to hidden page and pass \
+-appropriate arguments to GET request. This means, that hidden \
+-page feature must be enabled and properly configured."
+-	docs["vendorurl"] = "http://www.epowerswitch.com"
++The agent works by connecting to the hidden page and pass \
++the appropriate arguments to GET request. This means, that the hidden \
++page feature must be enabled and properly configured. \
++\n.TP\n\
++NOTE: In most cases you want to use fence_epsr2, as fence_eps \
++only works with older hardware."
++	docs["vendorurl"] = "https://www.neol.com"
++	docs["symlink"] = [("fence_epsr2", "Fence agent for ePowerSwitch R2 and newer")]
+ 	show_docs(options, docs)
+ 
+ 	run_delay(options)
+-	#Run fence action. Conn is None, beacause we always need open new http connection
++	#Run fence action. Conn is None, because we always need open new http connection
+ 	result = fence_action(None, options, set_power_status, get_power_status, get_power_status)
+ 
+ 	sys.exit(result)
+diff --git a/tests/data/metadata/fence_epsr2.xml b/tests/data/metadata/fence_epsr2.xml
+new file mode 100644
+index 000000000..37074e052
+--- /dev/null
++++ b/tests/data/metadata/fence_epsr2.xml
+@@ -0,0 +1,178 @@
++<?xml version="1.0" ?>
++<resource-agent name="fence_epsr2" shortdesc="Fence agent for ePowerSwitch" >
++<symlink name="fence_epsr2" shortdesc="Fence agent for ePowerSwitch R2 and newer"/>
++<longdesc>fence_epsr2 is a Power Fencing agent which can be used with the ePowerSwitch 8M+ power switch to fence connected machines. It ONLY works on 8M+ devices, as they support the hidden page feature. 
++
++The agent works by connecting to the hidden page and pass the appropriate arguments to GET request. This means, that the hidden page feature must be enabled and properly configured. 
++
++NOTE: In most cases you want to use fence_epsr2, as fence_eps only works with older hardware.</longdesc>
++<vendor-url>https://www.neol.com</vendor-url>
++<parameters>
++	<parameter name="action" unique="0" required="1">
++		<getopt mixed="-o, --action=[action]" />
++		<content type="string" default="reboot"  />
++		<shortdesc lang="en">Fencing action</shortdesc>
++	</parameter>
++	<parameter name="hidden_page" unique="0" required="0" deprecated="1">
++		<getopt mixed="-c, --page=[page]" />
++		<content type="string" default="hidden.htm"  />
++		<shortdesc lang="en">Name of hidden page</shortdesc>
++	</parameter>
++	<parameter name="ip" unique="0" required="1" obsoletes="ipaddr">
++		<getopt mixed="-a, --ip=[ip]" />
++		<content type="string"  />
++		<shortdesc lang="en">IP address or hostname of fencing device</shortdesc>
++	</parameter>
++	<parameter name="ipaddr" unique="0" required="1" deprecated="1">
++		<getopt mixed="-a, --ip=[ip]" />
++		<content type="string"  />
++		<shortdesc lang="en">IP address or hostname of fencing device</shortdesc>
++	</parameter>
++	<parameter name="ipport" unique="0" required="0">
++		<getopt mixed="-u, --ipport=[port]" />
++		<content type="integer" default="80"  />
++		<shortdesc lang="en">TCP/UDP port to use for connection with device</shortdesc>
++	</parameter>
++	<parameter name="login" unique="0" required="0" deprecated="1">
++		<getopt mixed="-l, --username=[name]" />
++		<content type="string"  />
++		<shortdesc lang="en">Login name</shortdesc>
++	</parameter>
++	<parameter name="page" unique="0" required="0" obsoletes="hidden_page">
++		<getopt mixed="-c, --page=[page]" />
++		<content type="string" default="hidden.htm"  />
++		<shortdesc lang="en">Name of hidden page</shortdesc>
++	</parameter>
++	<parameter name="passwd" unique="0" required="0" deprecated="1">
++		<getopt mixed="-p, --password=[password]" />
++		<content type="string"  />
++		<shortdesc lang="en">Login password or passphrase</shortdesc>
++	</parameter>
++	<parameter name="passwd_script" unique="0" required="0" deprecated="1">
++		<getopt mixed="-S, --password-script=[script]" />
++		<content type="string"  />
++		<shortdesc lang="en">Script to run to retrieve password</shortdesc>
++	</parameter>
++	<parameter name="password" unique="0" required="0" obsoletes="passwd">
++		<getopt mixed="-p, --password=[password]" />
++		<content type="string"  />
++		<shortdesc lang="en">Login password or passphrase</shortdesc>
++	</parameter>
++	<parameter name="password_script" unique="0" required="0" obsoletes="passwd_script">
++		<getopt mixed="-S, --password-script=[script]" />
++		<content type="string"  />
++		<shortdesc lang="en">Script to run to retrieve password</shortdesc>
++	</parameter>
++	<parameter name="plug" unique="0" required="1" obsoletes="port">
++		<getopt mixed="-n, --plug=[id]" />
++		<content type="string"  />
++		<shortdesc lang="en">Physical plug number on device, UUID or identification of machine</shortdesc>
++	</parameter>
++	<parameter name="port" unique="0" required="1" deprecated="1">
++		<getopt mixed="-n, --plug=[id]" />
++		<content type="string"  />
++		<shortdesc lang="en">Physical plug number on device, UUID or identification of machine</shortdesc>
++	</parameter>
++	<parameter name="username" unique="0" required="0" obsoletes="login">
++		<getopt mixed="-l, --username=[name]" />
++		<content type="string"  />
++		<shortdesc lang="en">Login name</shortdesc>
++	</parameter>
++	<parameter name="quiet" unique="0" required="0">
++		<getopt mixed="-q, --quiet" />
++		<content type="boolean"  />
++		<shortdesc lang="en">Disable logging to stderr. Does not affect --verbose or --debug-file or logging to syslog.</shortdesc>
++	</parameter>
++	<parameter name="verbose" unique="0" required="0">
++		<getopt mixed="-v, --verbose" />
++		<content type="boolean"  />
++		<shortdesc lang="en">Verbose mode. Multiple -v flags can be stacked on the command line (e.g., -vvv) to increase verbosity.</shortdesc>
++	</parameter>
++	<parameter name="verbose_level" unique="0" required="0">
++		<getopt mixed="--verbose-level" />
++		<content type="integer"  />
++		<shortdesc lang="en">Level of debugging detail in output. Defaults to the number of --verbose flags specified on the command line, or to 1 if verbose=1 in a stonith device configuration (i.e., on stdin).</shortdesc>
++	</parameter>
++	<parameter name="debug" unique="0" required="0" deprecated="1">
++		<getopt mixed="-D, --debug-file=[debugfile]" />
++		<content type="string"  />
++		<shortdesc lang="en">Write debug information to given file</shortdesc>
++	</parameter>
++	<parameter name="debug_file" unique="0" required="0" obsoletes="debug">
++		<getopt mixed="-D, --debug-file=[debugfile]" />
++		<shortdesc lang="en">Write debug information to given file</shortdesc>
++	</parameter>
++	<parameter name="version" unique="0" required="0">
++		<getopt mixed="-V, --version" />
++		<content type="boolean"  />
++		<shortdesc lang="en">Display version information and exit</shortdesc>
++	</parameter>
++	<parameter name="help" unique="0" required="0">
++		<getopt mixed="-h, --help" />
++		<content type="boolean"  />
++		<shortdesc lang="en">Display help and exit</shortdesc>
++	</parameter>
++	<parameter name="plug_separator" unique="0" required="0">
++		<getopt mixed="--plug-separator=[char]" />
++		<content type="string" default=","  />
++		<shortdesc lang="en">Separator for plug parameter when specifying more than 1 plug</shortdesc>
++	</parameter>
++	<parameter name="separator" unique="0" required="0">
++		<getopt mixed="-C, --separator=[char]" />
++		<content type="string" default=","  />
++		<shortdesc lang="en">Separator for CSV created by 'list' operation</shortdesc>
++	</parameter>
++	<parameter name="delay" unique="0" required="0">
++		<getopt mixed="--delay=[seconds]" />
++		<content type="second" default="0"  />
++		<shortdesc lang="en">Wait X seconds before fencing is started</shortdesc>
++	</parameter>
++	<parameter name="disable_timeout" unique="0" required="0">
++		<getopt mixed="--disable-timeout=[true/false]" />
++		<content type="string"  />
++		<shortdesc lang="en">Disable timeout (true/false) (default: true when run from Pacemaker 2.0+)</shortdesc>
++	</parameter>
++	<parameter name="login_timeout" unique="0" required="0">
++		<getopt mixed="--login-timeout=[seconds]" />
++		<content type="second" default="5"  />
++		<shortdesc lang="en">Wait X seconds for cmd prompt after login</shortdesc>
++	</parameter>
++	<parameter name="power_timeout" unique="0" required="0">
++		<getopt mixed="--power-timeout=[seconds]" />
++		<content type="second" default="20"  />
++		<shortdesc lang="en">Test X seconds for status change after ON/OFF</shortdesc>
++	</parameter>
++	<parameter name="power_wait" unique="0" required="0">
++		<getopt mixed="--power-wait=[seconds]" />
++		<content type="second" default="0"  />
++		<shortdesc lang="en">Wait X seconds after issuing ON/OFF</shortdesc>
++	</parameter>
++	<parameter name="shell_timeout" unique="0" required="0">
++		<getopt mixed="--shell-timeout=[seconds]" />
++		<content type="second" default="3"  />
++		<shortdesc lang="en">Wait X seconds for cmd prompt after issuing command</shortdesc>
++	</parameter>
++	<parameter name="stonith_status_sleep" unique="0" required="0">
++		<getopt mixed="--stonith-status-sleep=[seconds]" />
++		<content type="second" default="1"  />
++		<shortdesc lang="en">Sleep X seconds between status calls during a STONITH action</shortdesc>
++	</parameter>
++	<parameter name="retry_on" unique="0" required="0">
++		<getopt mixed="--retry-on=[attempts]" />
++		<content type="integer" default="1"  />
++		<shortdesc lang="en">Count of attempts to retry power on</shortdesc>
++	</parameter>
++</parameters>
++<actions>
++	<action name="on" automatic="0"/>
++	<action name="off" />
++	<action name="reboot" />
++	<action name="status" />
++	<action name="list" />
++	<action name="list-status" />
++	<action name="monitor" />
++	<action name="metadata" />
++	<action name="manpage" />
++	<action name="validate-all" />
++</actions>
++</resource-agent>

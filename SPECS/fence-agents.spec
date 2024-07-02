@@ -87,7 +87,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.2.1
-Release: 129%{?alphatag:.%{alphatag}}%{?dist}
+Release: 129%{?alphatag:.%{alphatag}}%{?dist}.2
 License: GPLv2+ and LGPLv2+
 Group: System Environment/Base
 URL: https://github.com/ClusterLabs/fence-agents
@@ -282,11 +282,13 @@ Patch139: RHEL-5397-fence_scsi-2-fix-ISID-reg-handling-off.patch
 Patch140: RHEL-5397-fence_scsi-3-fix-run_cmd.patch
 Patch141: RHEL-5397-4-fence_scsi-log-err.patch
 Patch142: RHEL-14343-fence_zvmip-2-fix-manpage-formatting.patch
+Patch143: RHEL-7734-fence_eps-add-fence_epsr2-for-ePowerSwitch-R2-and-newer.patch
 
 ### HA support libs/utils ###
 # all archs
 Patch1000: bz2218234-1-kubevirt-fix-bundled-dateutil-CVE-2007-4559.patch
 Patch1001: RHEL-22174-kubevirt-fix-bundled-jinja2-CVE-2024-22195.patch
+Patch1002: RHEL-35655-kubevirt-fix-bundled-jinja2-CVE-2024-34064.patch
 # cloud (x86_64 only)
 Patch2000: bz2218234-2-aws-fix-bundled-dateutil-CVE-2007-4559.patch
 
@@ -509,6 +511,7 @@ BuildRequires: python3-google-api-client python3-pip python3-wheel python3-jinja
 %patch -p1 -P 140
 %patch -p1 -P 141
 %patch -p1 -P 142
+%patch -p1 -P 143 -F1
 
 # prevent compilation of something that won't get used anyway
 sed -i.orig 's|FENCE_ZVM=1|FENCE_ZVM=0|' configure.ac
@@ -623,6 +626,7 @@ rm -rf %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}/kubevirt/rsa*
 pushd %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1000}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=1 < %{PATCH1001}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=1 < %{PATCH1002}
 
 %ifarch x86_64
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2000}
@@ -977,8 +981,8 @@ BuildArch: noarch
 Fence agent for ePowerSwitch 8M+ power switches that are accessed
 via the HTTP(s) protocol.
 %files eps
-%{_sbindir}/fence_eps
-%{_mandir}/man8/fence_eps.8*
+%{_sbindir}/fence_eps*
+%{_mandir}/man8/fence_eps*.8*
 
 %ifarch x86_64
 %package gce
@@ -1516,6 +1520,12 @@ Fence agent for IBM z/VM over IP.
 %endif
 
 %changelog
+* Thu May 30 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-129.2
+- fence_eps: add fence_epsr2 for ePowerSwitch R2 and newer
+  Resolves: RHEL-7734
+- bundled jinja2: fix CVE-2024-34064
+  Resolves: RHEL-35655
+
 * Fri Jan 19 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-129
 - bundled urllib3: fix CVE-2023-45803
   Resolves: RHEL-18132
