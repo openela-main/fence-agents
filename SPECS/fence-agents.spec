@@ -59,7 +59,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.10.0
-Release: 62%{?alphatag:.%{alphatag}}%{?dist}.3
+Release: 62%{?alphatag:.%{alphatag}}%{?dist}.4
 License: GPLv2+ and LGPLv2+
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
@@ -249,6 +249,7 @@ Patch1000: bz2217902-1-kubevirt-fix-bundled-dateutil-CVE-2007-4559.patch
 Patch1001: RHEL-36482-kubevirt-fix-bundled-jinja2-CVE-2024-34064.patch
 # cloud (x86_64 only)
 Patch2000: bz2217902-2-aws-awscli-azure-fix-bundled-dateutil-CVE-2007-4559.patch
+Patch2001: RHEL-43956-fix-bundled-urllib3-CVE-2024-37891.patch
 
 %global supportedagents amt_ws apc apc_snmp bladecenter brocade cisco_mds cisco_ucs compute drac5 eaton_snmp emerson eps evacuate hpblade ibmblade ibm_powervs ibm_vpc ifmib ilo ilo_moonshot ilo_mp ilo_ssh intelmodular ipdu ipmilan kdump kubevirt lpar mpath redfish rhevm rsa rsb sbd scsi vmware_rest vmware_soap wti
 %ifarch x86_64
@@ -455,6 +456,7 @@ pushd support
 
 %ifarch x86_64
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2000}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH2001}
 %endif
 popd
 
@@ -1490,6 +1492,10 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
+* Mon Jun 24 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-62.4
+- bundled urllib3: fix CVE-2024-37891
+  Resolves: RHEL-43956
+
 * Thu May 16 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-62.3
 - bundled jinja2: fix CVE-2024-34064
   Resolves: RHEL-36482
