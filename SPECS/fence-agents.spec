@@ -87,7 +87,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.2.1
-Release: 129%{?alphatag:.%{alphatag}}%{?dist}.2
+Release: 129%{?alphatag:.%{alphatag}}%{?dist}.4
 License: GPLv2+ and LGPLv2+
 Group: System Environment/Base
 URL: https://github.com/ClusterLabs/fence-agents
@@ -289,8 +289,11 @@ Patch143: RHEL-7734-fence_eps-add-fence_epsr2-for-ePowerSwitch-R2-and-newer.patc
 Patch1000: bz2218234-1-kubevirt-fix-bundled-dateutil-CVE-2007-4559.patch
 Patch1001: RHEL-22174-kubevirt-fix-bundled-jinja2-CVE-2024-22195.patch
 Patch1002: RHEL-35655-kubevirt-fix-bundled-jinja2-CVE-2024-34064.patch
+Patch1003: RHEL-43568-1-kubevirt-fix-bundled-urllib3-CVE-2024-37891.patch
+Patch1004: RHEL-50223-setuptools-fix-CVE-2024-6345.patch
 # cloud (x86_64 only)
 Patch2000: bz2218234-2-aws-fix-bundled-dateutil-CVE-2007-4559.patch
+Patch2001: RHEL-43568-2-aws-fix-bundled-urllib3-CVE-2024-37891.patch
 
 %if 0%{?fedora} || 0%{?rhel} > 7
 %global supportedagents amt_ws apc apc_snmp bladecenter brocade cisco_mds cisco_ucs compute drac5 eaton_snmp emerson eps evacuate hds_cb hpblade ibmblade ibm_powervs ibm_vpc ifmib ilo ilo_moonshot ilo_mp ilo_ssh intelmodular ipdu ipmilan kdump kubevirt lpar mpath redfish rhevm rsa rsb sbd scsi vmware_rest vmware_soap wti
@@ -627,9 +630,12 @@ pushd %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1000}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=1 < %{PATCH1001}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=1 < %{PATCH1002}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH1003}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH1004}
 
 %ifarch x86_64
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2000}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH2001}
 %endif
 popd
 
@@ -1520,6 +1526,14 @@ Fence agent for IBM z/VM over IP.
 %endif
 
 %changelog
+* Wed Jul 24 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-129.4
+- bundled setuptools: fix CVE-2024-6345
+  Resolves: RHEL-50223
+
+* Tue Jun 25 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-129.3
+- bundled urllib3: fix CVE-2024-37891
+  Resolves: RHEL-43568
+
 * Thu May 30 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-129.2
 - fence_eps: add fence_epsr2 for ePowerSwitch R2 and newer
   Resolves: RHEL-7734
