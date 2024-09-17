@@ -53,13 +53,11 @@
 %global reqstsoauthlib_version	1.3.0
 %global ruamelyaml		ruamel.yaml
 %global ruamelyaml_version	0.17.16
-%global setuptools		setuptools
-%global setuptools_version	58.3.0
 
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.10.0
-Release: 62%{?alphatag:.%{alphatag}}%{?dist}.4
+Release: 62%{?alphatag:.%{alphatag}}%{?dist}.5
 License: GPLv2+ and LGPLv2+
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
@@ -145,7 +143,7 @@ Source1060: pyroute2.nftables-0.6.13.tar.gz
 Source1061: pyroute2.nslink-0.6.13.tar.gz
 Source1062: pytz-2021.1-py2.py3-none-any.whl
 Source1063: rsa-4.7.2-py3-none-any.whl
-Source1064: setuptools-57.0.0-py3-none-any.whl
+Source1064: setuptools-71.1.0.tar.gz
 Source1065: uritemplate-3.0.1-py2.py3-none-any.whl
 # common (pexpect / suds)
 Source1066: pexpect-4.8.0-py2.py3-none-any.whl
@@ -178,14 +176,15 @@ Source1086: %{chrstnormalizer}-%{chrstnormalizer_version}.tar.gz
 Source1087: %{idna}-%{idna_version}.tar.gz
 Source1088: %{reqstsoauthlib}-%{reqstsoauthlib_version}.tar.gz
 Source1089: %{ruamelyaml}-%{ruamelyaml_version}.tar.gz
-Source1090: %{setuptools}-%{setuptools_version}.tar.gz
 ## required for installation
-Source1091: setuptools_scm-6.3.2.tar.gz
-Source1092: packaging-21.2-py3-none-any.whl
-Source1093: poetry-core-1.0.7.tar.gz
-Source1094: pyparsing-3.0.1.tar.gz
-Source1095: tomli-1.0.1.tar.gz
-Source1096: wheel-0.37.0-py2.py3-none-any.whl
+Source1090: setuptools_scm-8.1.0.tar.gz
+Source1091: packaging-21.2-py3-none-any.whl
+Source1092: poetry-core-1.0.7.tar.gz
+Source1093: pyparsing-3.0.1.tar.gz
+Source1094: tomli-2.0.1.tar.gz
+Source1095: flit_core-3.9.0.tar.gz
+Source1096: typing_extensions-4.12.2.tar.gz
+Source1097: wheel-0.37.0-py2.py3-none-any.whl
 ### END
 
 Patch0: ha-cloud-support-aliyun.patch
@@ -451,11 +450,11 @@ rm -rf kubevirt/rsa*
 
 # regular patch doesnt work in build-section
 pushd support
-/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1000}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH1000}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1001}
 
 %ifarch x86_64
-/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2000}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH2000}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH2001}
 %endif
 popd
@@ -649,7 +648,7 @@ Provides: bundled(python-pyroute2-nftables) = 0.6.13
 Provides: bundled(python-pyroute2-nslink) = 0.6.13
 Provides: bundled(python-pytz) = 2021.1
 Provides: bundled(python-rsa) = 4.7.2
-Provides: bundled(python-setuptools) = 57.0.0
+Provides: bundled(python3-setuptools) = 71.1.0
 Provides: bundled(python-uritemplate) = 3.0.1
 %description -n ha-cloud-support
 Support libraries for Fence Agents.
@@ -1186,7 +1185,7 @@ Provides: bundled(python3-%{idna}) = %{idna_version}
 Provides: bundled(python3-%{reqstsoauthlib}) = %{reqstsoauthlib_version}
 Provides: bundled(python3-%{oauthlib}) = %{oauthlib_version}
 Provides: bundled(python3-%{ruamelyaml}) = %{ruamelyaml_version}
-Provides: bundled(python3-%{setuptools}) = %{setuptools_version}
+Provides: bundled(python3-setuptools) = 71.1.0
 %description kubevirt
 Fence agent for KubeVirt platform.
 %files kubevirt
@@ -1492,6 +1491,11 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
+* Mon Aug 19 2024 Diaa Sami <disami@redhat.com> - 4.10.0-62.5
+- bundled setuptools: fix CVE-2024-6345
+
+  Resolves: RHEL-49657
+
 * Mon Jun 24 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-62.4
 - bundled urllib3: fix CVE-2024-37891
   Resolves: RHEL-43956
