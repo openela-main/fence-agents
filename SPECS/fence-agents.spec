@@ -87,7 +87,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.2.1
-Release: 129%{?alphatag:.%{alphatag}}%{?dist}.4
+Release: 129%{?alphatag:.%{alphatag}}%{?dist}.5
 License: GPLv2+ and LGPLv2+
 Group: System Environment/Base
 URL: https://github.com/ClusterLabs/fence-agents
@@ -283,6 +283,7 @@ Patch140: RHEL-5397-fence_scsi-3-fix-run_cmd.patch
 Patch141: RHEL-5397-4-fence_scsi-log-err.patch
 Patch142: RHEL-14343-fence_zvmip-2-fix-manpage-formatting.patch
 Patch143: RHEL-7734-fence_eps-add-fence_epsr2-for-ePowerSwitch-R2-and-newer.patch
+Patch144: RHEL-56840-fence_scsi-only-preempt-once-for-mpath-devices.patch
 
 ### HA support libs/utils ###
 # all archs
@@ -515,6 +516,7 @@ BuildRequires: python3-google-api-client python3-pip python3-wheel python3-jinja
 %patch -p1 -P 141
 %patch -p1 -P 142
 %patch -p1 -P 143 -F1
+%patch -p1 -P 144
 
 # prevent compilation of something that won't get used anyway
 sed -i.orig 's|FENCE_ZVM=1|FENCE_ZVM=0|' configure.ac
@@ -631,7 +633,7 @@ pushd %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=1 < %{PATCH1001}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=1 < %{PATCH1002}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH1003}
-/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH1004}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1004}
 
 %ifarch x86_64
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2000}
@@ -1526,6 +1528,11 @@ Fence agent for IBM z/VM over IP.
 %endif
 
 %changelog
+* Tue Sep 24 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-129.5
+- fence_scsi: preempt clears all devices on the mpath device, so only
+  run it for the first device
+  Resolves: RHEL-56840
+
 * Wed Jul 24 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-129.4
 - bundled setuptools: fix CVE-2024-6345
   Resolves: RHEL-50223

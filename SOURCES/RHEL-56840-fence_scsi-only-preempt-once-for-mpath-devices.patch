@@ -1,0 +1,40 @@
+From cb57f1c2ee734a40d01249305965ea4ecdf02039 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Thu, 5 Sep 2024 09:06:34 +0200
+Subject: [PATCH] fence_scsi: preempt clears all devices on the mpath device,
+ so only run it for the first device
+
+---
+ agents/scsi/fence_scsi.py | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/agents/scsi/fence_scsi.py b/agents/scsi/fence_scsi.py
+index a1598411c..12f7fb49b 100644
+--- a/agents/scsi/fence_scsi.py
++++ b/agents/scsi/fence_scsi.py
+@@ -131,11 +131,13 @@ def reset_dev(options, dev):
+ 	return run_cmd(options, options["--sg_turs-path"] + " " + dev)["rc"]
+ 
+ 
+-def register_dev(options, dev, key):
++def register_dev(options, dev, key, do_preempt=True):
+ 	dev = os.path.realpath(dev)
+ 	if re.search(r"^dm", dev[5:]):
+-		for slave in get_mpath_slaves(dev):
+-			register_dev(options, slave, key)
++		devices = get_mpath_slaves(dev)
++		register_dev(options, devices[0], key)
++		for device in devices[1:]:
++			register_dev(options, device, key, False)
+ 		return True
+ 
+ 	# Check if any registration exists for the key already. We track this in
+@@ -153,7 +155,7 @@ def register_dev(options, dev, key):
+ 		# If key matches, make sure it matches with the connection that
+ 		# exists right now. To do this, we can issue a preempt with same key
+ 		# which should replace the old invalid entries from the target.
+-		if not preempt(options, key, dev, key):
++		if do_preempt and not preempt(options, key, dev, key):
+ 			return False
+ 
+ 		# If there was no reservation, we need to issue another registration
