@@ -57,7 +57,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.10.0
-Release: 76%{?alphatag:.%{alphatag}}%{?dist}
+Release: 76%{?alphatag:.%{alphatag}}%{?dist}.1
 License: GPLv2+ and LGPLv2+
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
@@ -254,6 +254,7 @@ Patch54: RHEL-35263-fence_eps-add-fence_epsr2-for-ePowerSwitch-R2-and-newer.patc
 Patch55: RHEL-25256-fence_vmware_rest-detect-user-sufficient-rights.patch
 Patch56: RHEL-43235-fence_aws-1-list-add-instance-name-status.patch
 Patch57: RHEL-43235-fence_aws-2-log-error-for-unknown-states.patch
+Patch58: RHEL-59882-fence_scsi-only-preempt-once-for-mpath-devices.patch
 
 ### HA support libs/utils ###
 # all archs
@@ -433,6 +434,7 @@ BuildRequires: %{systemd_units}
 %patch -p1 -P 55
 %patch -p1 -P 56
 %patch -p1 -P 57
+%patch -p1 -P 58
 
 # prevent compilation of something that won't get used anyway
 sed -i.orig 's|FENCE_ZVM=1|FENCE_ZVM=0|' configure.ac
@@ -1530,6 +1532,11 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
+* Wed Sep 25 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-76.1
+- fence_scsi: preempt clears all devices on the mpath device, so only
+  run it for the first device
+  Resolves: RHEL-59882
+
 * Tue Jul 23 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-76
 - bundled setuptools: fix CVE-2024-6345
 
