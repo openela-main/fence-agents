@@ -1,0 +1,99 @@
+From a4502b3bf15a3be2ebd64b6829cd4f6641f2506b Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Fri, 14 Jun 2024 15:28:28 +0200
+Subject: [PATCH 1/2] fencing: use formatted strings to avoid failing when plug
+ is int
+
+---
+ lib/fencing.py.py | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/lib/fencing.py.py b/lib/fencing.py.py
+index 66e2ff156..9c090100d 100644
+--- a/lib/fencing.py.py
++++ b/lib/fencing.py.py
+@@ -985,9 +985,9 @@
+ 						status = status.upper()
+ 
+ 					if options["--action"] == "list":
+-						print(outlet_id + options["--separator"] + alias)
++						print("{}{}{}".format(outlet_id, options["--separator"], alias))
+ 					elif options["--action"] == "list-status":
+-						print(outlet_id + options["--separator"] + alias + options["--separator"] + status)
++						print("{}{}{}{}{}".format(outlet_id, options["--separator"], alias, options["--separator"], status))
+ 
+ 			return
+ 
+
+From f1ef26c885cdedb17eb366e4c8922ffb01aefc7c Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Fri, 14 Jun 2024 15:29:12 +0200
+Subject: [PATCH 2/2] fence_aws: improve list, list-status and status actions
+
+---
+ agents/aws/fence_aws.py | 31 +++++++++++++++++++------------
+ 1 file changed, 19 insertions(+), 12 deletions(-)
+
+diff --git a/agents/aws/fence_aws.py b/agents/aws/fence_aws.py
+index a9308dd9c..b8d38462e 100644
+--- a/agents/aws/fence_aws.py
++++ b/agents/aws/fence_aws.py
+@@ -22,6 +22,15 @@
+ logger.addHandler(SyslogLibHandler())
+ logging.getLogger('botocore.vendored').propagate = False
+ 
++status = {
++		"running": "on",
++		"stopped": "off",
++		"pending": "unknown",
++		"stopping": "unknown",
++		"shutting-down": "unknown",
++		"terminated": "unknown"
++}
++
+ def get_instance_id(options):
+ 	try:
+ 		token = requests.put('http://169.254.169.254/latest/api/token', headers={"X-aws-ec2-metadata-token-ttl-seconds" : "21600"}).content.decode("UTF-8")
+@@ -45,11 +54,14 @@ def get_nodes_list(conn, options):
+ 			filter_key   = options["--filter"].split("=")[0].strip()
+ 			filter_value = options["--filter"].split("=")[1].strip()
+ 			filter = [{ "Name": filter_key, "Values": [filter_value] }]
+-			for instance in conn.instances.filter(Filters=filter):
+-				result[instance.id] = ("", None)
+-		else:
+-			for instance in conn.instances.all():
+-				result[instance.id] = ("", None)
++			logging.debug("Filter: {}".format(filter))
++
++		for instance in conn.instances.filter(Filters=filter if 'filter' in vars() else []):
++			instance_name = ""
++			for tag in instance.tags or []:
++				if tag.get("Key") == "Name":
++					instance_name = tag["Value"]
++			result[instance.id] = (instance_name, status[instance.state["Name"]])
+ 	except ClientError:
+ 		fail_usage("Failed: Incorrect Access Key or Secret Key.")
+ 	except EndpointConnectionError:
+@@ -67,12 +79,7 @@ def get_power_status(conn, options):
+ 		instance = conn.instances.filter(Filters=[{"Name": "instance-id", "Values": [options["--plug"]]}])
+ 		state = list(instance)[0].state["Name"]
+ 		logger.debug("Status operation for EC2 instance %s returned state: %s",options["--plug"],state.upper())
+-		if state == "running":
+-			return "on"
+-		elif state == "stopped":
+-			return "off"
+-		else:
+-			return "unknown"
++		return status[state]
+ 
+ 	except ClientError:
+ 		fail_usage("Failed: Incorrect Access Key or Secret Key.")
+@@ -146,7 +153,7 @@ def define_new_opts():
+ 	all_opt["filter"] = {
+ 		"getopt" : ":",
+ 		"longopt" : "filter",
+-		"help" : "--filter=[key=value]           Filter (e.g. vpc-id=[vpc-XXYYZZAA]",
++		"help" : "--filter=[key=value]           Filter (e.g. vpc-id=[vpc-XXYYZZAA])",
+ 		"shortdesc": "Filter for list-action",
+ 		"required": "0",
+ 		"order": 5

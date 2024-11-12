@@ -57,7 +57,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.10.0
-Release: 62%{?alphatag:.%{alphatag}}%{?dist}.5
+Release: 76%{?alphatag:.%{alphatag}}%{?dist}
 License: GPLv2+ and LGPLv2+
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
@@ -77,12 +77,21 @@ Source901: botocore-2.0.0dev123.zip
 # aliyun
 Source1000: aliyun-python-sdk-core-2.11.5.tar.gz
 Source1001: aliyun_python_sdk_ecs-4.24.7-py2.py3-none-any.whl
-Source1002: aliyuncli-2.1.10-py2.py3-none-any.whl
-Source1003: cffi-1.14.5-cp39-cp39-manylinux1_x86_64.whl
-Source1004: colorama-0.3.3.tar.gz
-Source1005: jmespath-0.7.1-py2.py3-none-any.whl
-Source1006: pycryptodome-3.20.0.tar.gz
-Source1007: pycparser-2.20-py2.py3-none-any.whl
+Source1002: cffi-1.14.5-cp39-cp39-manylinux1_x86_64.whl
+Source1003: colorama-0.3.3.tar.gz
+Source1004: jmespath-0.7.1-py2.py3-none-any.whl
+Source1005: pycryptodome-3.20.0.tar.gz
+Source1006: pycparser-2.20-py2.py3-none-any.whl
+# aliyun-cli
+Source2000: aliyun-cli-3.0.198.tar.gz
+## TAG=$(git log --pretty="format:%h" -n 1)
+## distdir="aliyun-openapi-meta-${TAG}"
+## TARFILE="${distdir}.tar.gz"
+## rm -rf $TARFILE $distdir
+## git archive --prefix=$distdir/ HEAD | gzip > $TARFILE
+Source2001: aliyun-openapi-meta-5cf98b660.tar.gz
+## go mod vendor
+Source2002: aliyun-cli-go-vendor.tar.gz
 # awscli
 Source1008: awscrt-0.11.13-cp39-cp39-manylinux2014_x86_64.whl
 Source1009: colorama-0.4.3-py2.py3-none-any.whl
@@ -240,15 +249,19 @@ Patch49: RHEL-14344-fence_zvmip-1-document-user-permissions.patch
 Patch50: RHEL-14030-1-all-agents-metadata-update-IO-Power-Network.patch
 Patch51: RHEL-14030-2-fence_cisco_mds-undo-metadata-change.patch
 Patch52: RHEL-14344-fence_zvmip-2-fix-manpage-formatting.patch
-Patch53: RHEL-35273-fence_eps-add-fence_epsr2-for-ePowerSwitch-R2-and-newer.patch
+Patch53: RHEL-31488-RHEL-31485-RHEL-31483-fence_aliyun-update.patch
+Patch54: RHEL-35263-fence_eps-add-fence_epsr2-for-ePowerSwitch-R2-and-newer.patch
+Patch55: RHEL-25256-fence_vmware_rest-detect-user-sufficient-rights.patch
+Patch56: RHEL-43235-fence_aws-1-list-add-instance-name-status.patch
+Patch57: RHEL-43235-fence_aws-2-log-error-for-unknown-states.patch
 
 ### HA support libs/utils ###
 # all archs
 Patch1000: bz2217902-1-kubevirt-fix-bundled-dateutil-CVE-2007-4559.patch
-Patch1001: RHEL-36482-kubevirt-fix-bundled-jinja2-CVE-2024-34064.patch
+Patch1001: RHEL-35649-kubevirt-fix-bundled-jinja2-CVE-2024-34064.patch
 # cloud (x86_64 only)
 Patch2000: bz2217902-2-aws-awscli-azure-fix-bundled-dateutil-CVE-2007-4559.patch
-Patch2001: RHEL-43956-fix-bundled-urllib3-CVE-2024-37891.patch
+Patch2001: RHEL-43562-fix-bundled-urllib3-CVE-2024-37891.patch
 
 %global supportedagents amt_ws apc apc_snmp bladecenter brocade cisco_mds cisco_ucs compute drac5 eaton_snmp emerson eps evacuate hpblade ibmblade ibm_powervs ibm_vpc ifmib ilo ilo_moonshot ilo_mp ilo_ssh intelmodular ipdu ipmilan kdump kubevirt lpar mpath redfish rhevm rsa rsb sbd scsi vmware_rest vmware_soap wti
 %ifarch x86_64
@@ -319,9 +332,12 @@ BuildRequires: gcc
 BuildRequires: libxslt
 ## Python dependencies
 %if 0%{?fedora} || 0%{?centos} > 7 || 0%{?rhel} > 7 || 0%{?suse_version}
-BuildRequires: python3-devel python3-pip
-# wheel for HA support subpackages
-BuildRequires: python3-wheel
+BuildRequires: python3-devel
+# dependencies for building HA support subpackages
+BuildRequires: python3-pip python3-wheel
+%ifarch x86_64
+BuildRequires: golang git
+%endif
 BuildRequires: python3-pycurl python3-requests
 %if 0%{?fedora} || 0%{?centos} > 7 || 0%{?rhel} > 7
 BuildRequires: openwsman-python3
@@ -412,7 +428,11 @@ BuildRequires: %{systemd_units}
 %patch -p1 -P 50
 %patch -p1 -P 51
 %patch -p1 -P 52
-%patch -p1 -P 53 -F2
+%patch -p1 -P 53
+%patch -p1 -P 54 -F2
+%patch -p1 -P 55
+%patch -p1 -P 56
+%patch -p1 -P 57
 
 # prevent compilation of something that won't get used anyway
 sed -i.orig 's|FENCE_ZVM=1|FENCE_ZVM=0|' configure.ac
@@ -420,6 +440,24 @@ sed -i.orig 's|FENCE_ZVM=1|FENCE_ZVM=0|' configure.ac
 %build
 %if 0%{?fedora} || 0%{?centos} > 7 || 0%{?rhel} > 7 || 0%{?suse_version}
 	export PYTHON="%{__python3}"
+%endif
+
+# aliyun-cli
+%ifarch x86_64
+tar zxf %SOURCE2000
+pushd aliyun-cli-*
+git init
+rmdir aliyun-openapi-meta
+tar zxf %SOURCE2001
+tar zxf %SOURCE2002
+mv aliyun-openapi-meta-* aliyun-openapi-meta
+%define aliyun_cli_version 3.0.198
+# based on https://github.com/containers/podman/blob/main/rpm/podman.spec
+%define gobuild(o:) go build -buildmode pie -compiler gc -tags="rpm_crashtraceback libtrust_openssl ${BUILDTAGS:-}" -ldflags "-linkmode=external -compressdwarf=false ${LDFLAGS:-} -B 0x$(head -c20 /dev/urandom|od -An -tx1|tr -d ' \\n') -extldflags '%__global_ldflags' -X github.com/aliyun/aliyun-cli/cli.Version=%{aliyun_cli_version}" -a -v -x -mod=vendor %{?**};
+%gobuild -o out/aliyun main/main.go
+mkdir -p ../support/aliyun/aliyun-cli
+install -m 0755 out/aliyun ../support/aliyun/aliyun-cli/
+popd
 %endif
 
 # support libs
@@ -436,7 +474,7 @@ done
 
 # fix incorrect #! detected by CI
 %ifarch x86_64
-sed -i -e "/^#\!\/Users/c#\!%{__python3}" support/aws/bin/jp support/aliyun/bin/jp support/awscli/bin/jp
+sed -i -e "/^#\!\/Users/c#\!%{__python3}" support/aws/bin/jp support/awscli/bin/jp
 %endif
 
 %ifarch x86_64
@@ -535,7 +573,7 @@ network, storage, or similar. They operate through a unified interface
 (calling conventions) devised for the original Red Hat clustering solution.
 
 %package common
-License: GPLv2+ and LGPLv2+
+License: GPL-2.0-or-later AND LGPL-2.0-or-later AND LGPL-3.0-or-later AND ISC
 Summary: Common base for Fence Agents
 %if 0%{?fedora} || 0%{?centos} > 7 || 0%{?rhel} > 7 || 0%{?suse_version}
 Requires: python3-pycurl
@@ -579,17 +617,18 @@ This package contains support files including the Python fencing library.
 
 %ifarch x86_64
 %package -n ha-cloud-support
-License: GPLv2+ and LGPLv2+
+License: GPL-2.0-or-later AND LGPL-2.0-or-later AND LGPL-2.1-or-later AND Apache-2.0 AND MIT AND BSD-2-Clause AND BSD-3-Clause AND MPL-2.0 AND Apache-2.0 AND PSF-2.0 AND Unlicense AND ISC
 Summary: Support libraries for HA Cloud agents
 # aliyun
 Provides: bundled(python-aliyun-python-sdk-core) = 2.11.5
 Provides: bundled(python-aliyun-python-sdk-ecs) = 4.24.7
-Provides: bundled(aliyuncli) = 2.1.10
 Provides: bundled(python-cffi) = 1.14.5
 Provides: bundled(python-colorama) = 0.3.3
 Provides: bundled(python-jmespath) = 0.7.1
 Provides: bundled(python-pycryptodome) = 3.20.0
 Provides: bundled(python-pycparser) = 2.20
+Provides: bundled(aliyun-cli) = 3.0.198
+Provides: bundled(aliyun-openapi-meta) = 5cf98b660
 # awscli
 Provides: bundled(awscli) = 2.2.15
 Provides: bundled(python-awscrt) = 0.11.13
@@ -1491,27 +1530,47 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
-* Mon Aug 19 2024 Diaa Sami <disami@redhat.com> - 4.10.0-62.5
+* Tue Jul 23 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-76
 - bundled setuptools: fix CVE-2024-6345
 
-  Resolves: RHEL-49657
+  Resolves: RHEL-49658
 
-* Mon Jun 24 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-62.4
+* Fri Jun 21 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-75
 - bundled urllib3: fix CVE-2024-37891
-  Resolves: RHEL-43956
+  Resolves: RHEL-43562
 
-* Thu May 16 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-62.3
+* Wed Jun 19 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-74
+- fence_aws: add instance name and status to list/list-status actions
+  Resolves: RHEL-43235
+
+* Thu May 23 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-73
+- fence_vmware_rest: detect if the API user has sufficient rights to
+  manage the fence device
+  Resolves: RHEL-25256
+
+* Wed May 15 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-72
 - bundled jinja2: fix CVE-2024-34064
-  Resolves: RHEL-36482
+  Resolves: RHEL-35649
 
-* Fri May  3 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-62.2
+* Fri May  3 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-71
 - fence_eps: add fence_epsr2 for ePowerSwitch R2 and newer
-  Resolves: RHEL-35273
+  Resolves: RHEL-35263
 
-* Thu Mar 21 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-62.1
+* Thu Apr  4 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-70
+- fence_aliyun: add credentials file support, filter parameter, and
+  optimize log output
+  Resolves: RHEL-31488, RHEL-31485, RHEL-31483
+
+* Thu Mar 21 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-69
 - ha-cloud-support: upgrade bundled pyroute2 libs to fix issue in
   gcp-vpc-move-route's stop-action
-  Resolves: RHEL-29668
+  Resolves: RHEL-29649
+
+* Thu Mar 14 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-66
+- Add missing licenses to spec-file
+  Resolves: RHEL-27929
+- ha-cloud-support: fix aliyun-cli
+  Resolves: RHEL-28097
 
 * Thu Jan 18 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-62
 - bundled urllib3: fix CVE-2023-45803

@@ -1,0 +1,41 @@
+From c2753c1882b5892b8b7a0fd093baded4a359b2a5 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Mon, 17 Jun 2024 11:19:12 +0200
+Subject: [PATCH] fence_aws: log error if unknown state returned
+
+---
+ agents/aws/fence_aws.py | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/agents/aws/fence_aws.py b/agents/aws/fence_aws.py
+index b8d38462e..5459a06c4 100644
+--- a/agents/aws/fence_aws.py
++++ b/agents/aws/fence_aws.py
+@@ -61,7 +61,12 @@ def get_nodes_list(conn, options):
+ 			for tag in instance.tags or []:
+ 				if tag.get("Key") == "Name":
+ 					instance_name = tag["Value"]
+-			result[instance.id] = (instance_name, status[instance.state["Name"]])
++			try:
++				result[instance.id] = (instance_name, status[instance.state["Name"]])
++			except KeyError as e:
++				if options.get("--original-action") == "list-status":
++					logger.error("Unknown status \"{}\" returned for {} ({})".format(instance.state["Name"], instance.id, instance_name))
++				result[instance.id] = (instance_name, "unknown")
+ 	except ClientError:
+ 		fail_usage("Failed: Incorrect Access Key or Secret Key.")
+ 	except EndpointConnectionError:
+@@ -79,8 +84,11 @@ def get_power_status(conn, options):
+ 		instance = conn.instances.filter(Filters=[{"Name": "instance-id", "Values": [options["--plug"]]}])
+ 		state = list(instance)[0].state["Name"]
+ 		logger.debug("Status operation for EC2 instance %s returned state: %s",options["--plug"],state.upper())
+-		return status[state]
+-
++		try:
++			return status[state]
++		except KeyError as e:
++			logger.error("Unknown status \"{}\" returned".format(state))
++			return "unknown"
+ 	except ClientError:
+ 		fail_usage("Failed: Incorrect Access Key or Secret Key.")
+ 	except EndpointConnectionError:

@@ -1,0 +1,26 @@
+From fc7d7c4baef64f510bd3332c9f008d3e1128dc7b Mon Sep 17 00:00:00 2001
+From: Peter Varkoly <varkoly@suse.com>
+Date: Sun, 11 Feb 2024 09:13:51 +0100
+Subject: [PATCH] fence_vmware_rest : monitoring is not detecting if the API
+ user has sufficient right to manage the fence device. The call
+ https://{api_host}/api/vcenter/vm is subject to permission checks. If the
+ delivered list is empty the user has no rights.
+
+---
+ agents/vmware_rest/fence_vmware_rest.py | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/agents/vmware_rest/fence_vmware_rest.py b/agents/vmware_rest/fence_vmware_rest.py
+index 378771863..9dc9a12f4 100644
+--- a/agents/vmware_rest/fence_vmware_rest.py
++++ b/agents/vmware_rest/fence_vmware_rest.py
+@@ -60,6 +60,9 @@ def get_list(conn, options):
+ 		else:
+ 			fail(EC_STATUS)
+ 
++	if options.get("--original-action") == "monitor" and not res["value"]:
++		logging.error("API user does not have sufficient rights to manage the power status.")
++		fail(EC_STATUS)
+ 	for r in res["value"]:
+ 		outlets[r["name"]] = ("", state[r["power_state"]])
+ 

@@ -1,3 +1,1 @@
 aliyun-python-sdk-ecs
-# for resource-agents-cloud
-aliyuncli>=2.1.5
