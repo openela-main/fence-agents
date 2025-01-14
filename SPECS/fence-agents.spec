@@ -37,8 +37,8 @@
 %global urllib3_version 	1.26.18
 %global websocketclient 	websocket-client
 %global websocketclient_version 1.2.1
-%global jinja2			Jinja2
-%global jinja2_version		3.1.3
+%global jinja2			jinja2
+%global jinja2_version		3.1.5
 %global markupsafe		MarkupSafe
 %global markupsafe_version	2.0.1
 %global stringutils		string-utils
@@ -57,7 +57,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.10.0
-Release: 76%{?alphatag:.%{alphatag}}%{?dist}.1
+Release: 76%{?alphatag:.%{alphatag}}%{?dist}.4
 License: GPLv2+ and LGPLv2+
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
@@ -259,7 +259,6 @@ Patch58: RHEL-59882-fence_scsi-only-preempt-once-for-mpath-devices.patch
 ### HA support libs/utils ###
 # all archs
 Patch1000: bz2217902-1-kubevirt-fix-bundled-dateutil-CVE-2007-4559.patch
-Patch1001: RHEL-35649-kubevirt-fix-bundled-jinja2-CVE-2024-34064.patch
 # cloud (x86_64 only)
 Patch2000: bz2217902-2-aws-awscli-azure-fix-bundled-dateutil-CVE-2007-4559.patch
 Patch2001: RHEL-43562-fix-bundled-urllib3-CVE-2024-37891.patch
@@ -491,7 +490,6 @@ rm -rf kubevirt/rsa*
 # regular patch doesnt work in build-section
 pushd support
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH1000}
-/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1001}
 
 %ifarch x86_64
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH2000}
@@ -1532,6 +1530,10 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
+* Thu Jan  9 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-76.4
+- bundled jinja2: fix CVE-2024-56201 and CVE-2024-56326
+  Resolves: RHEL-72070, RHEL-72063
+
 * Wed Sep 25 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-76.1
 - fence_scsi: preempt clears all devices on the mpath device, so only
   run it for the first device
