@@ -87,7 +87,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.2.1
-Release: 129%{?alphatag:.%{alphatag}}%{?dist}.5
+Release: 129%{?alphatag:.%{alphatag}}%{?dist}.7
 License: GPLv2+ and LGPLv2+
 Group: System Environment/Base
 URL: https://github.com/ClusterLabs/fence-agents
@@ -133,10 +133,40 @@ Source30: %{reqstsoauthlib}-%{reqstsoauthlib_version}.tar.gz
 Source31: %{oauthlib}-%{oauthlib_version}.tar.gz
 Source32: %{ruamelyaml}-%{ruamelyaml_version}.tar.gz
 Source33: %{setuptools}-%{setuptools_version}.tar.gz
+# azure
+Source34: requirements-azure.txt
+Source35: azure-common-1.1.28.zip
+Source36: azure-core-1.24.2.zip
+Source37: azure-mgmt-compute-27.2.0.zip
+Source38: azure-mgmt-core-1.3.2.zip
+Source39: azure-mgmt-network-20.0.0.zip
+Source40: azure-identity-1.10.0.zip
+Source41: isodate-0.6.1.tar.gz
+Source42: msrest-0.7.1.zip
+Source43: oauthlib-3.2.2.tar.gz
+Source44: PyJWT-2.4.0.tar.gz
+Source45: requests-2.27.1.tar.gz
+Source46: requests-oauthlib-2.0.0.tar.gz
+Source47: msal-1.27.0.tar.gz
+Source48: msal-extensions-1.0.0.tar.gz
+Source49: portalocker-2.7.0.tar.gz
+Source50: cryptography-3.3.2.tar.gz
+Source51: cffi-1.15.1.tar.gz
+Source52: typing_extensions-4.1.1.tar.gz
+## msrestazure specific
+Source54: msrestazure-0.6.4.tar.gz
+Source55: adal-1.2.7.tar.gz
 ## required for installation
-Source34: setuptools_scm-6.3.2.tar.gz
-Source35: packaging-21.2-py3-none-any.whl
-Source36: tomli-1.0.1.tar.gz
+Source100: setuptools_scm-6.4.2.tar.gz
+Source101: packaging-21.2-py3-none-any.whl
+Source102: tomli-1.1.0.tar.gz
+Source103: pycparser-2.20.tar.gz
+Source104: wheel-0.37.1.tar.gz
+Source105: pip-21.3.1.tar.gz
+## azure
+Source106: flit_core-3.10.1.tar.gz
+## msrestazure
+Source107: poetry-core-1.0.8.tar.gz
 ### END
 
 Patch0: fence_impilan-fence_ilo_ssh-add-ilo5-support.patch
@@ -284,6 +314,7 @@ Patch141: RHEL-5397-4-fence_scsi-log-err.patch
 Patch142: RHEL-14343-fence_zvmip-2-fix-manpage-formatting.patch
 Patch143: RHEL-7734-fence_eps-add-fence_epsr2-for-ePowerSwitch-R2-and-newer.patch
 Patch144: RHEL-56840-fence_scsi-only-preempt-once-for-mpath-devices.patch
+Patch145: RHEL-76492-fence_azure_arm-use-azure-identity.patch
 
 ### HA support libs/utils ###
 # all archs
@@ -360,7 +391,7 @@ BuildRequires: libxslt
 ## establishing proper paths to particular programs
 BuildRequires: gnutls-utils
 ## Python dependencies
-BuildRequires: python3-devel
+BuildRequires: python3-devel python3-pycparser libffi-devel openssl-devel
 BuildRequires: python3-pexpect python3-pycurl python3-requests
 BuildRequires: python3-suds openwsman-python3 python3-boto3
 BuildRequires: python3-google-api-client python3-pip python3-wheel python3-jinja2
@@ -517,6 +548,7 @@ BuildRequires: python3-google-api-client python3-pip python3-wheel python3-jinja
 %patch -p1 -P 142
 %patch -p1 -P 143 -F1
 %patch -p1 -P 144
+%patch -p1 -P 145
 
 # prevent compilation of something that won't get used anyway
 sed -i.orig 's|FENCE_ZVM=1|FENCE_ZVM=0|' configure.ac
@@ -616,16 +648,21 @@ popd
 # aws/kubevirt
 %{__python3} -m pip install --user --no-index --find-links %{_sourcedir} setuptools-scm
 
-# aws
-%ifarch x86_64
-%{__python3} -m pip install --user --no-index --find-links %{_sourcedir} jmespath
-%{__python3} -m pip install --target %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}/aws --no-index --find-links %{_sourcedir} botocore
-%{__python3} -m pip install --target %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}/aws --no-index --find-links %{_sourcedir} requests
-%endif
-
 # kubevirt
 %{__python3} -m pip install --target %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}/kubevirt --no-index --find-links %{_sourcedir} openshift
 rm -rf %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}/kubevirt/rsa*
+
+%ifarch x86_64
+# aws
+%{__python3} -m pip install --user --no-index --find-links %{_sourcedir} jmespath
+%{__python3} -m pip install --target %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}/aws --no-index --find-links %{_sourcedir} botocore
+%{__python3} -m pip install --target %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}/aws --no-index --find-links %{_sourcedir} requests
+
+# azure
+%{__python3} -m pip install --user --upgrade --no-index --find-links %{_sourcedir} pip setuptools
+
+%{__python3} -m pip install --target %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}/azure --no-index --find-links %{_sourcedir} -r %{_sourcedir}/requirements-azure.txt
+%endif
 
 # regular patch doesnt work in build-section
 pushd %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}
@@ -822,13 +859,41 @@ Fence agent for Amazon AWS instances.
 
 %ifarch x86_64
 %package azure-arm
-License: GPLv2+ and LGPLv2+
+License: GPLv2+ and LGPLv2+ and MIT and MPL-2.0 and Apache-2.0 and BSD and PSF-2.0 and BSD-3-Clause and ISC
 Group: System Environment/Base
 Summary: Fence agent for Azure Resource Manager
 Requires: fence-agents-common >= %{version}-%{release}
-Requires: python3-azure-sdk >= 4.0.0-9
+# azure
+Provides: bundled(python3-adal) = 1.2.7
+Provides: bundled(python3-azure-common) = 1.1.28
+Provides: bundled(python3-azure-core) = 1.24.2
+Provides: bundled(python3-azure-identity) = 1.10.0
+Provides: bundled(python3-azure-mgmt-compute) = 27.2.0
+Provides: bundled(python3-azure-mgmt-core) = 1.3.2
+Provides: bundled(python3-azure-mgmt-network) = 20.0.0
+Provides: bundled(python3-certifi) = 2023.7.22
+Provides: bundled(python3-cffi) = 1.15.1
+Provides: bundled(python3-charset-normalizer) = 2.0.7
+Provides: bundled(python3-cryptography) = 3.3.2
+Provides: bundled(python3-%{dateutil}) = %{dateutil_version}
+Provides: bundled(python3-%{idna}) = %{idna_version}
+Provides: bundled(python3-isodate) = 0.6.1
+Provides: bundled(python3-msal) = 1.27.0
+Provides: bundled(python3-msal-extensions) = 1.0.0
+Provides: bundled(python3-msrest) = 0.7.1
+Provides: bundled(python3-msrestazure) = 0.6.4
+Provides: bundled(python3-oauthlib) = 3.2.2
+Provides: bundled(python3-portalocker) = 2.7.0
+Provides: bundled(python3-pycparser) = 2.20
+Provides: bundled(python3-PyJWT) = 2.4.0
+Provides: bundled(python3-requests) = 2.27.1
+Provides: bundled(python3-requests-oauthlib) = 2.0.0
+Provides: bundled(python3-six) = 1.16.0
+Provides: bundled(python3-typing-extensions) = 4.1.1
+Provides: bundled(python3-urllib3) = 1.26.18
 Obsoletes: %{name} < %{version}-%{release}
-BuildArch: noarch
+Provides: python3-azure-sdk = 4.0.0-10
+Obsoletes: python3-azure-sdk < 4.0.0-10
 %description azure-arm
 Fence agent for Azure Resource Manager instances.
 %files azure-arm
@@ -836,6 +901,8 @@ Fence agent for Azure Resource Manager instances.
 %{_datadir}/fence/azure_fence.py*
 %{_datadir}/fence/__pycache__/azure_fence.*
 %{_mandir}/man8/fence_azure_arm.8*
+# bundled libraries
+/usr/lib/fence-agents/%{bundled_lib_dir}/azure
 %endif
 
 %package bladecenter
@@ -1528,6 +1595,11 @@ Fence agent for IBM z/VM over IP.
 %endif
 
 %changelog
+* Thu Jan 30 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-129.7
+- fence_azure_arm: use azure-identity instead of msrestazure, which has
+  been deprecated
+  Resolves: RHEL-76492
+
 * Tue Sep 24 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-129.5
 - fence_scsi: preempt clears all devices on the mpath device, so only
   run it for the first device
