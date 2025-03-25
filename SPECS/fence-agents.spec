@@ -38,7 +38,7 @@
 %global websocketclient 	websocket-client
 %global websocketclient_version 1.2.1
 %global jinja2			jinja2
-%global jinja2_version		3.1.5
+%global jinja2_version		3.1.6
 %global markupsafe		MarkupSafe
 %global markupsafe_version	2.0.1
 %global stringutils		string-utils
@@ -57,7 +57,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.10.0
-Release: 76%{?alphatag:.%{alphatag}}%{?dist}.4
+Release: 76%{?alphatag:.%{alphatag}}%{?dist}.6
 License: GPLv2+ and LGPLv2+
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
@@ -255,6 +255,7 @@ Patch55: RHEL-25256-fence_vmware_rest-detect-user-sufficient-rights.patch
 Patch56: RHEL-43235-fence_aws-1-list-add-instance-name-status.patch
 Patch57: RHEL-43235-fence_aws-2-log-error-for-unknown-states.patch
 Patch58: RHEL-59882-fence_scsi-only-preempt-once-for-mpath-devices.patch
+Patch59: RHEL-83487-fence_ibm_vpc-refresh-bearer-token.patch
 
 ### HA support libs/utils ###
 # all archs
@@ -434,6 +435,7 @@ BuildRequires: %{systemd_units}
 %patch -p1 -P 56
 %patch -p1 -P 57
 %patch -p1 -P 58
+%patch -p1 -P 59
 
 # prevent compilation of something that won't get used anyway
 sed -i.orig 's|FENCE_ZVM=1|FENCE_ZVM=0|' configure.ac
@@ -1530,6 +1532,15 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
+* Fri Mar 14 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-76.6
+- fence_ibm_vpc: refresh bearer-token if token data is corrupt, and
+  avoid edge-case of writing empty token file
+  Resolves: RHEL-83487
+
+* Tue Mar 11 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-76.5
+- bundled jinja2: fix CVE-2025-27516
+  Resolves: RHEL-82712
+
 * Thu Jan  9 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-76.4
 - bundled jinja2: fix CVE-2024-56201 and CVE-2024-56326
   Resolves: RHEL-72070, RHEL-72063
