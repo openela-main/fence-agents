@@ -57,21 +57,18 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.10.0
-Release: 76%{?alphatag:.%{alphatag}}%{?dist}.6
+Release: 86%{?alphatag:.%{alphatag}}%{?dist}
 License: GPLv2+ and LGPLv2+
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
 ### HA support requirements-*.txt ###
-Source100: requirements-aliyun.txt
-Source101: requirements-aws.txt
-Source102: requirements-azure.txt
-Source103: requirements-google.txt
-Source104: requirements-common.txt
+Source100: requirements-common.txt
+Source101: requirements-aliyun.txt
+Source102: requirements-aws.txt
+Source103: requirements-azure.txt
+Source104: requirements-google.txt
+Source105: requirements-ibm.txt
 ### HA support libs/utils ###
-# awscli 2+ is only available from github (and needs to be renamed from aws-cli... to awscli)
-Source900: awscli-2.2.15.tar.gz
-# From awscli's requirements.txt: https://github.com/boto/botocore/zipball/v2#egg=botocore
-Source901: botocore-2.0.0dev123.zip
 # update with ./update-ha-support.sh and replace lines below with output
 ### BEGIN ###
 # aliyun
@@ -92,108 +89,97 @@ Source2000: aliyun-cli-3.0.198.tar.gz
 Source2001: aliyun-openapi-meta-5cf98b660.tar.gz
 ## go mod vendor
 Source2002: aliyun-cli-go-vendor.tar.gz
-# awscli
-Source1008: awscrt-0.11.13-cp39-cp39-manylinux2014_x86_64.whl
-Source1009: colorama-0.4.3-py2.py3-none-any.whl
-Source1010: cryptography-3.3.2-cp36-abi3-manylinux2010_x86_64.whl
-Source1011: distro-1.5.0-py2.py3-none-any.whl
-Source1012: docutils-0.15.2-py3-none-any.whl
-Source1013: prompt_toolkit-2.0.10-py3-none-any.whl
-Source1014: ruamel.yaml-0.15.100.tar.gz
-Source1015: six-1.16.0-py2.py3-none-any.whl
-Source1016: wcwidth-0.1.9-py2.py3-none-any.whl
 # aws
-Source1017: boto3-1.17.102-py2.py3-none-any.whl
-Source1018: botocore-1.20.102-py2.py3-none-any.whl
-Source1019: python_dateutil-2.8.1-py2.py3-none-any.whl
-Source1020: s3transfer-0.4.2-py2.py3-none-any.whl
-Source1021: urllib3-1.26.18.tar.gz
+Source1007: boto3-1.17.102-py2.py3-none-any.whl
+Source1008: botocore-1.20.102-py2.py3-none-any.whl
+Source1009: python_dateutil-2.8.1-py2.py3-none-any.whl
+Source1010: s3transfer-0.4.2-py2.py3-none-any.whl
+Source1011: %{urllib3}-%{urllib3_version}.tar.gz
 # azure
-Source1022: adal-1.2.7-py2.py3-none-any.whl
-Source1023: azure_common-1.1.27-py2.py3-none-any.whl
-Source1024: azure_core-1.15.0-py2.py3-none-any.whl
-Source1025: azure_mgmt_compute-21.0.0-py2.py3-none-any.whl
-Source1026: azure_mgmt_core-1.2.2-py2.py3-none-any.whl
-Source1027: azure_mgmt_network-19.0.0-py2.py3-none-any.whl
-Source1028: azure-identity-1.10.0.zip
-Source1029: chardet-4.0.0-py2.py3-none-any.whl
-Source1030: idna-2.10-py2.py3-none-any.whl
-Source1031: isodate-0.6.0-py2.py3-none-any.whl
-Source1032: msrest-0.6.21-py2.py3-none-any.whl
-Source1033: msrestazure-0.6.4-py2.py3-none-any.whl
-Source1034: %{oauthlib}-%{oauthlib_version}.tar.gz
-Source1035: PyJWT-2.1.0-py3-none-any.whl
-Source1036: requests-2.25.1-py2.py3-none-any.whl
-Source1037: requests_oauthlib-1.3.0-py2.py3-none-any.whl
-Source1038: msal-1.18.0.tar.gz
-Source1039: msal-extensions-1.0.0.tar.gz
-Source1040: portalocker-2.5.1.tar.gz
+Source1012: adal-1.2.7.tar.gz
+Source1013: azure-common-1.1.28.zip
+Source1014: azure_core-1.32.0.tar.gz
+Source1015: azure_mgmt_compute-34.0.0.tar.gz
+Source1016: azure_mgmt_core-1.5.0.tar.gz
+Source1017: azure_mgmt_network-28.1.0.tar.gz
+Source1018: azure_identity-1.19.0.tar.gz
+Source1019: chardet-4.0.0-py2.py3-none-any.whl
+Source1020: isodate-0.6.1.tar.gz
+Source1021: msrest-0.7.1.zip
+Source1022: msrestazure-0.6.4.post1.tar.gz
+Source1023: %{oauthlib}-%{oauthlib_version}.tar.gz
+Source1024: PyJWT-2.1.0-py3-none-any.whl
+Source1025: requests_oauthlib-1.3.0-py2.py3-none-any.whl
+Source1026: msal-1.31.1.tar.gz
+Source1027: msal_extensions-1.2.0.tar.gz
+Source1028: portalocker-2.5.1.tar.gz
+Source1029: cryptography-3.3.2-cp36-abi3-manylinux2010_x86_64.whl
+Source1030: typing_extensions-4.12.2.tar.gz
 # google
-Source1041: cachetools-4.2.2-py3-none-any.whl
-Source1042: chardet-3.0.4-py2.py3-none-any.whl
-Source1043: google_api_core-1.30.0-py2.py3-none-any.whl
-Source1044: google_api_python_client-1.12.8-py2.py3-none-any.whl
-Source1045: googleapis_common_protos-1.53.0-py2.py3-none-any.whl
-Source1046: google_auth-1.32.0-py2.py3-none-any.whl
-Source1047: google_auth_httplib2-0.1.0-py2.py3-none-any.whl
-Source1048: httplib2-0.19.1-py3-none-any.whl
-Source1049: packaging-20.9-py2.py3-none-any.whl
-Source1050: protobuf-3.17.3-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.whl
-Source1051: pyasn1-0.4.8-py2.py3-none-any.whl
-Source1052: pyasn1_modules-0.2.8-py2.py3-none-any.whl
-Source1053: pyparsing-2.4.7-py2.py3-none-any.whl
-Source1054: pyroute2-0.7.12.tar.gz
-Source1055: pyroute2.core-0.6.13.tar.gz
-Source1056: pyroute2.ethtool-0.6.13.tar.gz
-Source1057: pyroute2.ipdb-0.6.13.tar.gz
-Source1058: pyroute2.ipset-0.6.13.tar.gz
-Source1059: pyroute2.ndb-0.6.13.tar.gz
-Source1060: pyroute2.nftables-0.6.13.tar.gz
-Source1061: pyroute2.nslink-0.6.13.tar.gz
-Source1062: pytz-2021.1-py2.py3-none-any.whl
-Source1063: rsa-4.7.2-py3-none-any.whl
-Source1064: setuptools-71.1.0.tar.gz
-Source1065: uritemplate-3.0.1-py2.py3-none-any.whl
+Source1031: cachetools-4.2.2-py3-none-any.whl
+Source1032: chardet-3.0.4-py2.py3-none-any.whl
+Source1033: google_api_core-1.30.0-py2.py3-none-any.whl
+Source1034: google_api_python_client-1.12.8-py2.py3-none-any.whl
+Source1035: googleapis_common_protos-1.53.0-py2.py3-none-any.whl
+Source1036: google_auth-1.32.0-py2.py3-none-any.whl
+Source1037: google_auth_httplib2-0.1.0-py2.py3-none-any.whl
+Source1038: httplib2-0.19.1-py3-none-any.whl
+Source1039: packaging-20.9-py2.py3-none-any.whl
+Source1040: protobuf-3.17.3-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.whl
+Source1041: pyasn1-0.4.8-py2.py3-none-any.whl
+Source1042: pyasn1_modules-0.2.8-py2.py3-none-any.whl
+Source1043: pyparsing-2.4.7-py2.py3-none-any.whl
+Source1044: pyroute2-0.7.12.tar.gz
+Source1045: pyroute2.core-0.6.13.tar.gz
+Source1046: pyroute2.ethtool-0.6.13.tar.gz
+Source1047: pyroute2.ipdb-0.6.13.tar.gz
+Source1048: pyroute2.ipset-0.6.13.tar.gz
+Source1049: pyroute2.ndb-0.6.13.tar.gz
+Source1050: pyroute2.nftables-0.6.13.tar.gz
+Source1051: pyroute2.nslink-0.6.13.tar.gz
+Source1052: pytz-2021.1-py2.py3-none-any.whl
+Source1053: rsa-4.7.2-py3-none-any.whl
+Source1054: setuptools-71.1.0.tar.gz
+Source1055: uritemplate-3.0.1-py2.py3-none-any.whl
 # common (pexpect / suds)
-Source1066: pexpect-4.8.0-py2.py3-none-any.whl
-Source1067: ptyprocess-0.7.0-py2.py3-none-any.whl
-Source1068: suds_community-0.8.5-py3-none-any.whl
+Source1056: pexpect-4.8.0-py2.py3-none-any.whl
+Source1057: ptyprocess-0.7.0-py2.py3-none-any.whl
+Source1058: suds_community-0.8.5-py3-none-any.whl
 ### END ###
 # kubevirt
 ## pip download --no-binary :all: openshift "ruamel.yaml.clib>=0.1.2"
 ### BEGIN
-Source1069: %{openshift}-%{openshift_version}.tar.gz
-Source1070: %{ruamelyamlclib}-%{ruamelyamlclib_version}.tar.gz
-Source1071: %{kubernetes}-%{kubernetes_version}.tar.gz
-Source1072: %{certifi}-%{certifi_version}.tar.gz
-Source1073: %{googleauth}-%{googleauth_version}.tar.gz
-Source1074: %{cachetools}-%{cachetools_version}.tar.gz
-Source1075: %{pyasn1modules}-%{pyasn1modules_version}.tar.gz
-Source1076: %{pyasn1}-%{pyasn1_version}.tar.gz
-Source1077: python-%{dateutil}-%{dateutil_version}.tar.gz
-Source1078: %{pyyaml}-%{pyyaml_version}.tar.gz
+Source1060: %{openshift}-%{openshift_version}.tar.gz
+Source1061: %{ruamelyamlclib}-%{ruamelyamlclib_version}.tar.gz
+Source1062: %{kubernetes}-%{kubernetes_version}.tar.gz
+Source1063: %{certifi}-%{certifi_version}.tar.gz
+Source1064: %{googleauth}-%{googleauth_version}.tar.gz
+Source1065: %{cachetools}-%{cachetools_version}.tar.gz
+Source1066: %{pyasn1modules}-%{pyasn1modules_version}.tar.gz
+Source1067: %{pyasn1}-%{pyasn1_version}.tar.gz
+Source1068: python-%{dateutil}-%{dateutil_version}.tar.gz
+Source1069: %{pyyaml}-%{pyyaml_version}.tar.gz
 ## rsa is dependency for "pip install",
 ## but gets removed to use cryptography lib instead
-Source1079: rsa-4.7.2.tar.gz
-Source1080: %{six}-%{six_version}.tar.gz
-Source1081: %{websocketclient}-%{websocketclient_version}.tar.gz
-Source1082: %{jinja2}-%{jinja2_version}.tar.gz
-Source1083: %{markupsafe}-%{markupsafe_version}.tar.gz
-Source1084: python-%{stringutils}-%{stringutils_version}.tar.gz
-Source1085: %{requests}-%{requests_version}.tar.gz
-Source1086: %{chrstnormalizer}-%{chrstnormalizer_version}.tar.gz
-Source1087: %{idna}-%{idna_version}.tar.gz
-Source1088: %{reqstsoauthlib}-%{reqstsoauthlib_version}.tar.gz
-Source1089: %{ruamelyaml}-%{ruamelyaml_version}.tar.gz
+Source1070: rsa-4.7.2.tar.gz
+Source1071: %{six}-%{six_version}.tar.gz
+Source1072: %{websocketclient}-%{websocketclient_version}.tar.gz
+Source1073: %{jinja2}-%{jinja2_version}.tar.gz
+Source1074: %{markupsafe}-%{markupsafe_version}.tar.gz
+Source1075: python-%{stringutils}-%{stringutils_version}.tar.gz
+Source1076: %{requests}-%{requests_version}.tar.gz
+Source1077: %{chrstnormalizer}-%{chrstnormalizer_version}.tar.gz
+Source1078: %{idna}-%{idna_version}.tar.gz
+Source1079: %{reqstsoauthlib}-%{reqstsoauthlib_version}.tar.gz
+Source1080: %{ruamelyaml}-%{ruamelyaml_version}.tar.gz
 ## required for installation
-Source1090: setuptools_scm-8.1.0.tar.gz
-Source1091: packaging-21.2-py3-none-any.whl
-Source1092: poetry-core-1.0.7.tar.gz
-Source1093: pyparsing-3.0.1.tar.gz
-Source1094: tomli-2.0.1.tar.gz
-Source1095: flit_core-3.9.0.tar.gz
-Source1096: typing_extensions-4.12.2.tar.gz
-Source1097: wheel-0.37.0-py2.py3-none-any.whl
+Source1081: setuptools_scm-8.1.0.tar.gz
+Source1082: packaging-21.2-py3-none-any.whl
+Source1083: poetry-core-1.0.7.tar.gz
+Source1084: pyparsing-3.0.1.tar.gz
+Source1085: tomli-2.0.1.tar.gz
+Source1086: flit_core-3.9.0.tar.gz
+Source1087: wheel-0.37.0-py2.py3-none-any.whl
 ### END
 
 Patch0: ha-cloud-support-aliyun.patch
@@ -254,14 +240,17 @@ Patch54: RHEL-35263-fence_eps-add-fence_epsr2-for-ePowerSwitch-R2-and-newer.patc
 Patch55: RHEL-25256-fence_vmware_rest-detect-user-sufficient-rights.patch
 Patch56: RHEL-43235-fence_aws-1-list-add-instance-name-status.patch
 Patch57: RHEL-43235-fence_aws-2-log-error-for-unknown-states.patch
-Patch58: RHEL-59882-fence_scsi-only-preempt-once-for-mpath-devices.patch
-Patch59: RHEL-83487-fence_ibm_vpc-refresh-bearer-token.patch
+Patch58: RHEL-59878-fence_scsi-only-preempt-once-for-mpath-devices.patch
+Patch59: RHEL-56138-fence_mpath-1-support-hex-key-format.patch
+Patch60: RHEL-56138-fence_mpath-2-fix-unfencing-issue-use-MULTILINE-avoid-duplicates.patch
+Patch61: RHEL-62206-fence_ibm_powervs-add-private-endpoint-and-token-file-support.patch
+Patch62: RHEL-76493-fence_azure_arm-use-azure-identity.patch
 
 ### HA support libs/utils ###
 # all archs
 Patch1000: bz2217902-1-kubevirt-fix-bundled-dateutil-CVE-2007-4559.patch
 # cloud (x86_64 only)
-Patch2000: bz2217902-2-aws-awscli-azure-fix-bundled-dateutil-CVE-2007-4559.patch
+Patch2000: bz2217902-2-aws-azure-fix-bundled-dateutil-CVE-2007-4559.patch
 Patch2001: RHEL-43562-fix-bundled-urllib3-CVE-2024-37891.patch
 
 %global supportedagents amt_ws apc apc_snmp bladecenter brocade cisco_mds cisco_ucs compute drac5 eaton_snmp emerson eps evacuate hpblade ibmblade ibm_powervs ibm_vpc ifmib ilo ilo_moonshot ilo_mp ilo_ssh intelmodular ipdu ipmilan kdump kubevirt lpar mpath redfish rhevm rsa rsb sbd scsi vmware_rest vmware_soap wti
@@ -436,6 +425,9 @@ BuildRequires: %{systemd_units}
 %patch -p1 -P 57
 %patch -p1 -P 58
 %patch -p1 -P 59
+%patch -p1 -P 60
+%patch -p1 -P 61
+%patch -p1 -P 62
 
 # prevent compilation of something that won't get used anyway
 sed -i.orig 's|FENCE_ZVM=1|FENCE_ZVM=0|' configure.ac
@@ -466,22 +458,21 @@ popd
 # support libs
 %ifarch x86_64
 LIBS="%{_sourcedir}/requirements-*.txt"
-echo "awscli" >> %{_sourcedir}/requirements-awscli.txt
 %endif
-%ifnarch x86_64
+%ifarch ppc64le
+LIBS="%{_sourcedir}/requirements-common.txt %{_sourcedir}/requirements-ibm.txt"
+%endif
+%ifnarch x86_64 ppc64le
 LIBS="%{_sourcedir}/requirements-common.txt"
 %endif
 for x in $LIBS; do
+	[ "%{_arch}" = "x86_64" ] && [ "$x" = "%{_sourcedir}/requirements-ibm.txt" ] && continue
 	%{__python3} -m pip install --target support/$(echo $x | sed -E "s/.*requirements-(.*).txt/\1/") --no-index --find-links %{_sourcedir} -r $x
 done
 
 # fix incorrect #! detected by CI
 %ifarch x86_64
-sed -i -e "/^#\!\/Users/c#\!%{__python3}" support/aws/bin/jp support/awscli/bin/jp
-%endif
-
-%ifarch x86_64
-sed -i -e "/^import awscli.clidriver/isys.path.insert(0, '/usr/lib/%{name}/support/awscli')" support/awscli/bin/aws
+sed -i -e "/^#\!\/Users/c#\!%{__python3}" support/aws/bin/jp
 %endif
 
 # kubevirt
@@ -617,10 +608,12 @@ This package contains support files including the Python fencing library.
 %dir %{_usr}/lib/%{name}
 %{_usr}/lib/%{name}/support/common
 
-%ifarch x86_64
+%ifarch x86_64 ppc64le
 %package -n ha-cloud-support
 License: GPL-2.0-or-later AND LGPL-2.0-or-later AND LGPL-2.1-or-later AND Apache-2.0 AND MIT AND BSD-2-Clause AND BSD-3-Clause AND MPL-2.0 AND Apache-2.0 AND PSF-2.0 AND Unlicense AND ISC
 Summary: Support libraries for HA Cloud agents
+%ifarch x86_64
+Requires: awscli2
 # aliyun
 Provides: bundled(python-aliyun-python-sdk-core) = 2.11.5
 Provides: bundled(python-aliyun-python-sdk-ecs) = 4.24.7
@@ -631,17 +624,6 @@ Provides: bundled(python-pycryptodome) = 3.20.0
 Provides: bundled(python-pycparser) = 2.20
 Provides: bundled(aliyun-cli) = 3.0.198
 Provides: bundled(aliyun-openapi-meta) = 5cf98b660
-# awscli
-Provides: bundled(awscli) = 2.2.15
-Provides: bundled(python-awscrt) = 0.11.13
-Provides: bundled(python-colorama) = 0.4.3
-Provides: bundled(python-cryptography) = 3.3.2
-Provides: bundled(python-distro) = 1.5.0
-Provides: bundled(python-docutils) = 0.15.2
-Provides: bundled(python-prompt-toolkit) = 2.0.10
-Provides: bundled(python-ruamel-yaml) = 0.15.100
-Provides: bundled(python-six) = 1.16.0
-Provides: bundled(python-wcwidth) = 0.1.9
 # aws
 Provides: bundled(python-boto3) = 1.17.102
 Provides: bundled(python-botocore) = 1.20.102
@@ -650,21 +632,32 @@ Provides: bundled(python-s3transfer) = 0.4.2
 Provides: bundled(python-urllib3) = 1.26.18
 # azure
 Provides: bundled(python-adal) = 1.2.7
-Provides: bundled(python-azure-common) = 1.1.27
-Provides: bundled(python-azure-core) = 1.15.0
-Provides: bundled(python-azure-mgmt-compute) = 21.0.0
-Provides: bundled(python-azure-mgmt-core) = 1.2.2
-Provides: bundled(python-azure-mgmt-network) = 19.0.0
-Provides: bundled(python-certifi) = %{certifi_version}
+Provides: bundled(python-azure-common) = 1.1.28
+Provides: bundled(python-azure-core) = 1.32.0
+Provides: bundled(python-azure-identity) = 1.19.0
+Provides: bundled(python-azure-mgmt-compute) = 34.0.0
+Provides: bundled(python-azure-mgmt-core) = 1.5.0
+Provides: bundled(python-azure-mgmt-network) = 28.1.0
 Provides: bundled(python-chardet) = 4.0.0
-Provides: bundled(python-idna) = 2.10
-Provides: bundled(python-isodate) = 0.6.0
-Provides: bundled(python-msrest) = 0.6.21
-Provides: bundled(python-msrestazure) = 0.6.4
-Provides: bundled(python-oauthlib) = 3.1.1
+Provides: bundled(python-cffi) = 1.14.5
+Provides: bundled(python-%{chrstnormalizer}) = %{chrstnormalizer_version}
+Provides: bundled(python-cryptography) = 3.3.2
+Provides: bundled(python-dateutil) = 2.8.1
+Provides: bundled(python-%{idna}) = %{idna_version}
+Provides: bundled(python-isodate) = 0.6.1
+Provides: bundled(python-msal) = 1.31.1
+Provides: bundled(python-msal-extensions) = 1.2.0
+Provides: bundled(python-msrest) = 0.7.1
+Provides: bundled(python-msrestazure) = 0.6.4.post1
+Provides: bundled(python-%{oauthlib}) = %{oauthlib_version}
+Provides: bundled(python-portalocker) = 2.5.1
+Provides: bundled(python-pycparser) = 2.20
 Provides: bundled(python-PyJWT) = 2.1.0
-Provides: bundled(python-requests) = 2.25.1
+Provides: bundled(python-%{requests}) = %{requests_version}
 Provides: bundled(python-requests-oauthlib) = 1.3.0
+Provides: bundled(python-%{six}) = %{six_version}
+Provides: bundled(python-typing-extensions) = 4.12.2
+Provides: bundled(python-%{urllib3}) = %{urllib3_version}
 # google
 Provides: bundled(python-cachetools) = 4.2.2
 Provides: bundled(python-chardet) = 3.0.4
@@ -691,6 +684,15 @@ Provides: bundled(python-pytz) = 2021.1
 Provides: bundled(python-rsa) = 4.7.2
 Provides: bundled(python3-setuptools) = 71.1.0
 Provides: bundled(python-uritemplate) = 3.0.1
+%endif
+%ifarch ppc64le
+# ibm
+Provides: bundled(python3-%{certifi}) = %{certifi_version}
+Provides: bundled(python3-%{chrstnormalizer}) = %{chrstnormalizer_version}
+Provides: bundled(python3-%{idna}) = %{idna_version}
+Provides: bundled(python3-%{requests}) = %{requests_version}
+Provides: bundled(python3-%{urllib3}) = %{urllib3_version}
+%endif
 %description -n ha-cloud-support
 Support libraries for Fence Agents.
 %files -n ha-cloud-support
@@ -1532,27 +1534,45 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
-* Fri Mar 14 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-76.6
-- fence_ibm_vpc: refresh bearer-token if token data is corrupt, and
-  avoid edge-case of writing empty token file
-  Resolves: RHEL-83487
-
-* Tue Mar 11 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-76.5
+* Tue Mar 11 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-86
 - bundled jinja2: fix CVE-2025-27516
-  Resolves: RHEL-82712
+  Resolves: RHEL-82713
 
-* Thu Jan  9 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-76.4
+* Fri Jan 31 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-85
+- fence_azure_arm: use azure-identity instead of msrestazure, which has
+  been deprecated
+  Resolves: RHEL-76493
+
+* Wed Jan  8 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-83
 - bundled jinja2: fix CVE-2024-56201 and CVE-2024-56326
-  Resolves: RHEL-72070, RHEL-72063
+  Resolves: RHEL-72074, RHEL-72067
 
-* Wed Sep 25 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-76.1
+* Tue Nov 26 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-82
+- Move fence-agents to AppStream
+  Resolves: RHEL-68841
+
+* Wed Oct 23 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-81
+- fence_ibm_powervs: add private endpoint and token file support
+  Resolves: RHEL-62206
+- ha-cloud-support: bundle libs for the powervs-subnet resource agent
+  Resolves: RHEL-64023
+
+* Thu Oct 10 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-80
+- fence_mpath: add support for hex-key format (used in multipath.conf)
+  Resolves: RHEL-56138
+- fence_scsi/fence_mpath: add support for SPC-4 disks
+  Resolves: RHEL-7629
+
+* Wed Sep 25 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-77
 - fence_scsi: preempt clears all devices on the mpath device, so only
   run it for the first device
-  Resolves: RHEL-59882
+  Resolves: RHEL-59878
+- ha-cloud-support: remove bundled awscli and use awscli2 package
+  instead
+  Resolves: RHEL-60020
 
 * Tue Jul 23 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-76
 - bundled setuptools: fix CVE-2024-6345
-
   Resolves: RHEL-49658
 
 * Fri Jun 21 2024 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-75

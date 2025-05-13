@@ -1,0 +1,10 @@
+--- a/agents/mpath/fence_mpath.py	2024-10-09 14:56:07.688665678 +0200
++++ b/agents/mpath/fence_mpath.py	2024-10-09 14:56:12.639780798 +0200
+@@ -323,6 +323,7 @@
+ 		fail_usage("Failed: No devices found")
+ 
+ 	options["devices"] = [d for d in re.split("\s*,\s*|\s+", options["--devices"].strip()) if d]
++	options["--plug"] = re.sub(r"^0x0*|^0+", "", options["--plug"])
+ 	# Input control END
+ 
+ 	result = fence_action(None, options, set_status, get_status)
