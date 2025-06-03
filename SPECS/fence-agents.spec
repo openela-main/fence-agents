@@ -87,7 +87,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.2.1
-Release: 129%{?alphatag:.%{alphatag}}%{?dist}.7
+Release: 129%{?alphatag:.%{alphatag}}%{?dist}.8
 License: GPLv2+ and LGPLv2+
 Group: System Environment/Base
 URL: https://github.com/ClusterLabs/fence-agents
@@ -315,6 +315,7 @@ Patch142: RHEL-14343-fence_zvmip-2-fix-manpage-formatting.patch
 Patch143: RHEL-7734-fence_eps-add-fence_epsr2-for-ePowerSwitch-R2-and-newer.patch
 Patch144: RHEL-56840-fence_scsi-only-preempt-once-for-mpath-devices.patch
 Patch145: RHEL-76492-fence_azure_arm-use-azure-identity.patch
+Patch146: RHEL-65025-fence_ibm_powervs-add-private-endpoint-and-token-file-support.patch
 
 ### HA support libs/utils ###
 # all archs
@@ -549,6 +550,7 @@ BuildRequires: python3-google-api-client python3-pip python3-wheel python3-jinja
 %patch -p1 -P 143 -F1
 %patch -p1 -P 144
 %patch -p1 -P 145
+%patch -p1 -P 146
 
 # prevent compilation of something that won't get used anyway
 sed -i.orig 's|FENCE_ZVM=1|FENCE_ZVM=0|' configure.ac
@@ -1595,6 +1597,10 @@ Fence agent for IBM z/VM over IP.
 %endif
 
 %changelog
+* Fri Apr 25 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-129.8
+- fence_ibm_powervs: add private endpoint and token file support
+  Resolves: RHEL-65025
+
 * Thu Jan 30 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-129.7
 - fence_azure_arm: use azure-identity instead of msrestazure, which has
   been deprecated
