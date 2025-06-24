@@ -57,7 +57,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.10.0
-Release: 86%{?alphatag:.%{alphatag}}%{?dist}
+Release: 86%{?alphatag:.%{alphatag}}%{?dist}.4
 License: GPLv2+ and LGPLv2+
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
@@ -245,6 +245,9 @@ Patch59: RHEL-56138-fence_mpath-1-support-hex-key-format.patch
 Patch60: RHEL-56138-fence_mpath-2-fix-unfencing-issue-use-MULTILINE-avoid-duplicates.patch
 Patch61: RHEL-62206-fence_ibm_powervs-add-private-endpoint-and-token-file-support.patch
 Patch62: RHEL-76493-fence_azure_arm-use-azure-identity.patch
+Patch63: RHEL-83488-fence_ibm_vpc-refresh-bearer-token.patch
+Patch64: RHEL-92695-1-fence_sbd-improve-error-handling.patch
+Patch65: RHEL-92695-2-fence_sbd-get-devices-from-SBD_DEVICE-if-devices-parameter-isnt-set.patch
 
 ### HA support libs/utils ###
 # all archs
@@ -428,6 +431,9 @@ BuildRequires: %{systemd_units}
 %patch -p1 -P 60
 %patch -p1 -P 61
 %patch -p1 -P 62
+%patch -p1 -P 63
+%patch -p1 -P 64
+%patch -p1 -P 65
 
 # prevent compilation of something that won't get used anyway
 sed -i.orig 's|FENCE_ZVM=1|FENCE_ZVM=0|' configure.ac
@@ -1534,6 +1540,16 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
+* Wed May 21 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-86.4
+- fence_sbd: improve error handling and get devices from SBD_DEVICE env
+  variable if devices parameter isnt set
+  Resolves: RHEL-92695
+
+* Fri Mar 14 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-86.3
+- fence_ibm_vpc: refresh bearer-token if token data is corrupt, and
+  avoid edge-case of writing empty token file
+  Resolves: RHEL-83488
+
 * Tue Mar 11 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-86
 - bundled jinja2: fix CVE-2025-27516
   Resolves: RHEL-82713

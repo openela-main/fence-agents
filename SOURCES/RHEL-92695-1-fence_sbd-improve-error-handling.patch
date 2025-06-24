@@ -1,0 +1,296 @@
+From ab1de07902d9f380c10405d6ddac3aeb43838c86 Mon Sep 17 00:00:00 2001
+From: Klaus Wenninger <klaus.wenninger@aon.at>
+Date: Thu, 28 Jul 2022 15:33:12 +0200
+Subject: [PATCH] fence_sbd: improve error handling
+
+basically when using 3 disks be happy with 2 answers
+but give it 5s at least to collect all answers
+increase default power-timeout to 30s so that waiting
+those 5s still allows us to get done sending the
+reboot
+
+RHBZ#2033671
+---
+ agents/sbd/fence_sbd.py           |  77 +++++++++++++--------
+ lib/fencing.py.py                 | 109 ++++++++++++++++++++++++++++++
+ tests/data/metadata/fence_sbd.xml |   2 +-
+ 3 files changed, 158 insertions(+), 30 deletions(-)
+
+diff --git a/agents/sbd/fence_sbd.py b/agents/sbd/fence_sbd.py
+index 0c876b16e..2b0127d55 100644
+--- a/agents/sbd/fence_sbd.py
++++ b/agents/sbd/fence_sbd.py
+@@ -5,7 +5,7 @@
+ import os
+ import atexit
+ sys.path.append("@FENCEAGENTSLIBDIR@")
+-from fencing import fail_usage, run_command, fence_action, all_opt
++from fencing import fail_usage, run_commands, fence_action, all_opt
+ from fencing import atexit_handler, check_input, process_input, show_docs
+ from fencing import run_delay
+ import itertools
+@@ -81,7 +81,7 @@ def check_sbd_device(options, device_path):
+ 
+     cmd = "%s -d %s dump" % (options["--sbd-path"], device_path)
+ 
+-    (return_code, out, err) = run_command(options, cmd)
++    (return_code, out, err) = run_commands(options, [ cmd ])
+ 
+     for line in itertools.chain(out.split("\n"), err.split("\n")):
+         if len(line) == 0:
+@@ -94,21 +94,35 @@ def check_sbd_device(options, device_path):
+ 
+     return DEVICE_INIT
+ 
++
+ def generate_sbd_command(options, command, arguments=None):
+     """Generates a sbd command based on given arguments.
+ 
+     Return Value:
+-    generated sbd command (string)
++    generated list of sbd commands (strings) depending
++    on command multiple commands with a device each
++    or a single command with multiple devices
+     """
+-    cmd = options["--sbd-path"]
++    cmds = []
++
++    if not command in ["list", "dump"]:
++        cmd = options["--sbd-path"]
+ 
+-    # add "-d" for each sbd device
+-    for device in parse_sbd_devices(options):
+-        cmd += " -d %s" % device
++        # add "-d" for each sbd device
++        for device in parse_sbd_devices(options):
++            cmd += " -d %s" % device
+ 
+-    cmd += " %s %s" % (command, arguments)
++        cmd += " %s %s" % (command, arguments)
++        cmds.append(cmd)
++
++    else:
++        for device in parse_sbd_devices(options):
++            cmd = options["--sbd-path"]
++            cmd += " -d %s" % device
++            cmd += " %s %s" % (command, arguments)
++            cmds.append(cmd)
+ 
+-    return cmd
++    return cmds
+ 
+ def send_sbd_message(conn, options, plug, message):
+     """Sends a message to all sbd devices.
+@@ -128,7 +142,7 @@ def send_sbd_message(conn, options, plug, message):
+     arguments = "%s %s" % (plug, message)
+     cmd = generate_sbd_command(options, "message", arguments)
+ 
+-    (return_code, out, err) = run_command(options, cmd)
++    (return_code, out, err) = run_commands(options, cmd)
+ 
+     return (return_code, out, err)
+ 
+@@ -147,7 +161,7 @@ def get_msg_timeout(options):
+ 
+     cmd = generate_sbd_command(options, "dump")
+ 
+-    (return_code, out, err) = run_command(options, cmd)
++    (return_code, out, err) = run_commands(options, cmd)
+ 
+     for line in itertools.chain(out.split("\n"), err.split("\n")):
+         if len(line) == 0:
+@@ -288,7 +302,7 @@ def get_node_list(conn, options):
+ 
+     cmd = generate_sbd_command(options, "list")
+ 
+-    (return_code, out, err) = run_command(options, cmd)
++    (return_code, out, err) = run_commands(options, cmd)
+ 
+     for line in out.split("\n"):
+         if len(line) == 0:
+@@ -356,6 +370,7 @@ def main():
+ 
+     all_opt["method"]["default"] = "cycle"
+     all_opt["method"]["help"] = "-m, --method=[method]          Method to fence (onoff|cycle) (Default: cycle)"
++    all_opt["power_timeout"]["default"] = "30"
+ 
+     options = check_input(device_opt, process_input(device_opt))
+ 
+@@ -376,23 +391,27 @@ def main():
+ 
+     # We need to check if the provided sbd_devices exists. We need to do
+     # that for every given device.
+-    for device_path in parse_sbd_devices(options):
+-        logging.debug("check device \"%s\"", device_path)
+-
+-        return_code = check_sbd_device(options, device_path)
+-        if PATH_NOT_EXISTS == return_code:
+-            logging.error("\"%s\" does not exist", device_path)
+-        elif PATH_NOT_BLOCK == return_code:
+-            logging.error("\"%s\" is not a valid block device", device_path)
+-        elif DEVICE_NOT_INIT == return_code:
+-            logging.error("\"%s\" is not initialized", device_path)
+-        elif DEVICE_INIT != return_code:
+-            logging.error("UNKNOWN error while checking \"%s\"", device_path)
+-
+-        # If we get any error while checking the device we need to exit at this
+-        # point.
+-        if DEVICE_INIT != return_code:
+-            exit(return_code)
++    # Just for the case we are really rebooting / powering off a device
++    # (pacemaker as well uses the list command to generate a dynamic list)
++    # we leave it to sbd to try and decide if it was successful
++    if not options["--action"] in ["reboot", "off", "list"]:
++        for device_path in parse_sbd_devices(options):
++            logging.debug("check device \"%s\"", device_path)
++
++            return_code = check_sbd_device(options, device_path)
++            if PATH_NOT_EXISTS == return_code:
++                logging.error("\"%s\" does not exist", device_path)
++            elif PATH_NOT_BLOCK == return_code:
++                logging.error("\"%s\" is not a valid block device", device_path)
++            elif DEVICE_NOT_INIT == return_code:
++                logging.error("\"%s\" is not initialized", device_path)
++            elif DEVICE_INIT != return_code:
++                logging.error("UNKNOWN error while checking \"%s\"", device_path)
++
++            # If we get any error while checking the device we need to exit at this
++            # point.
++            if DEVICE_INIT != return_code:
++                exit(return_code)
+ 
+     # we check against the defined timeouts. If the pacemaker timeout is smaller
+     # then that defined within sbd we should report this.
+diff --git a/lib/fencing.py.py b/lib/fencing.py.py
+index b746ede8b..fc3679e33 100644
+--- a/lib/fencing.py.py
++++ b/lib/fencing.py.py
+@@ -1088,6 +1088,115 @@ def is_executable(path):
+ 			return True
+ 	return False
+ 
++def run_commands(options, commands, timeout=None, env=None, log_command=None):
++	# inspired by psutils.wait_procs (BSD License)
++	def check_gone(proc, timeout):
++		try:
++			returncode = proc.wait(timeout=timeout)
++		except subprocess.TimeoutExpired:
++			pass
++		else:
++			if returncode is not None or not proc.is_running():
++				proc.returncode = returncode
++				gone.add(proc)
++
++	if timeout is None and "--power-timeout" in options:
++		timeout = options["--power-timeout"]
++	if timeout == 0:
++		timeout = None
++	if timeout is not None:
++		timeout = float(timeout)
++
++	time_start = time.time()
++	procs = []
++	status = None
++	pipe_stdout = ""
++	pipe_stderr = ""
++
++	for command in commands:
++		logging.info("Executing: %s\n", log_command or command)
++
++		try:
++			process = subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env,
++					# decodes newlines and in python3 also converts bytes to str
++					universal_newlines=(sys.version_info[0] > 2))
++		except OSError:
++			fail_usage("Unable to run %s\n" % command)
++
++		procs.append(process)
++
++	gone = set()
++	alive = set(procs)
++
++	while True:
++		if alive:
++			max_timeout = 2.0 / len(alive)
++			for proc in alive:
++				if timeout is not None:
++					if time.time()-time_start >= timeout:
++						# quickly go over the rest
++						max_timeout = 0
++				check_gone(proc, max_timeout)
++			alive = alive - gone
++
++		if not alive:
++			break
++
++		if time.time()-time_start < 5.0:
++			# give it at least 5s to get a complete answer
++			# afterwards we're OK with a quorate answer
++			continue
++
++		if len(gone) > len(alive):
++			good_cnt = 0
++			for proc in gone:
++				if proc.returncode == 0:
++					good_cnt += 1
++			# a positive result from more than half is fine
++			if good_cnt > len(procs)/2:
++				break
++
++		if timeout is not None:
++			if time.time() - time_start >= timeout:
++				logging.debug("Stop waiting after %s\n", str(timeout))
++				break
++
++	logging.debug("Done: %d gone, %d alive\n", len(gone), len(alive))
++
++	for proc in gone:
++		if (status != 0):
++			status = proc.returncode
++		# hand over the best status we have
++		# but still collect as much stdout/stderr feedback
++		# avoid communicate as we know already process
++		# is gone and it seems to block when there
++		# are D state children we don't get rid off
++		os.set_blocking(proc.stdout.fileno(), False)
++		os.set_blocking(proc.stderr.fileno(), False)
++		try:
++			pipe_stdout += proc.stdout.read()
++		except:
++			pass
++		try:
++			pipe_stderr += proc.stderr.read()
++		except:
++			pass
++		proc.stdout.close()
++		proc.stderr.close()
++
++	for proc in alive:
++		proc.kill()
++
++	if status is None:
++		fail(EC_TIMED_OUT, stop=(int(options.get("retry", 0)) < 1))
++		status = EC_TIMED_OUT
++		pipe_stdout = ""
++		pipe_stderr = "timed out"
++
++	logging.debug("%s %s %s\n", str(status), str(pipe_stdout), str(pipe_stderr))
++
++	return (status, pipe_stdout, pipe_stderr)
++
+ def run_command(options, command, timeout=None, env=None, log_command=None):
+ 	if timeout is None and "--power-timeout" in options:
+ 		timeout = options["--power-timeout"]
+diff --git a/tests/data/metadata/fence_sbd.xml b/tests/data/metadata/fence_sbd.xml
+index 516370c40..7248b864a 100644
+--- a/tests/data/metadata/fence_sbd.xml
++++ b/tests/data/metadata/fence_sbd.xml
+@@ -87,7 +87,7 @@
+ 	</parameter>
+ 	<parameter name="power_timeout" unique="0" required="0">
+ 		<getopt mixed="--power-timeout=[seconds]" />
+-		<content type="second" default="20"  />
++		<content type="second" default="30"  />
+ 		<shortdesc lang="en">Test X seconds for status change after ON/OFF</shortdesc>
+ 	</parameter>
+ 	<parameter name="power_wait" unique="0" required="0">
