@@ -28,7 +28,7 @@
 %global pyasn1			pyasn1
 %global pyasn1_version		0.4.8
 %global dateutil		dateutil
-%global dateutil_version	2.8.2
+%global dateutil_version	2.8.1
 %global pyyaml			PyYAML
 %global pyyaml_version		5.1
 %global six			six
@@ -57,7 +57,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.10.0
-Release: 86%{?alphatag:.%{alphatag}}%{?dist}.4
+Release: 86%{?alphatag:.%{alphatag}}%{?dist}.7
 License: GPLv2+ and LGPLv2+
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
@@ -92,7 +92,7 @@ Source2002: aliyun-cli-go-vendor.tar.gz
 # aws
 Source1007: boto3-1.17.102-py2.py3-none-any.whl
 Source1008: botocore-1.20.102-py2.py3-none-any.whl
-Source1009: python_dateutil-2.8.1-py2.py3-none-any.whl
+Source1009: python_%{dateutil}-%{dateutil_version}-py2.py3-none-any.whl
 Source1010: s3transfer-0.4.2-py2.py3-none-any.whl
 Source1011: %{urllib3}-%{urllib3_version}.tar.gz
 # azure
@@ -139,7 +139,7 @@ Source1050: pyroute2.nftables-0.6.13.tar.gz
 Source1051: pyroute2.nslink-0.6.13.tar.gz
 Source1052: pytz-2021.1-py2.py3-none-any.whl
 Source1053: rsa-4.7.2-py3-none-any.whl
-Source1054: setuptools-71.1.0.tar.gz
+Source1054: setuptools-80.9.0.tar.gz
 Source1055: uritemplate-3.0.1-py2.py3-none-any.whl
 # common (pexpect / suds)
 Source1056: pexpect-4.8.0-py2.py3-none-any.whl
@@ -157,29 +157,28 @@ Source1064: %{googleauth}-%{googleauth_version}.tar.gz
 Source1065: %{cachetools}-%{cachetools_version}.tar.gz
 Source1066: %{pyasn1modules}-%{pyasn1modules_version}.tar.gz
 Source1067: %{pyasn1}-%{pyasn1_version}.tar.gz
-Source1068: python-%{dateutil}-%{dateutil_version}.tar.gz
-Source1069: %{pyyaml}-%{pyyaml_version}.tar.gz
+Source1068: %{pyyaml}-%{pyyaml_version}.tar.gz
 ## rsa is dependency for "pip install",
 ## but gets removed to use cryptography lib instead
-Source1070: rsa-4.7.2.tar.gz
-Source1071: %{six}-%{six_version}.tar.gz
-Source1072: %{websocketclient}-%{websocketclient_version}.tar.gz
-Source1073: %{jinja2}-%{jinja2_version}.tar.gz
-Source1074: %{markupsafe}-%{markupsafe_version}.tar.gz
-Source1075: python-%{stringutils}-%{stringutils_version}.tar.gz
-Source1076: %{requests}-%{requests_version}.tar.gz
-Source1077: %{chrstnormalizer}-%{chrstnormalizer_version}.tar.gz
-Source1078: %{idna}-%{idna_version}.tar.gz
-Source1079: %{reqstsoauthlib}-%{reqstsoauthlib_version}.tar.gz
-Source1080: %{ruamelyaml}-%{ruamelyaml_version}.tar.gz
+Source1069: rsa-4.7.2.tar.gz
+Source1070: %{six}-%{six_version}.tar.gz
+Source1071: %{websocketclient}-%{websocketclient_version}.tar.gz
+Source1072: %{jinja2}-%{jinja2_version}.tar.gz
+Source1073: %{markupsafe}-%{markupsafe_version}.tar.gz
+Source1074: python-%{stringutils}-%{stringutils_version}.tar.gz
+Source1075: %{requests}-%{requests_version}.tar.gz
+Source1076: %{chrstnormalizer}-%{chrstnormalizer_version}.tar.gz
+Source1077: %{idna}-%{idna_version}.tar.gz
+Source1078: %{reqstsoauthlib}-%{reqstsoauthlib_version}.tar.gz
+Source1079: %{ruamelyaml}-%{ruamelyaml_version}.tar.gz
 ## required for installation
-Source1081: setuptools_scm-8.1.0.tar.gz
-Source1082: packaging-21.2-py3-none-any.whl
-Source1083: poetry-core-1.0.7.tar.gz
-Source1084: pyparsing-3.0.1.tar.gz
-Source1085: tomli-2.0.1.tar.gz
-Source1086: flit_core-3.9.0.tar.gz
-Source1087: wheel-0.37.0-py2.py3-none-any.whl
+Source1080: setuptools_scm-8.1.0.tar.gz
+Source1081: packaging-21.2-py3-none-any.whl
+Source1082: poetry-core-1.0.7.tar.gz
+Source1083: pyparsing-3.0.1.tar.gz
+Source1084: tomli-2.0.1.tar.gz
+Source1085: flit_core-3.9.0.tar.gz
+Source1086: wheel-0.37.0-py2.py3-none-any.whl
 ### END
 
 Patch0: ha-cloud-support-aliyun.patch
@@ -248,6 +247,7 @@ Patch62: RHEL-76493-fence_azure_arm-use-azure-identity.patch
 Patch63: RHEL-83488-fence_ibm_vpc-refresh-bearer-token.patch
 Patch64: RHEL-92695-1-fence_sbd-improve-error-handling.patch
 Patch65: RHEL-92695-2-fence_sbd-get-devices-from-SBD_DEVICE-if-devices-parameter-isnt-set.patch
+Patch66: RHEL-96183-fence_kubevirt-force-off.patch
 
 ### HA support libs/utils ###
 # all archs
@@ -255,6 +255,7 @@ Patch1000: bz2217902-1-kubevirt-fix-bundled-dateutil-CVE-2007-4559.patch
 # cloud (x86_64 only)
 Patch2000: bz2217902-2-aws-azure-fix-bundled-dateutil-CVE-2007-4559.patch
 Patch2001: RHEL-43562-fix-bundled-urllib3-CVE-2024-37891.patch
+Patch2002: RHEL-95903-pkg_resources-suppress-UserWarning.patch
 
 %global supportedagents amt_ws apc apc_snmp bladecenter brocade cisco_mds cisco_ucs compute drac5 eaton_snmp emerson eps evacuate hpblade ibmblade ibm_powervs ibm_vpc ifmib ilo ilo_moonshot ilo_mp ilo_ssh intelmodular ipdu ipmilan kdump kubevirt lpar mpath redfish rhevm rsa rsb sbd scsi vmware_rest vmware_soap wti
 %ifarch x86_64
@@ -434,6 +435,7 @@ BuildRequires: %{systemd_units}
 %patch -p1 -P 63
 %patch -p1 -P 64
 %patch -p1 -P 65
+%patch -p1 -P 66
 
 # prevent compilation of something that won't get used anyway
 sed -i.orig 's|FENCE_ZVM=1|FENCE_ZVM=0|' configure.ac
@@ -493,6 +495,7 @@ pushd support
 %ifarch x86_64
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH2000}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH2001}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2002}
 %endif
 popd
 
@@ -633,7 +636,7 @@ Provides: bundled(aliyun-openapi-meta) = 5cf98b660
 # aws
 Provides: bundled(python-boto3) = 1.17.102
 Provides: bundled(python-botocore) = 1.20.102
-Provides: bundled(python-dateutil) = 2.8.1
+Provides: bundled(python-%{dateutil}) = %{dateutil_version}
 Provides: bundled(python-s3transfer) = 0.4.2
 Provides: bundled(python-urllib3) = 1.26.18
 # azure
@@ -648,7 +651,7 @@ Provides: bundled(python-chardet) = 4.0.0
 Provides: bundled(python-cffi) = 1.14.5
 Provides: bundled(python-%{chrstnormalizer}) = %{chrstnormalizer_version}
 Provides: bundled(python-cryptography) = 3.3.2
-Provides: bundled(python-dateutil) = 2.8.1
+Provides: bundled(python-%{dateutil}) = %{dateutil_version}
 Provides: bundled(python-%{idna}) = %{idna_version}
 Provides: bundled(python-isodate) = 0.6.1
 Provides: bundled(python-msal) = 1.31.1
@@ -688,7 +691,7 @@ Provides: bundled(python-pyroute2-nftables) = 0.6.13
 Provides: bundled(python-pyroute2-nslink) = 0.6.13
 Provides: bundled(python-pytz) = 2021.1
 Provides: bundled(python-rsa) = 4.7.2
-Provides: bundled(python3-setuptools) = 71.1.0
+Provides: bundled(python3-setuptools) = 80.9.0
 Provides: bundled(python-uritemplate) = 3.0.1
 %endif
 %ifarch ppc64le
@@ -1234,7 +1237,7 @@ Provides: bundled(python3-%{idna}) = %{idna_version}
 Provides: bundled(python3-%{reqstsoauthlib}) = %{reqstsoauthlib_version}
 Provides: bundled(python3-%{oauthlib}) = %{oauthlib_version}
 Provides: bundled(python3-%{ruamelyaml}) = %{ruamelyaml_version}
-Provides: bundled(python3-setuptools) = 71.1.0
+Provides: bundled(python3-setuptools) = 80.9.0
 %description kubevirt
 Fence agent for KubeVirt platform.
 %files kubevirt
@@ -1540,6 +1543,14 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
+* Thu Jun 26 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-86.7
+- bundled setuptools: fix CVE-2025-47273
+  Resolves: RHEL-95903
+
+* Fri Jun 13 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-86.6
+- fence_kubevirt: use hard poweroff
+  Resolves: RHEL-96183
+
 * Wed May 21 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-86.4
 - fence_sbd: improve error handling and get devices from SBD_DEVICE env
   variable if devices parameter isnt set
