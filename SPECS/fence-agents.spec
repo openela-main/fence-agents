@@ -57,7 +57,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.10.0
-Release: 86%{?alphatag:.%{alphatag}}%{?dist}.7
+Release: 86%{?alphatag:.%{alphatag}}%{?dist}.8
 License: GPLv2+ and LGPLv2+
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
@@ -247,7 +247,6 @@ Patch62: RHEL-76493-fence_azure_arm-use-azure-identity.patch
 Patch63: RHEL-83488-fence_ibm_vpc-refresh-bearer-token.patch
 Patch64: RHEL-92695-1-fence_sbd-improve-error-handling.patch
 Patch65: RHEL-92695-2-fence_sbd-get-devices-from-SBD_DEVICE-if-devices-parameter-isnt-set.patch
-Patch66: RHEL-96183-fence_kubevirt-force-off.patch
 
 ### HA support libs/utils ###
 # all archs
@@ -435,7 +434,6 @@ BuildRequires: %{systemd_units}
 %patch -p1 -P 63
 %patch -p1 -P 64
 %patch -p1 -P 65
-%patch -p1 -P 66
 
 # prevent compilation of something that won't get used anyway
 sed -i.orig 's|FENCE_ZVM=1|FENCE_ZVM=0|' configure.ac
@@ -1543,13 +1541,9 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
-* Thu Jun 26 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-86.7
+* Thu Jul 17 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-86.8
 - bundled setuptools: fix CVE-2025-47273
   Resolves: RHEL-95903
-
-* Fri Jun 13 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-86.6
-- fence_kubevirt: use hard poweroff
-  Resolves: RHEL-96183
 
 * Wed May 21 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-86.4
 - fence_sbd: improve error handling and get devices from SBD_DEVICE env
