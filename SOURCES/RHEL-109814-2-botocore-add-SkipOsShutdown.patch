@@ -1,0 +1,31 @@
+diff -uNr a/aws/botocore/data/ec2/2016-11-15/service-2.json b/aws/botocore/data/ec2/2016-11-15/service-2.json
+--- a/aws/botocore/data/ec2/2016-11-15/service-2.json	2025-08-19 11:21:50.328630448 +0200
++++ b/aws/botocore/data/ec2/2016-11-15/service-2.json	2025-08-19 11:25:37.767261040 +0200
+@@ -45844,7 +45844,11 @@
+         },
+         "Hibernate":{
+           "shape":"Boolean",
+-          "documentation":"<p>Hibernates the instance if the instance was enabled for hibernation at launch. If the instance cannot hibernate successfully, a normal shutdown occurs. For more information, see <a href=\"https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Hibernate.html\">Hibernate your instance</a> in the <i>Amazon EC2 User Guide</i>.</p> <p> Default: <code>false</code> </p>"
++          "documentation":"<p>Hibernates the instance if the instance was enabled for hibernation at launch. If the instance cannot hibernate successfully, a normal shutdown occurs. For more information, see <a href=\"https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Hibernate.html\">Hibernate your Amazon EC2 instance</a> in the <i>Amazon EC2 User Guide</i>.</p> <p> Default: <code>false</code> </p>"
++        },
++        "SkipOsShutdown":{
++          "shape":"Boolean",
++          "documentation":"<p>Specifies whether to bypass the graceful OS shutdown process when the instance is stopped.</p> <important> <p>Bypassing the graceful OS shutdown might result in data loss or corruption (for example, memory contents not flushed to disk or loss of in-flight IOs) or skipped shutdown scripts.</p> </important> <p>Default: <code>false</code> </p>"
+         },
+         "DryRun":{
+           "shape":"Boolean",
+@@ -46648,6 +46652,14 @@
+           "documentation":"<p>The IDs of the instances.</p> <p>Constraints: Up to 1000 instance IDs. We recommend breaking up this request into smaller batches.</p>",
+           "locationName":"InstanceId"
+         },
++        "Force":{
++          "shape":"Boolean",
++          "documentation":"<p>Forces the instances to terminate. The instance will first attempt a graceful shutdown, which includes flushing file system caches and metadata. If the graceful shutdown fails to complete within the timeout period, the instance shuts down forcibly without flushing the file system caches and metadata.</p>"
++        },
++        "SkipOsShutdown":{
++          "shape":"Boolean",
++          "documentation":"<p>Specifies whether to bypass the graceful OS shutdown process when the instance is terminated.</p> <p>Default: <code>false</code> </p>"
++        },
+         "DryRun":{
+           "shape":"Boolean",
+           "documentation":"<p>Checks whether you have the required permissions for the action, without actually making the request, and provides an error response. If you have the required permissions, the error response is <code>DryRunOperation</code>. Otherwise, it is <code>UnauthorizedOperation</code>.</p>",

@@ -87,7 +87,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.2.1
-Release: 129%{?alphatag:.%{alphatag}}%{?dist}.11
+Release: 129%{?alphatag:.%{alphatag}}%{?dist}.14
 License: GPLv2+ and LGPLv2+
 Group: System Environment/Base
 URL: https://github.com/ClusterLabs/fence-agents
@@ -317,6 +317,8 @@ Patch144: RHEL-56840-fence_scsi-only-preempt-once-for-mpath-devices.patch
 Patch145: RHEL-76492-fence_azure_arm-use-azure-identity.patch
 Patch146: RHEL-65025-fence_ibm_powervs-add-private-endpoint-and-token-file-support.patch
 Patch147: RHEL-99338-fence_aliyun-update.patch
+Patch148: RHEL-107506-fence_ibm_vpc-add-apikey-file-support.patch
+Patch149: RHEL-109814-1-fence_aws-add-skipshutdown-parameter.patch
 
 ### HA support libs/utils ###
 # all archs
@@ -325,9 +327,12 @@ Patch1001: RHEL-22174-kubevirt-fix-bundled-jinja2-CVE-2024-22195.patch
 Patch1002: RHEL-35655-kubevirt-fix-bundled-jinja2-CVE-2024-34064.patch
 Patch1003: RHEL-43568-1-kubevirt-fix-bundled-urllib3-CVE-2024-37891.patch
 Patch1004: RHEL-50223-setuptools-fix-CVE-2024-6345.patch
+Patch1005: RHEL-104741-1-kubevirt-fix-bundled-requests-CVE-2024-47081.patch
 # cloud (x86_64 only)
 Patch2000: bz2218234-2-aws-fix-bundled-dateutil-CVE-2007-4559.patch
 Patch2001: RHEL-43568-2-aws-fix-bundled-urllib3-CVE-2024-37891.patch
+Patch2002: RHEL-104741-2-aliyun-aws-azure-fix-bundled-requests-CVE-2024-47081.patch
+Patch2003: RHEL-109814-2-botocore-add-SkipOsShutdown.patch
 
 %if 0%{?fedora} || 0%{?rhel} > 7
 %global supportedagents amt_ws apc apc_snmp bladecenter brocade cisco_mds cisco_ucs compute drac5 eaton_snmp emerson eps evacuate hds_cb hpblade ibmblade ibm_powervs ibm_vpc ifmib ilo ilo_moonshot ilo_mp ilo_ssh intelmodular ipdu ipmilan kdump kubevirt lpar mpath redfish rhevm rsa rsb sbd scsi vmware_rest vmware_soap wti
@@ -553,6 +558,8 @@ BuildRequires: python3-google-api-client python3-pip python3-wheel python3-jinja
 %patch -p1 -P 145
 %patch -p1 -P 146
 %patch -p1 -P 147
+%patch -p1 -P 148
+%patch -p1 -P 149
 
 # prevent compilation of something that won't get used anyway
 sed -i.orig 's|FENCE_ZVM=1|FENCE_ZVM=0|' configure.ac
@@ -675,10 +682,13 @@ pushd %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=1 < %{PATCH1002}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH1003}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1004}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1005}
 
 %ifarch x86_64
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2000}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH2001}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH2002}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2003}
 %endif
 popd
 
@@ -1599,6 +1609,18 @@ Fence agent for IBM z/VM over IP.
 %endif
 
 %changelog
+* Thu Aug 21 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-129.14
+- fence_aws: add skip_os_shutdown parameter
+  Resolves: RHEL-109814
+
+* Fri Aug 15 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-129.13
+- bundled requests: fix CVE-2024-47081
+  Resolves: RHEL-104741
+
+* Tue Aug 12 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-129.12
+- fence_ibm_vpc: add apikey file support
+  Resolves: RHEL-107506
+
 * Tue Aug  5 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-129.11
 - fence_aliyun: add credentials file support
   Resolves: RHEL-99338
