@@ -1,0 +1,12 @@
+diff --color -uNr a/agents/kubevirt/fence_kubevirt.py b/agents/kubevirt/fence_kubevirt.py
+--- a/agents/kubevirt/fence_kubevirt.py	2022-01-17 12:18:10.000000000 +0100
++++ b/agents/kubevirt/fence_kubevirt.py	2024-03-14 10:10:00.334272185 +0100
+@@ -8,6 +8,8 @@
+ from fencing import fail, fail_usage, run_delay, EC_STATUS, EC_FETCH_VM_UUID
+ 
+ try:
++    sys.path.insert(0, '/usr/lib/fence-agents/support/kubevirt/lib64/python#PYTHON3_VERSION#/site-packages')
++    sys.path.insert(1, '/usr/lib/fence-agents/support/kubevirt/lib/python#PYTHON3_VERSION#/site-packages')
+     from kubernetes.client.exceptions import ApiException
+ except ImportError:
+     logging.error("Couldn\'t import kubernetes.client.exceptions.ApiException - not found or not accessible")

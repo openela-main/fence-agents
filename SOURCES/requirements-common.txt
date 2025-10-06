@@ -1,0 +1,3 @@
+pexpect
+pycurl
+suds-community

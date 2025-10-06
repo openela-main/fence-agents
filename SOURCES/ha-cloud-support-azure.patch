@@ -1,0 +1,16 @@
+--- a/agents/azure_arm/fence_azure_arm.py	2025-01-31 15:12:38.877143460 +0100
++++ b/agents/azure_arm/fence_azure_arm.py	2025-01-31 11:20:23.325919657 +0100
+@@ -1,6 +1,12 @@
+ #!@PYTHON@ -tt
+ 
+-import sys, re, pexpect
++import sys, re
++sys.path.insert(0, '/usr/lib/fence-agents/support/common/lib/python#PYTHON3_VERSION#/site-packages')
++sys.path.insert(1, '/usr/lib/fence-agents/support/azure/lib/python#PYTHON3_VERSION#/site-packages')
++try:
++    import pexpect
++except:
++    pass
+ import logging
+ import atexit
+ import xml.etree.ElementTree as ET

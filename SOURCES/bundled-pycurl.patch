@@ -1,0 +1,110 @@
+diff --color -uNr a/agents/cisco_ucs/fence_cisco_ucs.py b/agents/cisco_ucs/fence_cisco_ucs.py
+--- a/agents/cisco_ucs/fence_cisco_ucs.py	2024-05-29 17:10:31.000000000 +0200
++++ b/agents/cisco_ucs/fence_cisco_ucs.py	2024-11-25 12:24:29.897194522 +0100
+@@ -1,6 +1,8 @@
+ #!@PYTHON@ -tt
+ 
+ import sys, re
++sys.path.insert(0, '/usr/lib/fence-agents/support/common/lib64/python#PYTHON3_VERSION#/site-packages')
++sys.path.insert(1, '/usr/lib/fence-agents/support/common/lib/python#PYTHON3_VERSION#/site-packages')
+ import pycurl, io
+ import logging
+ import atexit
+diff --color -uNr a/agents/docker/fence_docker.py b/agents/docker/fence_docker.py
+--- a/agents/docker/fence_docker.py	2024-11-20 11:39:38.000000000 +0100
++++ b/agents/docker/fence_docker.py	2024-11-25 12:24:42.345486546 +0100
+@@ -4,6 +4,8 @@
+ import sys
+ import io
+ import logging
++sys.path.insert(0, '/usr/lib/fence-agents/support/common/lib64/python#PYTHON3_VERSION#/site-packages')
++sys.path.insert(1, '/usr/lib/fence-agents/support/common/lib/python#PYTHON3_VERSION#/site-packages')
+ import pycurl
+ import json
+ 
+diff --color -uNr a/agents/ibm_powervs/fence_ibm_powervs.py b/agents/ibm_powervs/fence_ibm_powervs.py
+--- a/agents/ibm_powervs/fence_ibm_powervs.py	2024-11-20 11:39:38.000000000 +0100
++++ b/agents/ibm_powervs/fence_ibm_powervs.py	2024-11-25 12:24:43.929523706 +0100
+@@ -1,6 +1,8 @@
+ #!@PYTHON@ -tt
+ 
+ import sys
++sys.path.insert(0, '/usr/lib/fence-agents/support/common/lib64/python#PYTHON3_VERSION#/site-packages')
++sys.path.insert(1, '/usr/lib/fence-agents/support/common/lib/python#PYTHON3_VERSION#/site-packages')
+ import pycurl
+ import io
+ import json
+diff --color -uNr a/agents/ibm_vpc/fence_ibm_vpc.py b/agents/ibm_vpc/fence_ibm_vpc.py
+--- a/agents/ibm_vpc/fence_ibm_vpc.py	2024-05-29 17:10:31.000000000 +0200
++++ b/agents/ibm_vpc/fence_ibm_vpc.py	2024-11-25 12:24:48.318626670 +0100
+@@ -1,6 +1,8 @@
+ #!@PYTHON@ -tt
+ 
+ import sys
++sys.path.insert(0, '/usr/lib/fence-agents/support/common/lib64/python#PYTHON3_VERSION#/site-packages')
++sys.path.insert(1, '/usr/lib/fence-agents/support/common/lib/python#PYTHON3_VERSION#/site-packages')
+ import pycurl, io, json
+ import logging
+ import atexit
+diff --color -uNr a/agents/pve/fence_pve.py b/agents/pve/fence_pve.py
+--- a/agents/pve/fence_pve.py	2024-05-29 17:10:31.000000000 +0200
++++ b/agents/pve/fence_pve.py	2024-11-25 12:24:52.395722312 +0100
+@@ -6,6 +6,8 @@
+ 
+ import sys
+ import json
++sys.path.insert(0, '/usr/lib/fence-agents/support/common/lib64/python#PYTHON3_VERSION#/site-packages')
++sys.path.insert(1, '/usr/lib/fence-agents/support/common/lib/python#PYTHON3_VERSION#/site-packages')
+ import pycurl
+ import io
+ import atexit
+diff --color -uNr a/agents/rhevm/fence_rhevm.py b/agents/rhevm/fence_rhevm.py
+--- a/agents/rhevm/fence_rhevm.py	2024-05-29 17:10:31.000000000 +0200
++++ b/agents/rhevm/fence_rhevm.py	2024-11-25 12:24:56.342814908 +0100
+@@ -1,6 +1,8 @@
+ #!@PYTHON@ -tt
+ 
+ import sys, re
++sys.path.insert(0, '/usr/lib/fence-agents/support/common/lib64/python#PYTHON3_VERSION#/site-packages')
++sys.path.insert(1, '/usr/lib/fence-agents/support/common/lib/python#PYTHON3_VERSION#/site-packages')
+ import pycurl, io
+ import logging
+ import atexit
+diff --color -uNr a/agents/vmware_rest/fence_vmware_rest.py b/agents/vmware_rest/fence_vmware_rest.py
+--- a/agents/vmware_rest/fence_vmware_rest.py	2024-05-29 17:10:31.000000000 +0200
++++ b/agents/vmware_rest/fence_vmware_rest.py	2024-11-25 12:25:02.753965308 +0100
+@@ -1,6 +1,8 @@
+ #!@PYTHON@ -tt
+ 
+ import sys
++sys.path.insert(0, '/usr/lib/fence-agents/support/common/lib64/python#PYTHON3_VERSION#/site-packages')
++sys.path.insert(1, '/usr/lib/fence-agents/support/common/lib/python#PYTHON3_VERSION#/site-packages')
+ import pycurl, io, json
+ import logging
+ import atexit
+diff --color -uNr a/agents/vmware_vcloud/fence_vmware_vcloud.py b/agents/vmware_vcloud/fence_vmware_vcloud.py
+--- a/agents/vmware_vcloud/fence_vmware_vcloud.py	2024-05-29 17:10:31.000000000 +0200
++++ b/agents/vmware_vcloud/fence_vmware_vcloud.py	2024-11-25 12:25:06.316048871 +0100
+@@ -1,6 +1,8 @@
+ #!@PYTHON@ -tt
+ 
+ import sys
++sys.path.insert(0, '/usr/lib/fence-agents/support/common/lib64/python#PYTHON3_VERSION#/site-packages')
++sys.path.insert(1, '/usr/lib/fence-agents/support/common/lib/python#PYTHON3_VERSION#/site-packages')
+ import pycurl, io
+ import logging
+ import atexit
+diff --color -uNr a/lib/fencing.py.py b/lib/fencing.py.py
+--- a/lib/fencing.py.py	2024-11-20 11:39:38.000000000 +0100
++++ b/lib/fencing.py.py	2024-11-25 12:24:23.323040301 +0100
+@@ -1,6 +1,9 @@
+ #!@PYTHON@ -tt
+ 
+-import sys, getopt, time, os, uuid, pycurl, stat
++import sys, getopt, time, os, uuid, stat
++sys.path.insert(0, '/usr/lib/fence-agents/support/common/lib64/python#PYTHON3_VERSION#/site-packages')
++sys.path.insert(1, '/usr/lib/fence-agents/support/common/lib/python#PYTHON3_VERSION#/site-packages')
++import pycurl
+ import pexpect, re, syslog
+ import logging
+ import subprocess
