@@ -87,7 +87,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.2.1
-Release: 129%{?alphatag:.%{alphatag}}%{?dist}.14
+Release: 129%{?alphatag:.%{alphatag}}%{?dist}.15
 License: GPLv2+ and LGPLv2+
 Group: System Environment/Base
 URL: https://github.com/ClusterLabs/fence-agents
@@ -319,6 +319,7 @@ Patch146: RHEL-65025-fence_ibm_powervs-add-private-endpoint-and-token-file-suppo
 Patch147: RHEL-99338-fence_aliyun-update.patch
 Patch148: RHEL-107506-fence_ibm_vpc-add-apikey-file-support.patch
 Patch149: RHEL-109814-1-fence_aws-add-skipshutdown-parameter.patch
+Patch150: RHEL-96179-fence_kubevirt-force-off.patch
 
 ### HA support libs/utils ###
 # all archs
@@ -560,6 +561,7 @@ BuildRequires: python3-google-api-client python3-pip python3-wheel python3-jinja
 %patch -p1 -P 147
 %patch -p1 -P 148
 %patch -p1 -P 149
+%patch -p1 -P 150
 
 # prevent compilation of something that won't get used anyway
 sed -i.orig 's|FENCE_ZVM=1|FENCE_ZVM=0|' configure.ac
@@ -1609,6 +1611,10 @@ Fence agent for IBM z/VM over IP.
 %endif
 
 %changelog
+* Fri Sep 12 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-129.15
+- fence_kubevirt: use hard poweroff
+  Resolves: RHEL-96179
+
 * Thu Aug 21 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-129.14
 - fence_aws: add skip_os_shutdown parameter
   Resolves: RHEL-109814
