@@ -57,7 +57,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.10.0
-Release: 86%{?alphatag:.%{alphatag}}%{?dist}.9
+Release: 86%{?alphatag:.%{alphatag}}%{?dist}.11
 License: GPLv2+ and LGPLv2+
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
@@ -90,10 +90,10 @@ Source2001: aliyun-openapi-meta-5cf98b660.tar.gz
 ## go mod vendor
 Source2002: aliyun-cli-go-vendor.tar.gz
 # aws
-Source1007: boto3-1.17.102-py2.py3-none-any.whl
-Source1008: botocore-1.20.102-py2.py3-none-any.whl
+Source1007: boto3-1.40.13.tar.gz
+Source1008: botocore-1.40.13.tar.gz
 Source1009: python_%{dateutil}-%{dateutil_version}-py2.py3-none-any.whl
-Source1010: s3transfer-0.4.2-py2.py3-none-any.whl
+Source1010: s3transfer-0.13.1.tar.gz
 Source1011: %{urllib3}-%{urllib3_version}.tar.gz
 # azure
 Source1012: adal-1.2.7.tar.gz
@@ -248,6 +248,8 @@ Patch63: RHEL-83488-fence_ibm_vpc-refresh-bearer-token.patch
 Patch64: RHEL-92695-1-fence_sbd-improve-error-handling.patch
 Patch65: RHEL-92695-2-fence_sbd-get-devices-from-SBD_DEVICE-if-devices-parameter-isnt-set.patch
 Patch66: RHEL-107529-fence_ibm_vpc-add-apikey-file-support.patch
+Patch67: RHEL-109923-fence_aws-add-skipshutdown-parameter.patch
+Patch68: RHEL-96183-fence_kubevirt-force-off.patch
 
 ### HA support libs/utils ###
 # all archs
@@ -436,6 +438,8 @@ BuildRequires: %{systemd_units}
 %patch -p1 -P 64
 %patch -p1 -P 65
 %patch -p1 -P 66
+%patch -p1 -P 67 -F2
+%patch -p1 -P 68
 
 # prevent compilation of something that won't get used anyway
 sed -i.orig 's|FENCE_ZVM=1|FENCE_ZVM=0|' configure.ac
@@ -634,10 +638,10 @@ Provides: bundled(python-pycparser) = 2.20
 Provides: bundled(aliyun-cli) = 3.0.198
 Provides: bundled(aliyun-openapi-meta) = 5cf98b660
 # aws
-Provides: bundled(python-boto3) = 1.17.102
-Provides: bundled(python-botocore) = 1.20.102
+Provides: bundled(python-boto3) = 1.40.13
+Provides: bundled(python-botocore) = 1.40.13
 Provides: bundled(python-%{dateutil}) = %{dateutil_version}
-Provides: bundled(python-s3transfer) = 0.4.2
+Provides: bundled(python-s3transfer) = 0.13.1
 Provides: bundled(python-urllib3) = 1.26.18
 # azure
 Provides: bundled(python-adal) = 1.2.7
@@ -1543,6 +1547,14 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
+* Thu Sep 11 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-86.11
+- fence_kubevirt: use hard poweroff
+  Resolves: RHEL-96183
+
+* Tue Aug 19 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-86.10
+- fence_aws: add "skip_os_shutdown" parameter to allow hard poweroff
+  Resolves: RHEL-109923
+
 * Tue Aug 12 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-86.9
 - fence_ibm_vpc: add apikey file support
   Resolves: RHEL-107529
