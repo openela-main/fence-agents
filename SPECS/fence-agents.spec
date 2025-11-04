@@ -13,7 +13,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.16.0
-Release: 5%{?alphatag:.%{alphatag}}%{?dist}.5
+Release: 5%{?alphatag:.%{alphatag}}%{?dist}.6
 License: GPL-2.0-or-later AND LGPL-2.0-or-later
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
@@ -109,6 +109,7 @@ Patch8: bundled-suds.patch
 Patch9: RHEL-83774-fence_ibm_vpc-refresh-bearer-token.patch
 Patch10: RHEL-107530-fence_ibm_vpc-add-apikey-file-support.patch
 Patch11: RHEL-109922-fence_aws-add-skipshutdown-parameter.patch
+Patch12: RHEL-96184-fence_kubevirt-force-off.patch
 
 %global supportedagents amt_ws apc apc_snmp bladecenter brocade cisco_mds cisco_ucs drac5 eaton_snmp emerson eps hpblade ibmblade ibm_powervs ibm_vpc ifmib ilo ilo_moonshot ilo_mp ilo_ssh intelmodular ipdu ipmilan kdump kubevirt lpar mpath redfish rhevm rsa rsb sbd scsi vmware_rest vmware_soap wti
 %ifarch x86_64
@@ -229,6 +230,7 @@ BuildRequires: %{systemd_units}
 %patch -p1 -P 9
 %patch -p1 -P 10
 %patch -p1 -P 11 -F2
+%patch -p1 -P 12
 
 # prevent compilation of something that won't get used anyway
 sed -i.orig 's|FENCE_ZVM=1|FENCE_ZVM=0|' configure.ac
@@ -1188,6 +1190,10 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
+* Fri Sep 12 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-5.6
+- fence_kubevirt: use hard poweroff
+  Resolves: RHEL-96184
+
 * Wed Aug 20 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-5.5
 - fence_aws: add "skip_os_shutdown" parameter to allow hard poweroff
   Resolves: RHEL-109922
