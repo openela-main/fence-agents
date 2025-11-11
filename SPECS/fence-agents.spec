@@ -57,7 +57,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.10.0
-Release: 86%{?alphatag:.%{alphatag}}%{?dist}.11
+Release: 98%{?alphatag:.%{alphatag}}%{?dist}
 License: GPLv2+ and LGPLv2+
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
@@ -244,12 +244,16 @@ Patch59: RHEL-56138-fence_mpath-1-support-hex-key-format.patch
 Patch60: RHEL-56138-fence_mpath-2-fix-unfencing-issue-use-MULTILINE-avoid-duplicates.patch
 Patch61: RHEL-62206-fence_ibm_powervs-add-private-endpoint-and-token-file-support.patch
 Patch62: RHEL-76493-fence_azure_arm-use-azure-identity.patch
-Patch63: RHEL-83488-fence_ibm_vpc-refresh-bearer-token.patch
-Patch64: RHEL-92695-1-fence_sbd-improve-error-handling.patch
-Patch65: RHEL-92695-2-fence_sbd-get-devices-from-SBD_DEVICE-if-devices-parameter-isnt-set.patch
-Patch66: RHEL-107529-fence_ibm_vpc-add-apikey-file-support.patch
-Patch67: RHEL-109923-fence_aws-add-skipshutdown-parameter.patch
-Patch68: RHEL-96183-fence_kubevirt-force-off.patch
+Patch63: RHEL-83255-fence_ibm_vpc-refresh-bearer-token.patch
+Patch64: RHEL-84448-fence_compute-fence_evacuate-dont-use-deprecated-getargspec.patch
+Patch65: RHEL-79798-fence_sbd-get-devices-from-SBD_DEVICE-if-devices-parameter-isnt-set.patch
+Patch66: RHEL-68321-1-fence_nutanix_ahv.patch
+Patch67: RHEL-68321-2-fence_nutanix_ahv-update-metadata.patch
+Patch68: RHEL-88568-fence_ibm_powervs-fix-plaintext-token-file-support.patch
+Patch69: RHEL-13088-fence_sbd-improve-error-handling.patch
+Patch70: RHEL-82193-fence_kubevirt-force-off.patch
+Patch71: RHEL-107505-fence_ibm_vpc-add-apikey-file-support.patch
+Patch72: RHEL-7601-fence_aws-add-skipshutdown-parameter.patch
 
 ### HA support libs/utils ###
 # all archs
@@ -257,9 +261,9 @@ Patch1000: bz2217902-1-kubevirt-fix-bundled-dateutil-CVE-2007-4559.patch
 # cloud (x86_64 only)
 Patch2000: bz2217902-2-aws-azure-fix-bundled-dateutil-CVE-2007-4559.patch
 Patch2001: RHEL-43562-fix-bundled-urllib3-CVE-2024-37891.patch
-Patch2002: RHEL-95903-pkg_resources-suppress-UserWarning.patch
+Patch2002: RHEL-95901-pkg_resources-suppress-UserWarning.patch
 
-%global supportedagents amt_ws apc apc_snmp bladecenter brocade cisco_mds cisco_ucs compute drac5 eaton_snmp emerson eps evacuate hpblade ibmblade ibm_powervs ibm_vpc ifmib ilo ilo_moonshot ilo_mp ilo_ssh intelmodular ipdu ipmilan kdump kubevirt lpar mpath redfish rhevm rsa rsb sbd scsi vmware_rest vmware_soap wti
+%global supportedagents amt_ws apc apc_snmp bladecenter brocade cisco_mds cisco_ucs compute drac5 eaton_snmp emerson eps evacuate hpblade ibmblade ibm_powervs ibm_vpc ifmib ilo ilo_moonshot ilo_mp ilo_ssh intelmodular ipdu ipmilan kdump kubevirt lpar mpath nutanix_ahv redfish rhevm rsa rsb sbd scsi vmware_rest vmware_soap wti
 %ifarch x86_64
 %global testagents virsh heuristics_ping aliyun aws azure_arm gce openstack virt
 %endif
@@ -438,8 +442,12 @@ BuildRequires: %{systemd_units}
 %patch -p1 -P 64
 %patch -p1 -P 65
 %patch -p1 -P 66
-%patch -p1 -P 67 -F2
+%patch -p1 -P 67
 %patch -p1 -P 68
+%patch -p1 -P 69
+%patch -p1 -P 70
+%patch -p1 -P 71
+%patch -p1 -P 72 -F2
 
 # prevent compilation of something that won't get used anyway
 sed -i.orig 's|FENCE_ZVM=1|FENCE_ZVM=0|' configure.ac
@@ -1283,6 +1291,19 @@ Device Mapper Multipath.
 %{_datadir}/cluster/fence_mpath_check*
 %{_mandir}/man8/fence_mpath.8*
 
+%package nutanix-ahv
+License: GPL-2.0-or-later AND LGPL-2.0-or-later
+Summary: Fence agent for Nutanix AHV
+Requires: python3-requests
+Requires: fence-agents-common = %{version}-%{release}
+BuildArch: noarch
+Obsoletes: fence-agents < 3.1.13
+%description nutanix-ahv
+Fence agent for Nutanix AHV clusters.
+%files nutanix-ahv
+%{_sbindir}/fence_nutanix_ahv
+%{_mandir}/man8/fence_nutanix_ahv.8*
+
 %ifarch x86_64 ppc64le
 %package openstack
 License: GPLv2+ and LGPLv2+
@@ -1547,31 +1568,45 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
-* Thu Sep 11 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-86.11
-- fence_kubevirt: use hard poweroff
-  Resolves: RHEL-96183
-
-* Tue Aug 19 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-86.10
+* Tue Aug 19 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-98
 - fence_aws: add "skip_os_shutdown" parameter to allow hard poweroff
-  Resolves: RHEL-109923
+  Resolves: RHEL-7601
 
-* Tue Aug 12 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-86.9
+* Tue Aug 12 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-97
 - fence_ibm_vpc: add apikey file support
-  Resolves: RHEL-107529
+  Resolves: RHEL-107505
 
-* Thu Jul 17 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-86.8
+* Thu Jun 26 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-96
 - bundled setuptools: fix CVE-2025-47273
-  Resolves: RHEL-95903
+  Resolves: RHEL-95901
 
-* Wed May 21 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-86.4
-- fence_sbd: improve error handling and get devices from SBD_DEVICE env
-  variable if devices parameter isnt set
-  Resolves: RHEL-92695
+* Thu Jun 12 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-95
+- fence_kubevirt: use hard poweroff
+  Resolves: RHEL-82193
 
-* Fri Mar 14 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-86.3
+* Wed May 21 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-92
+- fence_sbd: improve error handling
+  Resolves: RHEL-13088
+
+* Mon Apr 28 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-91
+- fence_ibm_powervs: fix plaintext token file support
+  Resolves: RHEL-88568
+
+* Wed Apr 23 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-90
+- fence_nutanix_ahv: new fence agent
+  Resolves: RHEL-68321
+
+* Tue Mar 25 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-88
+- fence_compute/fence_evacuate: dont use deprecated inspect.getargspec()
+  Resolves: RHEL-84448
+- fence_sbd: get devices from SBD_DEVICE env variable if devices
+  parameter isnt set
+  Resolves: RHEL-79798
+
+* Fri Mar 14 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-87
 - fence_ibm_vpc: refresh bearer-token if token data is corrupt, and
   avoid edge-case of writing empty token file
-  Resolves: RHEL-83488
+  Resolves: RHEL-83255
 
 * Tue Mar 11 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-86
 - bundled jinja2: fix CVE-2025-27516

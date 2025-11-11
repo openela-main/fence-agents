@@ -1,0 +1,38 @@
+From deadda03cb331b766d83e332f06af9a53906a2a8 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Fri, 21 Mar 2025 12:21:06 +0100
+Subject: [PATCH] fence_compute/fence_evacuate: dont use deprecated
+ inspect.getargspec()
+
+/usr/sbin/fence_compute:288: DeprecationWarning: inspect.getargspec() is deprecated since Python 3.0, use inspect.signature() or inspect.getfullargspec()
+---
+ agents/compute/fence_compute.py   | 2 +-
+ agents/evacuate/fence_evacuate.py | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/agents/compute/fence_compute.py b/agents/compute/fence_compute.py
+index d862dca3f..01b535bb3 100644
+--- a/agents/compute/fence_compute.py
++++ b/agents/compute/fence_compute.py
+@@ -285,7 +285,7 @@ def create_nova_connection(options):
+ 
+ 	nova_versions = [ "2.11", "2" ]
+ 	for version in nova_versions:
+-		clientargs = inspect.getargspec(client.Client).varargs
++		clientargs = inspect.getfullargspec(client.Client).varargs
+ 		# Some versions of Openstack prior to Ocata only
+ 		# supported positional arguments for username,
+ 		# password, and tenant.
+diff --git a/agents/evacuate/fence_evacuate.py b/agents/evacuate/fence_evacuate.py
+index 53d6fd15b..1ea020f69 100644
+--- a/agents/evacuate/fence_evacuate.py
++++ b/agents/evacuate/fence_evacuate.py
+@@ -221,7 +221,7 @@ def create_nova_connection(options):
+ 
+ 	versions = [ "2.11", "2" ]
+ 	for version in versions:
+-		clientargs = inspect.getargspec(client.Client).varargs
++		clientargs = inspect.getfullargspec(client.Client).varargs
+ 
+ 		# Some versions of Openstack prior to Ocata only
+ 		# supported positional arguments for username,
