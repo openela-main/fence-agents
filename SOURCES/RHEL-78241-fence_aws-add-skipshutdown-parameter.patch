@@ -61,7 +61,7 @@ index 5459a06c4..cddca4580 100644
 +		"help" : "--skip-os-shutdown=[true|false]    Uses SkipOsShutdown flag",
 +		"shortdesc" : "Use SkipOsShutdown flag to stop the EC2 instance",
 +		"required" : "0",
-+		"default" : "false",
++		"default" : "true",
 +		"order" : 8
 +	}
  
@@ -84,7 +84,7 @@ index ad471c797..c53873bbe 100644
  	</parameter>
 +	<parameter name="skip_os_shutdown" unique="0" required="0">
 +		<getopt mixed="--skip-os-shutdown=[true|false]" />
-+		<content type="string" default="false"  />
++		<content type="string" default="true"  />
 +		<shortdesc lang="en">Use SkipOsShutdown flag to stop the EC2 instance</shortdesc>
 +	</parameter>
  	<parameter name="quiet" unique="0" required="0">

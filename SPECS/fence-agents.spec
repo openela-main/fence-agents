@@ -13,7 +13,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.16.0
-Release: 5%{?alphatag:.%{alphatag}}%{?dist}.6
+Release: 13%{?alphatag:.%{alphatag}}%{?dist}
 License: GPL-2.0-or-later AND LGPL-2.0-or-later
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
@@ -106,12 +106,16 @@ Patch5: ha-cloud-support-google.patch
 Patch6: bundled-kubevirt.patch
 Patch7: bundled-pycurl.patch
 Patch8: bundled-suds.patch
-Patch9: RHEL-83774-fence_ibm_vpc-refresh-bearer-token.patch
-Patch10: RHEL-107530-fence_ibm_vpc-add-apikey-file-support.patch
-Patch11: RHEL-109922-fence_aws-add-skipshutdown-parameter.patch
-Patch12: RHEL-96184-fence_kubevirt-force-off.patch
+Patch9: RHEL-83520-fence_ibm_vpc-refresh-bearer-token.patch
+Patch10: RHEL-79799-fence_sbd-get-devices-from-SBD_DEVICE-if-devices-parameter-isnt-set.patch
+Patch11: RHEL-68322-1-fence_nutanix_ahv-handle-api-rate-limits.patch
+Patch12: RHEL-68322-2-fence_nutanix_ahv-update-metadata.patch
+Patch13: RHEL-88569-fence_ibm_powervs-fix-plaintext-token-file-support.patch
+Patch14: RHEL-95379-fence_kubevirt-force-off.patch
+Patch15: RHEL-107504-fence_ibm_vpc-add-apikey-file-support.patch
+Patch16: RHEL-78241-fence_aws-add-skipshutdown-parameter.patch
 
-%global supportedagents amt_ws apc apc_snmp bladecenter brocade cisco_mds cisco_ucs drac5 eaton_snmp emerson eps hpblade ibmblade ibm_powervs ibm_vpc ifmib ilo ilo_moonshot ilo_mp ilo_ssh intelmodular ipdu ipmilan kdump kubevirt lpar mpath redfish rhevm rsa rsb sbd scsi vmware_rest vmware_soap wti
+%global supportedagents amt_ws apc apc_snmp bladecenter brocade cisco_mds cisco_ucs drac5 eaton_snmp emerson eps hpblade ibmblade ibm_powervs ibm_vpc ifmib ilo ilo_moonshot ilo_mp ilo_ssh intelmodular ipdu ipmilan kdump kubevirt lpar mpath nutanix_ahv redfish rhevm rsa rsb sbd scsi vmware_rest vmware_soap wti
 %ifarch x86_64
 %global testagents virsh heuristics_ping aliyun aws azure_arm gce openstack virt
 %endif
@@ -229,8 +233,12 @@ BuildRequires: %{systemd_units}
 %patch -p1 -P 8
 %patch -p1 -P 9
 %patch -p1 -P 10
-%patch -p1 -P 11 -F2
+%patch -p1 -P 11
 %patch -p1 -P 12
+%patch -p1 -P 13
+%patch -p1 -P 14
+%patch -p1 -P 15
+%patch -p1 -P 16 -F2
 
 # prevent compilation of something that won't get used anyway
 sed -i.orig 's|FENCE_ZVM=1|FENCE_ZVM=0|' configure.ac
@@ -946,6 +954,19 @@ Device Mapper Multipath.
 %{_datadir}/cluster/fence_mpath_check*
 %{_mandir}/man8/fence_mpath.8*
 
+%package nutanix-ahv
+License: GPL-2.0-or-later AND LGPL-2.0-or-later
+Summary: Fence agent for Nutanix AHV
+Requires: python3-requests
+Requires: fence-agents-common = %{version}-%{release}
+BuildArch: noarch
+Obsoletes: fence-agents < 3.1.13
+%description nutanix-ahv
+Fence agent for Nutanix AHV clusters.
+%files nutanix-ahv
+%{_sbindir}/fence_nutanix_ahv
+%{_mandir}/man8/fence_nutanix_ahv.8*
+
 %ifarch x86_64 ppc64le
 %package openstack
 License: GPL-2.0-or-later AND LGPL-2.0-or-later
@@ -1190,22 +1211,35 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
-* Fri Sep 12 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-5.6
-- fence_kubevirt: use hard poweroff
-  Resolves: RHEL-96184
-
-* Wed Aug 20 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-5.5
+* Wed Aug 20 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-13
 - fence_aws: add "skip_os_shutdown" parameter to allow hard poweroff
-  Resolves: RHEL-109922
+  Resolves: RHEL-78241
 
-* Tue Aug 12 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-5.4
+* Tue Aug 12 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-12
 - fence_ibm_vpc: add apikey file support
-  Resolves: RHEL-107530
+  Resolves: RHEL-107504
 
-* Thu Jul 17 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-5.3
+* Fri Jun 13 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-11
+- fence_kubevirt: use hard poweroff
+  Resolves: RHEL-95379
+
+* Mon Apr 28 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-10
+- fence_ibm_powervs: fix plaintext token file support
+  Resolves: RHEL-88569
+
+* Wed Apr 23 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-9
+- fence_nutanix_ahv: new fence agent
+  Resolves: RHEL-68322
+
+* Tue Mar 25 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-7
+- fence_sbd: get devices from SBD_DEVICE env variable if devices
+  parameter isnt set
+  Resolves: RHEL-79799
+
+* Mon Mar 17 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-6
 - fence_ibm_vpc: refresh bearer-token if token data is corrupt, and
   avoid edge-case of writing empty token file
-  Resolves: RHEL-83774
+  Resolves: RHEL-83520
 
 * Mon Feb  3 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-5
 - fence_azure_arm: use azure-identity instead of msrestazure, which has
