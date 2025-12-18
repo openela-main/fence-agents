@@ -87,7 +87,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.2.1
-Release: 129%{?alphatag:.%{alphatag}}%{?dist}.15
+Release: 129%{?alphatag:.%{alphatag}}%{?dist}.16
 License: GPLv2+ and LGPLv2+
 Group: System Environment/Base
 URL: https://github.com/ClusterLabs/fence-agents
@@ -320,6 +320,8 @@ Patch147: RHEL-99338-fence_aliyun-update.patch
 Patch148: RHEL-107506-fence_ibm_vpc-add-apikey-file-support.patch
 Patch149: RHEL-109814-1-fence_aws-add-skipshutdown-parameter.patch
 Patch150: RHEL-96179-fence_kubevirt-force-off.patch
+Patch151: RHEL-110964-1-fence_nutanix_ahv.patch
+Patch152: RHEL-110964-2-fence_nutanix_ahv-update-metadata.patch
 
 ### HA support libs/utils ###
 # all archs
@@ -336,7 +338,7 @@ Patch2002: RHEL-104741-2-aliyun-aws-azure-fix-bundled-requests-CVE-2024-47081.pa
 Patch2003: RHEL-109814-2-botocore-add-SkipOsShutdown.patch
 
 %if 0%{?fedora} || 0%{?rhel} > 7
-%global supportedagents amt_ws apc apc_snmp bladecenter brocade cisco_mds cisco_ucs compute drac5 eaton_snmp emerson eps evacuate hds_cb hpblade ibmblade ibm_powervs ibm_vpc ifmib ilo ilo_moonshot ilo_mp ilo_ssh intelmodular ipdu ipmilan kdump kubevirt lpar mpath redfish rhevm rsa rsb sbd scsi vmware_rest vmware_soap wti
+%global supportedagents amt_ws apc apc_snmp bladecenter brocade cisco_mds cisco_ucs compute drac5 eaton_snmp emerson eps evacuate hds_cb hpblade ibmblade ibm_powervs ibm_vpc ifmib ilo ilo_moonshot ilo_mp ilo_ssh intelmodular ipdu ipmilan kdump kubevirt lpar mpath nutanix_ahv redfish rhevm rsa rsb sbd scsi vmware_rest vmware_soap wti
 %ifarch x86_64
 %global testagents virsh heuristics_ping aliyun aws azure_arm gce openstack
 %endif
@@ -562,6 +564,8 @@ BuildRequires: python3-google-api-client python3-pip python3-wheel python3-jinja
 %patch -p1 -P 148
 %patch -p1 -P 149
 %patch -p1 -P 150
+%patch -p1 -P 151
+%patch -p1 -P 152
 
 # prevent compilation of something that won't get used anyway
 sed -i.orig 's|FENCE_ZVM=1|FENCE_ZVM=0|' configure.ac
@@ -1410,6 +1414,19 @@ Device Mapper Multipath.
 %{_datadir}/cluster/fence_mpath_check*
 %{_mandir}/man8/fence_mpath.8*
 
+%package nutanix-ahv
+License: GPL-2.0-or-later AND LGPL-2.0-or-later
+Summary: Fence agent for Nutanix AHV
+Requires: python3-requests
+Requires: fence-agents-common = %{version}-%{release}
+BuildArch: noarch
+Obsoletes: fence-agents < 3.1.13
+%description nutanix-ahv
+Fence agent for Nutanix AHV clusters.
+%files nutanix-ahv
+%{_sbindir}/fence_nutanix_ahv
+%{_mandir}/man8/fence_nutanix_ahv.8*
+
 %ifarch x86_64 ppc64le
 %package openstack
 License: GPLv2+ and LGPLv2+ and ASL 2.0 and MIT and Python
@@ -1611,6 +1628,10 @@ Fence agent for IBM z/VM over IP.
 %endif
 
 %changelog
+* Mon Nov  3 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-129.16
+- fence_nutanix_ahv: new fence agent
+  Resolves: RHEL-110964
+
 * Fri Sep 12 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-129.15
 - fence_kubevirt: use hard poweroff
   Resolves: RHEL-96179

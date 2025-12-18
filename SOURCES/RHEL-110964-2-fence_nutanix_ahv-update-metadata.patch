@@ -1,0 +1,39 @@
+From 345a609a34ea153e168b15d48eb8f2dd8d017f04 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Wed, 23 Apr 2025 15:25:13 +0200
+Subject: [PATCH] fence_nutanix_ahv: update metadata to fix incorrect agent
+ name and align with other agents metadata
+
+---
+ agents/nutanix_ahv/fence_nutanix_ahv.py   | 4 ++--
+ tests/data/metadata/fence_nutanix_ahv.xml | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/agents/nutanix_ahv/fence_nutanix_ahv.py b/agents/nutanix_ahv/fence_nutanix_ahv.py
+index 67e6d907c..c18d6a46e 100644
+--- a/agents/nutanix_ahv/fence_nutanix_ahv.py
++++ b/agents/nutanix_ahv/fence_nutanix_ahv.py
+@@ -563,8 +563,8 @@ def main():
+     all_opt["power_timeout"]["default"] = str(MIN_TIMEOUT)
+     options = check_input(device_opt, process_input(device_opt))
+     docs = {}
+-    docs["shortdesc"] = "Fencing agent for Nutanix AHV Cluster VMs."
+-    docs["longdesc"] = """fence_ahv is a power fencing agent for \
++    docs["shortdesc"] = "Fence agent for Nutanix AHV Cluster VMs."
++    docs["longdesc"] = """fence_nutanix_ahv is a Power Fencing agent for \
+ virtual machines deployed on Nutanix AHV cluster with the AHV cluster \
+ being managed by Prism Central."""
+     docs["vendorurl"] = "https://www.nutanix.com"
+diff --git a/tests/data/metadata/fence_nutanix_ahv.xml b/tests/data/metadata/fence_nutanix_ahv.xml
+index bbc307b1d..2de4b01ad 100644
+--- a/tests/data/metadata/fence_nutanix_ahv.xml
++++ b/tests/data/metadata/fence_nutanix_ahv.xml
+@@ -1,6 +1,6 @@
+ <?xml version="1.0" ?>
+-<resource-agent name="fence_nutanix_ahv" shortdesc="Fencing agent for Nutanix AHV Cluster VMs." >
+-<longdesc>fence_ahv is a power fencing agent for virtual machines deployed on Nutanix AHV cluster with the AHV cluster being managed by Prism Central.</longdesc>
++<resource-agent name="fence_nutanix_ahv" shortdesc="Fence agent for Nutanix AHV Cluster VMs." >
++<longdesc>fence_nutanix_ahv is a Power Fencing agent for virtual machines deployed on Nutanix AHV cluster with the AHV cluster being managed by Prism Central.</longdesc>
+ <vendor-url>https://www.nutanix.com</vendor-url>
+ <parameters>
+ 	<parameter name="action" unique="0" required="1">
