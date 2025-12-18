@@ -13,7 +13,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.16.0
-Release: 13%{?alphatag:.%{alphatag}}%{?dist}
+Release: 13%{?alphatag:.%{alphatag}}%{?dist}.1
 License: GPL-2.0-or-later AND LGPL-2.0-or-later
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
@@ -1211,6 +1211,10 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
+* Wed Nov 19 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-13.1
+- fence_nutanix_ahv: add new fence agent
+  Resolves: RHEL-128285
+
 * Wed Aug 20 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-13
 - fence_aws: add "skip_os_shutdown" parameter to allow hard poweroff
   Resolves: RHEL-78241
