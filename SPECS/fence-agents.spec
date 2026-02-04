@@ -13,7 +13,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.16.0
-Release: 13%{?alphatag:.%{alphatag}}%{?dist}.1
+Release: 13%{?alphatag:.%{alphatag}}%{?dist}.2
 License: GPL-2.0-or-later AND LGPL-2.0-or-later
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
@@ -114,6 +114,10 @@ Patch13: RHEL-88569-fence_ibm_powervs-fix-plaintext-token-file-support.patch
 Patch14: RHEL-95379-fence_kubevirt-force-off.patch
 Patch15: RHEL-107504-fence_ibm_vpc-add-apikey-file-support.patch
 Patch16: RHEL-78241-fence_aws-add-skipshutdown-parameter.patch
+
+### HA support libs/utils ###
+# cloud (x86_64 only)
+Patch1000: RHEL-142444-fix-bundled-pyasn1-CVE-2026-23490.patch
 
 %global supportedagents amt_ws apc apc_snmp bladecenter brocade cisco_mds cisco_ucs drac5 eaton_snmp emerson eps hpblade ibmblade ibm_powervs ibm_vpc ifmib ilo ilo_moonshot ilo_mp ilo_ssh intelmodular ipdu ipmilan kdump kubevirt lpar mpath nutanix_ahv redfish rhevm rsa rsb sbd scsi vmware_rest vmware_soap wti
 %ifarch x86_64
@@ -291,6 +295,14 @@ done
 %{__python3} -m pip install --no-build-isolation --user --no-index --find-links %{_sourcedir} suds-community
 
 sed -i -e "s/#PYTHON3_VERSION#/%{python3_version}/" lib/*.py agents/*/*.py
+
+# regular patch doesnt work in build-section
+sed -i -e "s/#PYTHON3_VERSION#/%{python3_version}/" %{PATCH1000}
+pushd support
+%ifarch x86_64
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH1000}
+%endif
+popd
 
 export PYTHONPATH="%{_builddir}/%{name}-%{version}/support/common/lib/python%{python3_version}/site-packages:%{_builddir}/%{name}-%{version}/support/common/lib64/python%{python3_version}/site-packages:%{_builddir}/%{name}-%{version}/support/aliyun/lib/python%{python3_version}/site-packages:%{_builddir}/%{name}-%{version}/support/aws/lib/python%{python3_version}/site-packages:%{_builddir}/%{name}-%{version}/support/azure/lib/python%{python3_version}/site-packages:%{_builddir}/%{name}-%{version}/support/google/lib/python%{python3_version}/site-packages:%{_builddir}/%{name}-%{version}/support/kubevirt/lib/python%{python3_version}/site-packages:%{_builddir}/%{name}-%{version}/support/kubevirt/lib64/python%{python3_version}/site-packages"
 ./autogen.sh
@@ -1211,6 +1223,10 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
+* Wed Jan 28 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-13.2
+- bundled pyasn1: fix CVE-2026-23490
+  Resolves: RHEL-142444
+
 * Wed Nov 19 2025 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-13.1
 - fence_nutanix_ahv: add new fence agent
   Resolves: RHEL-128285
