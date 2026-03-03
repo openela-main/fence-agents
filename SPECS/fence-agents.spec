@@ -87,7 +87,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.2.1
-Release: 129%{?alphatag:.%{alphatag}}%{?dist}.21
+Release: 129%{?alphatag:.%{alphatag}}%{?dist}.24
 License: GPLv2+ and LGPLv2+
 Group: System Environment/Base
 URL: https://github.com/ClusterLabs/fence-agents
@@ -322,6 +322,7 @@ Patch149: RHEL-109814-1-fence_aws-add-skipshutdown-parameter.patch
 Patch150: RHEL-96179-fence_kubevirt-force-off.patch
 Patch151: RHEL-110964-1-fence_nutanix_ahv.patch
 Patch152: RHEL-110964-2-fence_nutanix_ahv-update-metadata.patch
+Patch153: RHEL-145087-fence_ibm_vpc-fix-missing-statuses.patch
 
 ### HA support libs/utils ###
 # all archs
@@ -331,6 +332,10 @@ Patch1002: RHEL-35655-kubevirt-fix-bundled-jinja2-CVE-2024-34064.patch
 Patch1003: RHEL-43568-1-kubevirt-fix-bundled-urllib3-CVE-2024-37891.patch
 Patch1004: RHEL-50223-setuptools-fix-CVE-2024-6345.patch
 Patch1005: RHEL-104741-1-kubevirt-fix-bundled-requests-CVE-2024-47081.patch
+Patch1006: RHEL-148156-kubevirt-1-fix-bundled-urllib3-CVE-2025-66418.patch
+Patch1007: RHEL-148156-kubevirt-2-fix-bundled-urllib3-CVE-2025-66471.patch
+Patch1008: RHEL-148156-kubevirt-3-RHEL-146288-fix-bundled-urllib3-CVE-2026-21441.patch
+Patch1009: RHEL-148156-kubevirt-4-RHEL-142447-fix-bundled-pyasn1-CVE-2026-23490.patch
 # cloud (x86_64 only)
 Patch2000: bz2218234-2-aws-fix-bundled-dateutil-CVE-2007-4559.patch
 Patch2001: RHEL-43568-2-aws-fix-bundled-urllib3-CVE-2024-37891.patch
@@ -338,8 +343,7 @@ Patch2002: RHEL-104741-2-aliyun-aws-azure-fix-bundled-requests-CVE-2024-47081.pa
 Patch2003: RHEL-109814-2-botocore-add-SkipOsShutdown.patch
 Patch2004: RHEL-136027-fix-bundled-urllib3-CVE-2025-66418.patch
 Patch2005: RHEL-139756-fix-bundled-urllib3-CVE-2025-66471.patch
-Patch2006: RHEL-140783-fix-bundled-urllib3-CVE-2026-21441.patch
-Patch2007: RHEL-142447-fix-bundled-pyasn1-CVE-2026-23490.patch
+Patch2006: RHEL-140783-RHEL-146288-fix-bundled-urllib3-CVE-2026-21441.patch
 
 %if 0%{?fedora} || 0%{?rhel} > 7
 %global supportedagents amt_ws apc apc_snmp bladecenter brocade cisco_mds cisco_ucs compute drac5 eaton_snmp emerson eps evacuate hds_cb hpblade ibmblade ibm_powervs ibm_vpc ifmib ilo ilo_moonshot ilo_mp ilo_ssh intelmodular ipdu ipmilan kdump kubevirt lpar mpath nutanix_ahv redfish rhevm rsa rsb sbd scsi vmware_rest vmware_soap wti
@@ -570,6 +574,7 @@ BuildRequires: python3-google-api-client python3-pip python3-wheel python3-jinja
 %patch -p1 -P 150
 %patch -p1 -P 151
 %patch -p1 -P 152
+%patch -p1 -P 153
 
 # prevent compilation of something that won't get used anyway
 sed -i.orig 's|FENCE_ZVM=1|FENCE_ZVM=0|' configure.ac
@@ -693,6 +698,10 @@ pushd %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH1003}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1004}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1005}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1006}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1007}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1008}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1009}
 
 %ifarch x86_64
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2000}
@@ -702,7 +711,6 @@ pushd %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2004}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2005}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2006}
-/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2007}
 %endif
 popd
 
@@ -1636,6 +1644,19 @@ Fence agent for IBM z/VM over IP.
 %endif
 
 %changelog
+* Wed Feb 11 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-129.24
+- bundled urllib3: fix CVE-2025-66418, CVE-2025-66471, CVE-2026-21441,
+  and pyasn1 CVE-2026-23490 on all archs
+  Resolves: RHEL-148156
+
+* Tue Feb  3 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-129.23
+- bundled urllib3: fix issue with CVE-2026-21441 patch
+  Resolves: RHEL-146288
+
+* Thu Jan 29 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-129.22
+- fence_ibm_vpc: fix missing statuses
+  Resolves: RHEL-145087
+
 * Tue Jan 27 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-129.21
 - bundled pyasn1: fix CVE-2026-23490
   Resolves: RHEL-142447

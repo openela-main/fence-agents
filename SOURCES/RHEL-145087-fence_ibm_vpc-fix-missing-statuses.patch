@@ -1,0 +1,22 @@
+From fb50ca8a9e552a4b900c1101d49fb4ed9fa4144a Mon Sep 17 00:00:00 2001
+From: Ilias Romanos <ilias@rwx.gr>
+Date: Mon, 8 Dec 2025 16:57:48 +0100
+Subject: [PATCH] fence_ibm_vpc: fix missing statuses
+
+---
+ agents/ibm_vpc/fence_ibm_vpc.py | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/agents/ibm_vpc/fence_ibm_vpc.py b/agents/ibm_vpc/fence_ibm_vpc.py
+index a87e9e6dc..46cf9cc87 100755
+--- a/agents/ibm_vpc/fence_ibm_vpc.py
++++ b/agents/ibm_vpc/fence_ibm_vpc.py
+@@ -16,6 +16,8 @@
+ 	 "stopping": "unknown",
+ 	 "restarting": "unknown",
+ 	 "pending": "unknown",
++	 "deleting": "unknown",
++	 "failed": "unknown",
+ }
+ 
+ def get_list(conn, options):
