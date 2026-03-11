@@ -57,7 +57,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.10.0
-Release: 98%{?alphatag:.%{alphatag}}%{?dist}.5
+Release: 98%{?alphatag:.%{alphatag}}%{?dist}.10
 License: GPLv2+ and LGPLv2+
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
@@ -254,18 +254,29 @@ Patch69: RHEL-13088-fence_sbd-improve-error-handling.patch
 Patch70: RHEL-82193-fence_kubevirt-force-off.patch
 Patch71: RHEL-107505-fence_ibm_vpc-add-apikey-file-support.patch
 Patch72: RHEL-7601-fence_aws-add-skipshutdown-parameter.patch
+Patch73: RHEL-145761-fence_ibm_vpc-fix-missing-statuses.patch
 
 ### HA support libs/utils ###
 # all archs
 Patch1000: bz2217902-1-kubevirt-fix-bundled-dateutil-CVE-2007-4559.patch
+Patch1001: RHEL-146351-kubevirt-1-fix-bundled-urllib3-CVE-2024-37891.patch
+Patch1002: RHEL-146351-kubevirt-2-fix-bundled-urllib3-CVE-2025-66418.patch
+Patch1003: RHEL-146351-kubevirt-3-fix-bundled-urllib3-CVE-2025-66471.patch
+Patch1004: RHEL-146351-kubevirt-4-RHEL-146294-fix-bundled-urllib3-CVE-2026-21441.patch
+Patch1005: RHEL-146351-kubevirt-5-fix-bundled-pyasn1-CVE-2026-23490.patch
 # cloud (x86_64 only)
 Patch2000: bz2217902-2-aws-azure-fix-bundled-dateutil-CVE-2007-4559.patch
 Patch2001: RHEL-43562-fix-bundled-urllib3-CVE-2024-37891.patch
 Patch2002: RHEL-95901-pkg_resources-suppress-UserWarning.patch
 Patch2003: RHEL-136061-fix-bundled-urllib3-CVE-2025-66418.patch
 Patch2004: RHEL-139793-fix-bundled-urllib3-CVE-2025-66471.patch
-Patch2005: RHEL-140795-fix-bundled-urllib3-CVE-2026-21441.patch
+Patch2005: RHEL-140795-RHEL-146294-fix-bundled-urllib3-CVE-2026-21441.patch
 Patch2006: RHEL-142459-fix-bundled-pyasn1-CVE-2026-23490.patch
+# cloud (ppc64le only)
+Patch3000: RHEL-146351-ibm-1-fix-bundled-urllib3-CVE-2024-37891.patch
+Patch3001: RHEL-146351-ibm-2-fix-bundled-urllib3-CVE-2025-66418.patch
+Patch3002: RHEL-146351-ibm-3-fix-bundled-urllib3-CVE-2025-66471.patch
+Patch3003: RHEL-146351-ibm-4-RHEL-146294-fix-bundled-urllib3-CVE-2026-21441.patch
 
 %global supportedagents amt_ws apc apc_snmp bladecenter brocade cisco_mds cisco_ucs compute drac5 eaton_snmp emerson eps evacuate hpblade ibmblade ibm_powervs ibm_vpc ifmib ilo ilo_moonshot ilo_mp ilo_ssh intelmodular ipdu ipmilan kdump kubevirt lpar mpath nutanix_ahv redfish rhevm rsa rsb sbd scsi vmware_rest vmware_soap wti
 %ifarch x86_64
@@ -452,6 +463,7 @@ BuildRequires: %{systemd_units}
 %patch -p1 -P 70
 %patch -p1 -P 71
 %patch -p1 -P 72 -F2
+%patch -p1 -P 73
 
 # prevent compilation of something that won't get used anyway
 sed -i.orig 's|FENCE_ZVM=1|FENCE_ZVM=0|' configure.ac
@@ -507,6 +519,11 @@ rm -rf kubevirt/rsa*
 # regular patch doesnt work in build-section
 pushd support
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH1000}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH1001}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1002}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1003}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1004}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1005}
 
 %ifarch x86_64
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH2000}
@@ -516,6 +533,12 @@ pushd support
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2004}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2005}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2006}
+%endif
+%ifarch ppc64le
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH3000}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH3001}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH3002}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH3003}
 %endif
 popd
 
@@ -1576,6 +1599,19 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
+* Wed Feb  11 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-98.10
+- bundled urllib3: fix CVE-2024-37891, CVE-2025-66418, CVE-2025-66471,
+  CVE-2026-21441, and pyasn1 CVE-2026-23490 on all archs
+  Resolves: RHEL-146351
+
+* Thu Feb  5 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-98.7
+- bundled urllib3: fix issue with CVE-2026-21441 patch
+  Resolves: RHEL-146294
+
+* Tue Feb  3 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-98.6
+- fence_ibm_vpc: fix missing statuses
+  Resolves: RHEL-145761
+
 * Tue Jan 27 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-98.5
 - bundled pyasn1: fix CVE-2026-23490
   Resolves: RHEL-142459
