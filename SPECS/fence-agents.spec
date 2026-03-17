@@ -13,7 +13,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.16.0
-Release: 13%{?alphatag:.%{alphatag}}%{?dist}.2
+Release: 13%{?alphatag:.%{alphatag}}%{?dist}.3
 License: GPL-2.0-or-later AND LGPL-2.0-or-later
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
@@ -114,6 +114,7 @@ Patch13: RHEL-88569-fence_ibm_powervs-fix-plaintext-token-file-support.patch
 Patch14: RHEL-95379-fence_kubevirt-force-off.patch
 Patch15: RHEL-107504-fence_ibm_vpc-add-apikey-file-support.patch
 Patch16: RHEL-78241-fence_aws-add-skipshutdown-parameter.patch
+Patch17: RHEL-145756-fence_ibm_vpc-fix-missing-statuses.patch
 
 ### HA support libs/utils ###
 # cloud (x86_64 only)
@@ -243,6 +244,7 @@ BuildRequires: %{systemd_units}
 %patch -p1 -P 14
 %patch -p1 -P 15
 %patch -p1 -P 16 -F2
+%patch -p1 -P 17
 
 # prevent compilation of something that won't get used anyway
 sed -i.orig 's|FENCE_ZVM=1|FENCE_ZVM=0|' configure.ac
@@ -1223,6 +1225,10 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
+* Tue Feb  3 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-13.3
+- fence_ibm_vpc: fix missing statuses
+  Resolves: RHEL-145756
+
 * Wed Jan 28 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-13.2
 - bundled pyasn1: fix CVE-2026-23490
   Resolves: RHEL-142444
