@@ -87,7 +87,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.2.1
-Release: 129%{?alphatag:.%{alphatag}}%{?dist}.24
+Release: 129%{?alphatag:.%{alphatag}}%{?dist}.25
 License: GPLv2+ and LGPLv2+
 Group: System Environment/Base
 URL: https://github.com/ClusterLabs/fence-agents
@@ -336,6 +336,7 @@ Patch1006: RHEL-148156-kubevirt-1-fix-bundled-urllib3-CVE-2025-66418.patch
 Patch1007: RHEL-148156-kubevirt-2-fix-bundled-urllib3-CVE-2025-66471.patch
 Patch1008: RHEL-148156-kubevirt-3-RHEL-146288-fix-bundled-urllib3-CVE-2026-21441.patch
 Patch1009: RHEL-148156-kubevirt-4-RHEL-142447-fix-bundled-pyasn1-CVE-2026-23490.patch
+Patch1010: RHEL-157189-fix-bundled-pyasn1-CVE-2026-30922.patch
 # cloud (x86_64 only)
 Patch2000: bz2218234-2-aws-fix-bundled-dateutil-CVE-2007-4559.patch
 Patch2001: RHEL-43568-2-aws-fix-bundled-urllib3-CVE-2024-37891.patch
@@ -410,7 +411,7 @@ BuildRequires: libxslt
 BuildRequires: gnutls-utils
 ## Python dependencies
 BuildRequires: python3-devel python3-pycparser libffi-devel openssl-devel
-BuildRequires: python3-pexpect python3-pycurl python3-requests
+BuildRequires: python3-cryptography python3-jwt python3-pexpect python3-pycurl python3-requests
 BuildRequires: python3-suds openwsman-python3 python3-boto3
 BuildRequires: python3-google-api-client python3-pip python3-wheel python3-jinja2
 
@@ -688,6 +689,9 @@ rm -rf %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}/kubevirt/rsa*
 %{__python3} -m pip install --user --upgrade --no-index --find-links %{_sourcedir} pip setuptools
 
 %{__python3} -m pip install --target %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}/azure --no-index --find-links %{_sourcedir} -r %{_sourcedir}/requirements-azure.txt
+# We're unable to `pip install` without cryptography and PyJWT,
+# so we delete them and replace them with depencies instead
+rm -rf %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}/azure/{cryptography*,jwt,PyJWT-*}
 %endif
 
 # regular patch doesnt work in build-section
@@ -702,6 +706,7 @@ pushd %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1007}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1008}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1009}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH1010}
 
 %ifarch x86_64
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2000}
@@ -899,6 +904,7 @@ License: GPLv2+ and LGPLv2+ and MIT and MPL-2.0 and Apache-2.0 and BSD and PSF-2
 Group: System Environment/Base
 Summary: Fence agent for Azure Resource Manager
 Requires: fence-agents-common >= %{version}-%{release}
+Requires: python3-cryptography python3-jwt
 # azure
 Provides: bundled(python3-adal) = 1.2.7
 Provides: bundled(python3-azure-common) = 1.1.28
@@ -910,7 +916,6 @@ Provides: bundled(python3-azure-mgmt-network) = 20.0.0
 Provides: bundled(python3-certifi) = 2023.7.22
 Provides: bundled(python3-cffi) = 1.15.1
 Provides: bundled(python3-charset-normalizer) = 2.0.7
-Provides: bundled(python3-cryptography) = 3.3.2
 Provides: bundled(python3-%{dateutil}) = %{dateutil_version}
 Provides: bundled(python3-%{idna}) = %{idna_version}
 Provides: bundled(python3-isodate) = 0.6.1
@@ -921,7 +926,6 @@ Provides: bundled(python3-msrestazure) = 0.6.4
 Provides: bundled(python3-oauthlib) = 3.2.2
 Provides: bundled(python3-portalocker) = 2.7.0
 Provides: bundled(python3-pycparser) = 2.20
-Provides: bundled(python3-PyJWT) = 2.4.0
 Provides: bundled(python3-requests) = 2.27.1
 Provides: bundled(python3-requests-oauthlib) = 2.0.0
 Provides: bundled(python3-six) = 1.16.0
@@ -1644,6 +1648,12 @@ Fence agent for IBM z/VM over IP.
 %endif
 
 %changelog
+* Mon Apr 27 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-129.25
+- bundled cryptography: replace with dependency to fix CVE-2026-26007
+- bundled PyJWT: replace with dependency to fix CVE-2026-32597
+- bundled pyasn1: fix CVE-2026-30922
+  Resolves: RHEL-148431, RHEL-155670, RHEL-157189
+
 * Wed Feb 11 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-129.24
 - bundled urllib3: fix CVE-2025-66418, CVE-2025-66471, CVE-2026-21441,
   and pyasn1 CVE-2026-23490 on all archs
