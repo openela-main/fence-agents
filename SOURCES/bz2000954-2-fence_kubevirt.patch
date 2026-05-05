@@ -1,6 +1,6 @@
---- fence-agents-4.10.0/agents/kubevirt/fence_kubevirt.py	2021-07-08 13:09:05.000000000 +0200
-+++ /home/oalbrigt/rhpkg/fence-agents-8.6/fence-agents-4.2.1/agents/kubevirt/fence_kubevirt.py	2021-11-02 15:35:46.217440426 +0100
-@@ -2,24 +2,25 @@
+--- a/agents/kubevirt/fence_kubevirt.py	2026-04-14 15:49:53.368718050 +0200
++++ b/agents/kubevirt/fence_kubevirt.py	2026-04-14 15:51:18.996925630 +0200
+@@ -2,24 +2,26 @@
  
  import sys
  import logging
@@ -11,7 +11,8 @@
 +from fencing import fail, fail_usage, run_delay, EC_STATUS, EC_FETCH_VM_UUID
  
  try:
-+    sys.path.insert(0, '/usr/lib/fence-agents/support/kubevirt')
++    sys.path.insert(0, '/usr/lib/fence-agents/support/kubevirt/lib64/python#PYTHON3_VERSION#/site-packages')
++    sys.path.insert(1, '/usr/lib/fence-agents/support/kubevirt/lib/python#PYTHON3_VERSION#/site-packages')
      from kubernetes.client.exceptions import ApiException
  except ImportError:
      logging.error("Couldn\'t import kubernetes.client.exceptions.ApiException - not found or not accessible")
@@ -30,7 +31,7 @@
          vm_list = vm_api.get(namespace=namespace)
          for vm in vm_list.items:
              result[vm.metadata.name] = ("", None)
-@@ -30,18 +31,21 @@
+@@ -30,18 +32,21 @@
  def get_power_status(conn, options):
      logging.debug("Starting get status operation")
      try:
@@ -58,7 +59,7 @@
              return "off"
          logging.error("Failed to get power status, with API Exception: %s", e)
          fail(EC_STATUS)
-@@ -49,38 +53,53 @@
+@@ -49,38 +54,53 @@
          logging.error("Failed to get power status, with Exception: %s", e)
          fail(EC_STATUS)
  
@@ -131,7 +132,7 @@
      return conn.request('put', path, header_params={'accept': '*/*'})
  
  def validate_options(required_options_list, options):
-@@ -92,8 +111,13 @@
+@@ -92,8 +112,13 @@
  def main():
      conn = None
  
@@ -146,7 +147,7 @@
      options = check_input(device_opt, process_input(device_opt))
  
      docs = {}
-@@ -106,6 +130,11 @@
+@@ -106,6 +131,11 @@
  
      validate_options(['--namespace'], options)
  
