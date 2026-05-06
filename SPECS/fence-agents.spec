@@ -23,10 +23,10 @@
 %global googleauth_version	2.3.0
 %global cachetools		cachetools
 %global cachetools_version	4.2.4
-%global pyasn1modules		pyasn1-modules
-%global pyasn1modules_version	0.2.8
 %global pyasn1			pyasn1
 %global pyasn1_version		0.4.8
+%global pyasn1modules		pyasn1-modules
+%global pyasn1modules_version	0.2.8
 %global dateutil		dateutil
 %global dateutil_version	2.8.1
 %global pyyaml			PyYAML
@@ -47,7 +47,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.10.0
-Release: 98%{?alphatag:.%{alphatag}}%{?dist}.12
+Release: 98%{?alphatag:.%{alphatag}}%{?dist}.13
 License: GPLv2+ and LGPLv2+
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
@@ -110,12 +110,10 @@ Source1504: google_auth-1.32.0-py2.py3-none-any.whl
 Source1505: google_auth_httplib2-0.1.0-py2.py3-none-any.whl
 Source1506: httplib2-0.19.1-py3-none-any.whl
 Source1507: protobuf-3.17.3-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.whl
-Source1508: pyasn1-0.4.8-py2.py3-none-any.whl
-Source1509: pyasn1_modules-0.2.8-py2.py3-none-any.whl
-Source1510: pyroute2-0.7.12.tar.gz
-Source1511: pytz-2021.1-py2.py3-none-any.whl
-Source1512: rsa-4.7.2-py3-none-any.whl
-Source1513: uritemplate-3.0.1-py2.py3-none-any.whl
+Source1508: pyroute2-0.7.12.tar.gz
+Source1509: pytz-2021.1-py2.py3-none-any.whl
+Source1510: rsa-4.7.2-py3-none-any.whl
+Source1511: uritemplate-3.0.1-py2.py3-none-any.whl
 # kubevirt
 ## pip download --no-binary :all: openshift "ruamel.yaml.clib>=0.1.2"
 Source1600: %{openshift}-%{openshift_version}.tar.gz
@@ -123,8 +121,8 @@ Source1601: %{ruamelyamlclib}-%{ruamelyamlclib_version}.tar.gz
 Source1602: %{kubernetes}-%{kubernetes_version}.tar.gz
 Source1603: %{certifi}-%{certifi_version}.tar.gz
 Source1604: %{googleauth}-%{googleauth_version}.tar.gz
-Source1605: %{pyasn1modules}-%{pyasn1modules_version}.tar.gz
-Source1606: %{pyasn1}-%{pyasn1_version}.tar.gz
+Source1605: %{pyasn1}-%{pyasn1_version}.tar.gz
+Source1606: %{pyasn1modules}-%{pyasn1modules_version}.tar.gz
 Source1607: %{pyyaml}-%{pyyaml_version}.tar.gz
 ## rsa is dependency for "pip install",
 ## but gets removed to use cryptography lib instead
@@ -222,9 +220,11 @@ Patch73: RHEL-145761-fence_ibm_vpc-fix-missing-statuses.patch
 # all archs
 Patch1000: bz2217902-1-kubevirt-fix-bundled-dateutil-CVE-2007-4559.patch
 Patch1001: RHEL-146351-kubevirt-fix-bundled-pyasn1-CVE-2026-23490.patch
+Patch1002: RHEL-157201-1-kubevirt-fix-bundled-pyasn1-CVE-2026-30922.patch
 # cloud (x86_64 only)
 Patch2000: bz2217902-2-aws-azure-fix-bundled-dateutil-CVE-2007-4559.patch
 Patch2001: RHEL-142459-fix-bundled-pyasn1-CVE-2026-23490.patch
+Patch2002: RHEL-157201-2-google-fix-bundled-pyasn1-CVE-2026-30922.patch
 
 %global supportedagents amt_ws apc apc_snmp bladecenter brocade cisco_mds cisco_ucs compute drac5 eaton_snmp emerson eps evacuate hpblade ibmblade ibm_powervs ibm_vpc ifmib ilo ilo_moonshot ilo_mp ilo_ssh intelmodular ipdu ipmilan kdump kubevirt lpar mpath nutanix_ahv redfish rhevm rsa rsb sbd scsi vmware_rest vmware_soap wti
 %ifarch x86_64
@@ -478,10 +478,12 @@ sed -i -e "s/#PYTHON3_VERSION#/%{python3_version}/" %{_sourcedir}/*.patch make/*
 pushd support
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH1000}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1001}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH1002}
 
 %ifarch x86_64
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH2000}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2001}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH2002}
 %endif
 popd
 
@@ -652,8 +654,8 @@ Provides: bundled(python-google-auth) = 1.32.0
 Provides: bundled(python-google-auth-httplib2) = 0.1.0
 Provides: bundled(python-httplib2) = 0.19.1
 Provides: bundled(python-protobuf) = 3.17.3
-Provides: bundled(python-pyasn1) = 0.4.8
-Provides: bundled(python-pyasn1-modules) = 0.2.8
+Provides: bundled(python3-%{pyasn1}) = %{pyasn1_version}
+Provides: bundled(python3-%{pyasn1modules}) = %{pyasn1modules_version}
 Provides: bundled(python-pyroute2) = 0.7.12
 Provides: bundled(python-pytz) = 2021.1
 Provides: bundled(python-rsa) = 4.7.2
@@ -1508,6 +1510,10 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
+* Wed Apr 29 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-98.13
+- bundled pyasn1: fix CVE-2026-30922
+  Resolves: RHEL-157201
+
 * Thu Apr 16 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-98.12
 - bundled cryptography: replace with dependency to fix CVE-2026-26007
 - bundled PyJWT: upgrade to v2.12.1 to fix CVE-2026-32597
