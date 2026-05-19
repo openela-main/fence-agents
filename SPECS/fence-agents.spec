@@ -13,7 +13,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.16.0
-Release: 21%{?alphatag:.%{alphatag}}%{?dist}
+Release: 21%{?alphatag:.%{alphatag}}%{?dist}.1
 License: GPL-2.0-or-later AND LGPL-2.0-or-later
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
@@ -28,7 +28,7 @@ Source104: requirements-google.txt
 ## pip download --no-binary :all: -r requirements-<name>.txt
 # common
 Source1000: pycurl-7.45.3.tar.gz
-Source1001: suds-community-1.1.2.tar.gz
+Source1001: suds_community-1.2.0.tar.gz
 # aliyun
 Source1100: aliyun-python-sdk-ecs-4.24.71.tar.gz
 Source1101: aliyun-python-sdk-core-2.14.0.tar.gz
@@ -62,7 +62,9 @@ Source1310: adal-1.2.7.tar.gz
 Source1311: certifi-2025.1.31.tar.gz
 Source1312: isodate-0.6.1.tar.gz
 Source1313: portalocker-2.10.1.tar.gz
-Source1314: pyjwt-2.10.1.tar.gz
+Source1314: pyjwt-2.12.1.tar.gz
+## azure buildreq
+Source1315: setuptools-82.0.1.tar.gz
 # google
 Source1400: google-api-python-client-1.12.8.tar.gz
 Source1401: chardet-3.0.4.tar.gz
@@ -73,16 +75,15 @@ Source1405: httplib2-0.22.0.tar.gz
 Source1406: uritemplate-3.0.1.tar.gz
 Source1407: cachetools-5.3.2.tar.gz
 Source1408: googleapis-common-protos-1.62.0.tar.gz
-Source1409: pyasn1-0.5.1.tar.gz
-Source1410: pyasn1_modules-0.3.0.tar.gz
-Source1411: pyroute2-0.7.12.tar.gz
-Source1412: pyroute2.core-0.6.13.tar.gz
-Source1413: pyroute2.ethtool-0.6.13.tar.gz
-Source1414: pyroute2.ipdb-0.6.13.tar.gz
-Source1415: pyroute2.ipset-0.6.13.tar.gz
-Source1416: pyroute2.ndb-0.6.13.tar.gz
-Source1417: pyroute2.nftables-0.6.13.tar.gz
-Source1418: pyroute2.nslink-0.6.13.tar.gz
+Source1409: pyasn1_modules-0.4.2.tar.gz
+Source1410: pyroute2-0.7.12.tar.gz
+Source1411: pyroute2.core-0.6.13.tar.gz
+Source1412: pyroute2.ethtool-0.6.13.tar.gz
+Source1413: pyroute2.ipdb-0.6.13.tar.gz
+Source1414: pyroute2.ipset-0.6.13.tar.gz
+Source1415: pyroute2.ndb-0.6.13.tar.gz
+Source1416: pyroute2.nftables-0.6.13.tar.gz
+Source1417: pyroute2.nslink-0.6.13.tar.gz
 ## NEEEDED FOR GOOGLE AUTH
 ## INFO: pip is looking at multiple versions of google-auth to determine which version is compatible with other requirements. This could take a while.
 ## ERROR: Could not find a version that satisfies the requirement rsa<5,>=3.1.4 (from google-auth) (from versions: none)
@@ -118,12 +119,6 @@ Patch17: RHEL-114752-fence_ibm_powervs-update-api-type-description.patch
 Patch18: RHEL-128925-fence_gce-fix-node-list-limit.patch
 Patch19: RHEL-125959-fence_virt-print-errors-to-stderr.patch
 Patch20: RHEL-145086-fence_ibm_vpc-fix-missing-statuses.patch
-
-### HA support libs/utils ###
-# all archs
-Patch1000: RHEL-142445-1-kubevirt-fix-bundled-pyasn1-CVE-2026-23490.patch
-# cloud (x86_64 only)
-Patch2000: RHEL-142445-2-google-fix-bundled-pyasn1-CVE-2026-23490.patch
 
 %global supportedagents amt_ws apc apc_snmp bladecenter brocade cisco_mds cisco_ucs drac5 eaton_snmp emerson eps hpblade ibmblade ibm_powervs ibm_vpc ifmib ilo ilo_moonshot ilo_mp ilo_ssh intelmodular ipdu ipmilan kdump kubevirt lpar mpath nutanix_ahv redfish rhevm rsa rsb sbd scsi vmware_rest vmware_soap wti
 %ifarch x86_64
@@ -281,7 +276,8 @@ popd
 %endif
 
 # support libs
-%{__python3} -m pip install --no-build-isolation --user --no-index --find-links %{_sourcedir} poetry-core
+## setuptools upgrade needed due to old dual license format not working with the distro provided version
+%{__python3} -m pip install --no-build-isolation --user --upgrade --no-index --find-links %{_sourcedir} poetry-core setuptools
 
 %ifarch x86_64
 LIBS="%{_sourcedir}/requirements-*.txt"
@@ -305,15 +301,6 @@ done
 %{__python3} -m pip install --no-build-isolation --user --no-index --find-links %{_sourcedir} suds-community
 
 sed -i -e "s/#PYTHON3_VERSION#/%{python3_version}/" lib/*.py agents/*/*.py
-
-# regular patch doesnt work in build-section
-sed -i -e "s/#PYTHON3_VERSION#/%{python3_version}/" %{PATCH1000} %{PATCH2000}
-pushd support
-/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH1000}
-%ifarch x86_64
-/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH2000}
-%endif
-popd
 
 export PYTHONPATH="%{_builddir}/%{name}-%{version}/support/common/lib/python%{python3_version}/site-packages:%{_builddir}/%{name}-%{version}/support/common/lib64/python%{python3_version}/site-packages:%{_builddir}/%{name}-%{version}/support/aliyun/lib/python%{python3_version}/site-packages:%{_builddir}/%{name}-%{version}/support/aws/lib/python%{python3_version}/site-packages:%{_builddir}/%{name}-%{version}/support/azure/lib/python%{python3_version}/site-packages:%{_builddir}/%{name}-%{version}/support/google/lib/python%{python3_version}/site-packages:%{_builddir}/%{name}-%{version}/support/kubevirt/lib/python%{python3_version}/site-packages:%{_builddir}/%{name}-%{version}/support/kubevirt/lib64/python%{python3_version}/site-packages"
 ./autogen.sh
@@ -396,7 +383,7 @@ License: GPL-2.0-or-later AND LGPL-2.0-or-later AND LGPL-3.0-or-later AND LGPL-2
 Summary: Common base for Fence Agents
 Requires: python3-pexpect python3-ptyprocess
 Provides: bundled(python3-pycurl) = 7.45.3
-Provides: bundled(python3-suds-community) = 1.1.2
+Provides: bundled(python3-suds-community) = 1.2.0
 %description common
 A collection of executables to handle isolation ("fencing") of possibly
 misbehaving hosts by the means of remote power management, blocking
@@ -457,7 +444,7 @@ Provides: bundled(python3-adal) = 1.2.7
 Provides: bundled(python3-certifi) = 2025.1.31
 Provides: bundled(python3-isodate) = 0.6.1
 Provides: bundled(python3-portalocker) = 2.10.1
-Provides: bundled(python3-PyJWT) = 2.10.1
+Provides: bundled(python3-PyJWT) = 2.12.1
 # google
 Provides: bundled(python3-google-api-python-client) = 1.12.8
 Provides: bundled(python3-chardet) = 3.0.4
@@ -468,8 +455,7 @@ Provides: bundled(python3-httplib2) = 0.22.0
 Provides: bundled(python3-uritemplate) = 3.0.1
 Provides: bundled(python3-cachetools) = 5.3.2
 Provides: bundled(python3-googleapis-common-protos) = 1.62.0
-Provides: bundled(python3-pyasn1) = 0.5.1
-Provides: bundled(python3-pyasn1_modules) = 0.3.0
+Provides: bundled(python3-pyasn1_modules) = 0.4.2
 Provides: bundled(python-pyroute2) = 0.7.12
 Provides: bundled(python-pyroute2-core) = 0.6.13
 Provides: bundled(python-pyroute2-ethtool) = 0.6.13
@@ -1234,6 +1220,11 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
+* Wed Apr 29 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-21.1
+- bundled pyasn1: replace with dependency to fix CVE-2026-30922
+- bundled PyJWT: upgrade to v2.12.1 to fix CVE-2026-32597
+  Resolves: RHEL-157187, RHEL-155668
+
 * Mon Feb 16 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-21
 - bundled pyasn1: fix CVE-2026-23490
   Resolves: RHEL-142445
