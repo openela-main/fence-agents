@@ -6,7 +6,7 @@ diff --color -uNr a/agents/azure_arm/fence_azure_arm.py b/agents/azure_arm/fence
  
 -import sys, re, pexpect
 +import sys, re
-+sys.path.insert(0, '/usr/lib/fence-agents/support/common/lib/python#PYTHON3_VERSION#/site-packages')
++sys.path.insert(0, '/usr/lib/fence-agents/support/common')
 +try:
 +    import pexpect
 +except:
@@ -22,7 +22,7 @@ diff --color -uNr a/agents/hpblade/fence_hpblade.py b/agents/hpblade/fence_hpbla
  
  import sys, re
 -import pexpect
-+sys.path.insert(0, '/usr/lib/fence-agents/support/common/lib/python#PYTHON3_VERSION#/site-packages')
++sys.path.insert(0, '/usr/lib/fence-agents/support/common')
 +try:
 +	import pexpect
 +except:
@@ -39,7 +39,7 @@ diff --color -uNr a/agents/ilo/fence_ilo.py b/agents/ilo/fence_ilo.py
  
 -import sys, re, pexpect
 +import sys, re
-+sys.path.insert(0, '/usr/lib/fence-agents/support/common/lib/python#PYTHON3_VERSION#/site-packages')
++sys.path.insert(0, '/usr/lib/fence-agents/support/common')
 +try:
 +        import pexpect
 +except:
@@ -56,7 +56,7 @@ diff --color -uNr a/agents/ldom/fence_ldom.py b/agents/ldom/fence_ldom.py
  
 -import sys, re, pexpect
 +import sys, re
-+sys.path.insert(0, '/usr/lib/fence-agents/support/common/lib/python#PYTHON3_VERSION#/site-packages')
++sys.path.insert(0, '/usr/lib/fence-agents/support/common')
 +try:
 +        import pexpect
 +except:
@@ -72,11 +72,11 @@ diff --color -uNr a/agents/Makefile.am b/agents/Makefile.am
  	$(eval INPUT=$(subst .delay-check,,$@))
  	FENCE_TEST_ARGS_CISCO_MDS=$$(printf '$(FENCE_TEST_ARGS)' | sed 's#port=1#port=fc1/1#'); \
 -	test `PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib /usr/bin/time -p \
-+	test `PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib:$(abs_top_builddir)/support/common/lib/python#PYTHON3_VERSION#/site-packages /usr/bin/time -p \
++	test `PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib:$(abs_top_builddir)/support/common /usr/bin/time -p \
  	sh -c "printf 'delay=10\n $$FENCE_TEST_ARGS_CISCO_MDS' | $(PYTHON) ./$(INPUT)" 2>&1 |\
  	awk -F"[. ]" -vOFS= '/real/ {print $$2,$$3}'` -ge 1000 || ( \
 -	PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib /usr/bin/time -p \
-+	PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib:$(abs_top_builddir)/support/common/lib/python#PYTHON3_VERSION#/site-packages /usr/bin/time -p \
++	PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib:$(abs_top_builddir)/support/common /usr/bin/time -p \
  	sh -c "printf "delay=0\n $$FENCE_TEST_ARGS_CISCO_MDS" | $(PYTHON) ./$(INPUT)"; false )
  
  include $(top_srcdir)/make/fencebuild.mk
@@ -88,7 +88,7 @@ diff --color -uNr a/agents/netio/fence_netio.py b/agents/netio/fence_netio.py
  
 -import sys, re, pexpect
 +import sys, re
-+sys.path.insert(0, '/usr/lib/fence-agents/support/common/lib/python#PYTHON3_VERSION#/site-packages')
++sys.path.insert(0, '/usr/lib/fence-agents/support/common')
 +try:
 +        import pexpect
 +except:
@@ -104,7 +104,7 @@ diff --color -uNr a/agents/raritan/fence_raritan.py b/agents/raritan/fence_rarit
  
 -import sys, re, pexpect
 +import sys, re
-+sys.path.insert(0, '/usr/lib/fence-agents/support/common/lib/python#PYTHON3_VERSION#/site-packages')
++sys.path.insert(0, '/usr/lib/fence-agents/support/common')
 +try:
 +        import pexpect
 +except:
@@ -121,7 +121,7 @@ diff --color -uNr a/agents/sanbox2/fence_sanbox2.py b/agents/sanbox2/fence_sanbo
  
 -import sys, re, pexpect
 +import sys, re
-+sys.path.insert(0, '/usr/lib/fence-agents/support/common/lib/python#PYTHON3_VERSION#/site-packages')
++sys.path.insert(0, '/usr/lib/fence-agents/support/common')
 +try:
 +        import pexpect
 +except:
@@ -138,7 +138,7 @@ diff --color -uNr a/agents/vmware/fence_vmware.py b/agents/vmware/fence_vmware.p
  
 -import sys, re, pexpect
 +import sys, re
-+sys.path.insert(0, '/usr/lib/fence-agents/support/common/lib/python#PYTHON3_VERSION#/site-packages')
++sys.path.insert(0, '/usr/lib/fence-agents/support/common')
 +try:
 +        import pexpect
 +except:
@@ -155,7 +155,7 @@ diff --color -uNr a/agents/wti/fence_wti.py b/agents/wti/fence_wti.py
  
 -import sys, re, pexpect
 +import sys, re
-+sys.path.insert(0, '/usr/lib/fence-agents/support/common/lib/python#PYTHON3_VERSION#/site-packages')
++sys.path.insert(0, '/usr/lib/fence-agents/support/common')
 +try:
 +        import pexpect
 +except:
@@ -181,7 +181,7 @@ diff --color -uNr a/lib/fencing.py.py b/lib/fencing.py.py
  
  import sys, getopt, time, os, uuid, pycurl, stat
 -import pexpect, re, syslog
-+sys.path.insert(0, '/usr/lib/fence-agents/support/common/lib/python#PYTHON3_VERSION#/site-packages')
++sys.path.insert(0, '/usr/lib/fence-agents/support/common')
 +try:
 +	import pexpect
 +except:
@@ -255,7 +255,7 @@ diff --color -uNr a/lib/fencing_snmp.py.py b/lib/fencing_snmp.py.py
  
 -import re, pexpect
 +import sys
-+sys.path.insert(0, '/usr/lib/fence-agents/support/common/lib/python#PYTHON3_VERSION#/site-packages')
++sys.path.insert(0, '/usr/lib/fence-agents/support/common')
 +try:
 +	import pexpect
 +except:
@@ -272,10 +272,10 @@ diff --color -uNr a/make/agentpycheck.mk b/make/agentpycheck.mk
  %.xml-check: %.8
  	$(eval INPUT=$(subst .xml-check,,$(@F)))
 -	for x in $(INPUT) `PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib $(PYTHON) $(@D)/$(INPUT) -o metadata | grep symlink | sed -e "s/.*\(fence.*\)\" .*/\1/g"`; do \
-+	for x in $(INPUT) `PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib:$(abs_top_builddir)/support/common/lib/python#PYTHON3_VERSION#/site-packages $(PYTHON) $(@D)/$(INPUT) -o metadata | grep symlink | sed -e "s/.*\(fence.*\)\" .*/\1/g"`; do \
++	for x in $(INPUT) `PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib:$(abs_top_builddir)/support/common $(PYTHON) $(@D)/$(INPUT) -o metadata | grep symlink | sed -e "s/.*\(fence.*\)\" .*/\1/g"`; do \
  		TEMPFILE=$$(mktemp); \
 -		PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib $(PYTHON) $(@D)/$$x -o metadata | $(AWK) $(AWK_VAL) > $$TEMPFILE && \
-+		PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib:$(abs_top_builddir)/support/common/lib/python#PYTHON3_VERSION#/site-packages $(PYTHON) $(@D)/$$x -o metadata | $(AWK) $(AWK_VAL) > $$TEMPFILE && \
++		PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib:$(abs_top_builddir)/support/common $(PYTHON) $(@D)/$$x -o metadata | $(AWK) $(AWK_VAL) > $$TEMPFILE && \
  		diff $$TEMPFILE $(DATADIR)/$$x.xml || exit 1 && \
  		rm $$TEMPFILE; \
  	done
@@ -284,8 +284,8 @@ diff --color -uNr a/make/agentpycheck.mk b/make/agentpycheck.mk
  	$(eval INPUT=$(subst .xml-upload,,$(@F)))
 -	for x in $(INPUT) `PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib $(PYTHON) $(@D)/$(INPUT) -o metadata | grep symlink | sed -e "s/.*\(fence.*\)\" .*/\1/g"`; do \
 -		PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib $(PYTHON) $(@D)/$$x -o metadata | $(AWK) $(AWK_VAL) > $(DATADIR)/$$x.xml; \
-+	for x in $(INPUT) `PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib:$(abs_top_builddir)/support/common/lib/python#PYTHON3_VERSION#/site-packages $(PYTHON) $(@D)/$(INPUT) -o metadata | grep symlink | sed -e "s/.*\(fence.*\)\" .*/\1/g"`; do \
-+		PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib:$(abs_top_builddir)/support/common/lib/python#PYTHON3_VERSION#/site-packages $(PYTHON) $(@D)/$$x -o metadata | $(AWK) $(AWK_VAL) > $(DATADIR)/$$x.xml; \
++	for x in $(INPUT) `PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib:$(abs_top_builddir)/support/common $(PYTHON) $(@D)/$(INPUT) -o metadata | grep symlink | sed -e "s/.*\(fence.*\)\" .*/\1/g"`; do \
++		PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib:$(abs_top_builddir)/support/common $(PYTHON) $(@D)/$$x -o metadata | $(AWK) $(AWK_VAL) > $(DATADIR)/$$x.xml; \
  	done
  
  # If test will fail, rerun fence agents to show problems
@@ -293,12 +293,12 @@ diff --color -uNr a/make/agentpycheck.mk b/make/agentpycheck.mk
  	$(eval INPUT=$(subst .delay-check,,$(@F)))
 -	for x in $(INPUT) `PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib $(PYTHON) $(@D)/$(INPUT) -o metadata | grep symlink | sed -e "s/.*\(fence.*\)\" .*/\1/g"`; do \
 -		test `PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib /usr/bin/time -p \
-+	for x in $(INPUT) `PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib:$(abs_top_builddir)/support/common/lib/python#PYTHON3_VERSION#/site-packages $(PYTHON) $(@D)/$(INPUT) -o metadata | grep symlink | sed -e "s/.*\(fence.*\)\" .*/\1/g"`; do \
-+		test `PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib:$(abs_top_builddir)/support/common/lib/python#PYTHON3_VERSION#/site-packages /usr/bin/time -p \
++	for x in $(INPUT) `PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib:$(abs_top_builddir)/support/common $(PYTHON) $(@D)/$(INPUT) -o metadata | grep symlink | sed -e "s/.*\(fence.*\)\" .*/\1/g"`; do \
++		test `PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib:$(abs_top_builddir)/support/common /usr/bin/time -p \
  		sh -c "printf 'delay=10\n $(FENCE_TEST_ARGS)' | $(PYTHON) $(@D)/$$x" 2>&1 |\
  		awk -F"[. ]" -vOFS= '/real/ {print $$2,$$3}'` -ge 1000 || ( \
 -		PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib /usr/bin/time -p \
-+		PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib:$(abs_top_builddir)/support/common/lib/python#PYTHON3_VERSION#/site-packages /usr/bin/time -p \
++		PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib:$(abs_top_builddir)/support/common /usr/bin/time -p \
  		sh -c "printf 'delay=0\n $(FENCE_TEST_ARGS)' | $(PYTHON) $(@D)/$$x"; false ); \
  	done
  
@@ -306,8 +306,8 @@ diff --color -uNr a/make/agentpycheck.mk b/make/agentpycheck.mk
  	$(eval INPUT=$(subst .rng-check,,$(@F)))
 -	for x in $(INPUT) `PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib $(PYTHON) $(@D)/$(INPUT) -o metadata | grep symlink | sed -e "s/.*\(fence.*\)\" .*/\1/g"`; do \
 -		PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib $(PYTHON) $(@D)/$$x -o metadata | \
-+	for x in $(INPUT) `PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib:$(abs_top_builddir)/support/common/lib/python#PYTHON3_VERSION#/site-packages $(PYTHON) $(@D)/$(INPUT) -o metadata | grep symlink | sed -e "s/.*\(fence.*\)\" .*/\1/g"`; do \
-+		PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib:$(abs_top_builddir)/support/common/lib/python#PYTHON3_VERSION#/site-packages $(PYTHON) $(@D)/$$x -o metadata | \
++	for x in $(INPUT) `PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib:$(abs_top_builddir)/support/common $(PYTHON) $(@D)/$(INPUT) -o metadata | grep symlink | sed -e "s/.*\(fence.*\)\" .*/\1/g"`; do \
++		PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib:$(abs_top_builddir)/support/common $(PYTHON) $(@D)/$$x -o metadata | \
  		xsltproc ${abs_top_srcdir}/lib/fence2rng.xsl - | \
  		sed -e 's/ rha:description=/ description=/g' -e 's/ rha:name=/ name=/g' | \
  		xmllint --nsclean --noout -; \
@@ -319,11 +319,11 @@ diff --color -uNr a/make/fencebuild.mk b/make/fencebuild.mk
  
  	if [ 0 -eq `echo "$(@)" | grep fence_ > /dev/null 2>&1; echo $$?` ]; then \
 -		PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib $(PYTHON) $(top_srcdir)/lib/check_used_options.py $@; \
-+		PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib:$(abs_top_builddir)/support/common/lib/python#PYTHON3_VERSION#/site-packages $(PYTHON) $(top_srcdir)/lib/check_used_options.py $@; \
++		PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib:$(abs_top_builddir)/support/common $(PYTHON) $(top_srcdir)/lib/check_used_options.py $@; \
  	else true ; fi
  
 -	for x in `PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib $(PYTHON) $(@) -o metadata | grep symlink | sed -e "s/.*\(fence.*\)\" .*/\1/g"`; do \
-+for x in `PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib:$(abs_top_builddir)/support/common/lib/python#PYTHON3_VERSION#/site-packages $(PYTHON) $(@) -o metadata | grep symlink | sed -e "s/.*\(fence.*\)\" .*/\1/g"`; do \
++for x in `PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib:$(abs_top_builddir)/support/common $(PYTHON) $(@) -o metadata | grep symlink | sed -e "s/.*\(fence.*\)\" .*/\1/g"`; do \
  		cp -f $(@) $(@D)/$$x; \
  		$(MAKE) $(@D)/$$x.8; \
  	done
@@ -332,7 +332,7 @@ diff --color -uNr a/make/fencebuild.mk b/make/fencebuild.mk
  	for p in $(TARGET); do \
  		dir=`dirname $$p`; \
 -		for x in `PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib $(PYTHON) $$p -o metadata | grep symlink | sed -e "s/.*\(fence.*\)\" .*/\1/g"`; do \
-+		for x in `PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib:$(abs_top_builddir)/support/common/lib/python#PYTHON3_VERSION#/site-packages $(PYTHON) $$p -o metadata | grep symlink | sed -e "s/.*\(fence.*\)\" .*/\1/g"`; do \
++		for x in `PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib:$(abs_top_builddir)/support/common $(PYTHON) $$p -o metadata | grep symlink | sed -e "s/.*\(fence.*\)\" .*/\1/g"`; do \
  			echo " $(INSTALL_SCRIPT) $$dir/$$x '$(DESTDIR)$(sbindir)'"; \
  			$(INSTALL_SCRIPT) $$dir/$$x "$(DESTDIR)$(sbindir)" || exit $$?; \
  			echo " $(INSTALL_DATA) '$$dir/$$x.8' '$(DESTDIR)$(man8dir)'"; \
@@ -341,7 +341,7 @@ diff --color -uNr a/make/fencebuild.mk b/make/fencebuild.mk
  uninstall-hook: $(TARGET)
  	files=`for p in $(TARGET); do \
 -		for x in \`PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib $(PYTHON) $$p -o metadata | grep symlink | sed -e "s/.*\(fence.*\)\" .*/\1/g"\`; do \
-+	      for x in \`PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib:$(abs_top_builddir)/support/common/lib/python#PYTHON3_VERSION#/site-packages $(PYTHON) $$p -o metadata | grep symlink | sed -e "s/.*\(fence.*\)\" .*/\1/g"\`; do \
++	      for x in \`PYTHONPATH=$(abs_top_srcdir)/lib:$(abs_top_builddir)/lib:$(abs_top_builddir)/support/common $(PYTHON) $$p -o metadata | grep symlink | sed -e "s/.*\(fence.*\)\" .*/\1/g"\`; do \
  			echo " rm -f '$(DESTDIR)$(sbindir)/$$x'"; \
  			rm -f "$(DESTDIR)$(sbindir)/$$x"; \
  			echo " rm -f '$(DESTDIR)$(man8dir)/$$x.8'"; \
@@ -352,7 +352,7 @@ diff --color -uNr a/make/fenceman.mk b/make/fenceman.mk
  %.8: % $(top_srcdir)/lib/fence2man.xsl
  	set -e && \
 -	PYTHONPATH=$(abs_srcdir)/lib:$(abs_builddir)/../lib:$(abs_builddir)/lib \
-+		PYTHONPATH=$(abs_srcdir)/lib:$(abs_builddir)/../lib:$(abs_builddir)/lib:$(abs_top_builddir)/support/common/lib/python#PYTHON3_VERSION#/site-packages \
++		PYTHONPATH=$(abs_srcdir)/lib:$(abs_builddir)/../lib:$(abs_builddir)/lib:$(abs_top_builddir)/support/common \
  		$(PYTHON) $* -o manpage > $(@D)/.$(@F).tmp && \
  	xmllint --noout --relaxng $(top_srcdir)/lib/metadata.rng $(@D)/.$(@F).tmp && \
  	xsltproc $(top_srcdir)/lib/fence2man.xsl $(@D)/.$(@F).tmp > $@

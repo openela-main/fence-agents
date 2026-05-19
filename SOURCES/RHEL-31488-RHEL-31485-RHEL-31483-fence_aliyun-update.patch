@@ -16,7 +16,7 @@
 +
  
  try:
- 	sys.path.insert(0, '/usr/lib/fence-agents/support/aliyun/lib/python#PYTHON3_VERSION#/site-packages')
+ 	sys.path.insert(0, '/usr/lib/fence-agents/support/aliyun')
  	from aliyunsdkcore import client
  	from aliyunsdkcore.auth.credentials import EcsRamRoleCredential
 +	from aliyunsdkcore.profile import region_provider

@@ -1,0 +1,59 @@
+From f0b9a79b4c17ba3d98cf4dad9e15391595535f90 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Mon, 25 Aug 2025 13:28:59 +0200
+Subject: [PATCH] fence_ibm_powervs: update description of api-type parameter
+ to show correct default value
+
+---
+ agents/ibm_powervs/fence_ibm_powervs.py   | 6 +++---
+ tests/data/metadata/fence_ibm_powervs.xml | 8 ++++----
+ 2 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/agents/ibm_powervs/fence_ibm_powervs.py b/agents/ibm_powervs/fence_ibm_powervs.py
+index d408e8727..b4d3bdc32 100755
+--- a/agents/ibm_powervs/fence_ibm_powervs.py
++++ b/agents/ibm_powervs/fence_ibm_powervs.py
+@@ -258,9 +258,10 @@ def define_new_opts():
+ 	all_opt["api-type"] = {
+ 		"getopt" : ":",
+ 		"longopt" : "api-type",
+-		"help" : "--api-type=[public|private]          API-type: 'public' (default) or 'private'",
++		"help" : "--api-type=[private|public]          API-type: 'private' (default) or 'public'",
+ 		"required" : "0",
+-		"shortdesc" : "API-type (public|private)",
++		"shortdesc" : "API-type (private|public)",
++		"default" : "private",
+ 		"order" : 0
+ 	}
+ 	all_opt["proxy"] = {
+@@ -293,7 +294,6 @@ def main():
+ 	all_opt["power_timeout"]["default"] = "120"
+ 	all_opt["power_wait"]["default"] = "15"
+ 	all_opt["stonith_status_sleep"]["default"] = "10"
+-	all_opt["api-type"]["default"] = "private"
+ 	all_opt["proxy"]["default"] = ""
+ 
+ 	options = check_input(device_opt, process_input(device_opt))
+diff --git a/tests/data/metadata/fence_ibm_powervs.xml b/tests/data/metadata/fence_ibm_powervs.xml
+index ec59e1b53..2298d60cd 100644
+--- a/tests/data/metadata/fence_ibm_powervs.xml
++++ b/tests/data/metadata/fence_ibm_powervs.xml
+@@ -4,14 +4,14 @@
+ <vendor-url>https://www.ibm.com</vendor-url>
+ <parameters>
+ 	<parameter name="api-type" unique="0" required="0" deprecated="1">
+-		<getopt mixed="--api-type=[public|private]" />
++		<getopt mixed="--api-type=[private|public]" />
+ 		<content type="string" default="private"  />
+-		<shortdesc lang="en">API-type (public|private)</shortdesc>
++		<shortdesc lang="en">API-type (private|public)</shortdesc>
+ 	</parameter>
+ 	<parameter name="api_type" unique="0" required="0" obsoletes="api-type">
+-		<getopt mixed="--api-type=[public|private]" />
++		<getopt mixed="--api-type=[private|public]" />
+ 		<content type="string" default="private"  />
+-		<shortdesc lang="en">API-type (public|private)</shortdesc>
++		<shortdesc lang="en">API-type (private|public)</shortdesc>
+ 	</parameter>
+ 	<parameter name="crn" unique="0" required="1">
+ 		<getopt mixed="--crn=[crn]" />

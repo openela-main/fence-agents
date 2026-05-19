@@ -1,0 +1,29 @@
+From 7c1dc4e3935b2246015bba7ba78be4ef7a200423 Mon Sep 17 00:00:00 2001
+From: kj1724 <78624900+kj1724@users.noreply.github.com>
+Date: Wed, 18 May 2022 03:57:51 -0400
+Subject: [PATCH] fence_gce: Make zone optional for get_nodes_list (#487)
+
+---
+ agents/gce/fence_gce.py | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/agents/gce/fence_gce.py b/agents/gce/fence_gce.py
+index 63c7858f1..2bf4da5a1 100644
+--- a/agents/gce/fence_gce.py
++++ b/agents/gce/fence_gce.py
+@@ -135,10 +135,12 @@ def translate_status(instance_status):
+ 
+ def get_nodes_list(conn, options):
+ 	result = {}
+-	if "--zone" not in options:
+-		fail_fence_agent(options, "Failed: get_nodes_list: Please specify the --zone in the command")
++	plug = options["--plug"] if "--plug" in options else ""
++	zones = options["--zone"] if "--zone" in options else ""
++	if not zones:
++		zones = get_zone(conn, options, plug) if "--plugzonemap" not in options else options["--plugzonemap"][plug]
+ 	try:
+-		for zone in options["--zone"].split(","):
++		for zone in zones.split(","):
+ 			instanceList = retry_api_execute(options, conn.instances().list(
+ 				project=options["--project"],
+ 				zone=zone))

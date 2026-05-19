@@ -503,7 +503,7 @@ index 612450568..f30a1da28 100644
  
 -import sys, re
 +import sys, os, re
- sys.path.insert(0, '/usr/lib/fence-agents/support/common/lib/python#PYTHON3_VERSION#/site-packages')
+ sys.path.insert(0, '/usr/lib/fence-agents/support/common')
  try:
          import pexpect
 @@ -73,11 +73,11 @@ def main():
