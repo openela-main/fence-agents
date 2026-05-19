@@ -5,7 +5,7 @@
  from fencing import fail_usage
  
 -import sys
--sys.path.insert(0, '/usr/lib/fence-agents/support/azure')
+-sys.path.insert(0, '/usr/lib/fence-agents/support/azure/lib/python#PYTHON3_VERSION#/site-packages')
 -
  FENCE_SUBNET_NAME = "fence-subnet"
  FENCE_INBOUND_RULE_NAME = "FENCE_DENY_ALL_INBOUND"
@@ -403,8 +403,8 @@
 @@ -2,6 +2,7 @@
  
  import sys, re
- sys.path.insert(0, '/usr/lib/fence-agents/support/common')
-+sys.path.insert(1, '/usr/lib/fence-agents/support/azure')
+ sys.path.insert(0, '/usr/lib/fence-agents/support/common/lib/python#PYTHON3_VERSION#/site-packages')
++sys.path.insert(1, '/usr/lib/fence-agents/support/azure/lib/python#PYTHON3_VERSION#/site-packages')
  try:
      import pexpect
  except:

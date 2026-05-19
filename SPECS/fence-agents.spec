@@ -23,32 +23,22 @@
 %global googleauth_version	2.3.0
 %global cachetools		cachetools
 %global cachetools_version	4.2.4
-%global pyasn1modules		pyasn1-modules
-%global pyasn1modules_version	0.2.8
 %global pyasn1			pyasn1
 %global pyasn1_version		0.4.8
+%global pyasn1modules		pyasn1-modules
+%global pyasn1modules_version	0.2.8
 %global dateutil		dateutil
 %global dateutil_version	2.8.1
 %global pyyaml			PyYAML
 %global pyyaml_version		5.1
-%global six			six
-%global six_version		1.16.0
-%global urllib3 		urllib3
-%global urllib3_version 	1.26.18
-%global websocketclient 	websocket-client
-%global websocketclient_version 1.2.1
+%global websocketclient 	websocket_client
+%global websocketclient_version 1.9.0
 %global jinja2			jinja2
 %global jinja2_version		3.1.6
 %global markupsafe		MarkupSafe
 %global markupsafe_version	2.0.1
 %global stringutils		string-utils
 %global stringutils_version	1.0.0
-%global requests		requests
-%global requests_version	2.26.0
-%global chrstnormalizer		charset-normalizer
-%global chrstnormalizer_version	2.0.7
-%global idna			idna
-%global idna_version		3.3
 %global reqstsoauthlib		requests-oauthlib
 %global reqstsoauthlib_version	1.3.0
 %global ruamelyaml		ruamel.yaml
@@ -57,7 +47,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.10.0
-Release: 110%{?alphatag:.%{alphatag}}%{?dist}
+Release: 110%{?alphatag:.%{alphatag}}%{?dist}.2
 License: GPLv2+ and LGPLv2+
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
@@ -69,117 +59,87 @@ Source103: requirements-azure.txt
 Source104: requirements-google.txt
 Source105: requirements-ibm.txt
 ### HA support libs/utils ###
-# update with ./update-ha-support.sh and replace lines below with output
-### BEGIN ###
 # aliyun
-Source1000: aliyun-python-sdk-core-2.11.5.tar.gz
-Source1001: aliyun_python_sdk_ecs-4.24.7-py2.py3-none-any.whl
-Source1002: cffi-1.14.5-cp39-cp39-manylinux1_x86_64.whl
-Source1003: colorama-0.3.3.tar.gz
-Source1004: jmespath-0.7.1-py2.py3-none-any.whl
-Source1005: pycryptodome-3.20.0.tar.gz
-Source1006: pycparser-2.20-py2.py3-none-any.whl
+# common (pexpect / suds)
+Source1000: pexpect-4.8.0-py2.py3-none-any.whl
+Source1001: ptyprocess-0.7.0-py2.py3-none-any.whl
+Source1002: suds_community-0.8.5-py3-none-any.whl
+Source1100: aliyun-python-sdk-core-2.16.0.tar.gz
+Source1101: aliyun-python-sdk-ecs-4.24.82.tar.gz
+Source1102: colorama-0.3.3.tar.gz
+Source1103: jmespath-0.10.0.tar.gz
 # aliyun-cli
-Source2000: aliyun-cli-3.0.198.tar.gz
+Source1200: aliyun-cli-3.0.198.tar.gz
 ## TAG=$(git log --pretty="format:%h" -n 1)
 ## distdir="aliyun-openapi-meta-${TAG}"
 ## TARFILE="${distdir}.tar.gz"
 ## rm -rf $TARFILE $distdir
 ## git archive --prefix=$distdir/ HEAD | gzip > $TARFILE
-Source2001: aliyun-openapi-meta-5cf98b660.tar.gz
+Source1201: aliyun-openapi-meta-5cf98b660.tar.gz
 ## go mod vendor
-Source2002: aliyun-cli-go-vendor.tar.gz
+Source1202: aliyun-cli-go-vendor.tar.gz
 # aws
-Source1007: boto3-1.40.13.tar.gz
-Source1008: botocore-1.40.13.tar.gz
-Source1009: python_%{dateutil}-%{dateutil_version}-py2.py3-none-any.whl
-Source1010: s3transfer-0.13.1.tar.gz
-Source1011: %{urllib3}-%{urllib3_version}.tar.gz
+Source1300: boto3-1.40.13.tar.gz
+Source1301: botocore-1.40.13.tar.gz
+Source1302: python_%{dateutil}-%{dateutil_version}-py2.py3-none-any.whl
+Source1303: s3transfer-0.13.1.tar.gz
 # azure
-Source1012: adal-1.2.7.tar.gz
-Source1013: azure-common-1.1.28.zip
-Source1014: azure_core-1.32.0.tar.gz
-Source1015: azure_mgmt_compute-34.0.0.tar.gz
-Source1016: azure_mgmt_core-1.5.0.tar.gz
-Source1017: azure_mgmt_network-28.1.0.tar.gz
-Source1018: azure_identity-1.19.0.tar.gz
-Source1019: chardet-4.0.0-py2.py3-none-any.whl
-Source1020: isodate-0.6.1.tar.gz
-Source1021: msrest-0.7.1.zip
-Source1022: msrestazure-0.6.4.post1.tar.gz
-Source1023: %{oauthlib}-%{oauthlib_version}.tar.gz
-Source1024: PyJWT-2.1.0-py3-none-any.whl
-Source1025: requests_oauthlib-1.3.0-py2.py3-none-any.whl
-Source1026: msal-1.31.1.tar.gz
-Source1027: msal_extensions-1.2.0.tar.gz
-Source1028: portalocker-2.5.1.tar.gz
-Source1029: cryptography-3.3.2-cp36-abi3-manylinux2010_x86_64.whl
-Source1030: typing_extensions-4.12.2.tar.gz
+Source1400: adal-1.2.7.tar.gz
+Source1401: azure-common-1.1.28.zip
+Source1402: azure_core-1.32.0.tar.gz
+Source1403: azure_mgmt_core-1.5.0.tar.gz
+Source1404: azure_mgmt_compute-34.0.0.tar.gz
+Source1405: azure_mgmt_network-28.1.0.tar.gz
+Source1406: azure_identity-1.25.3.tar.gz
+Source1407: isodate-0.6.1.tar.gz
+Source1408: msrest-0.7.1.zip
+Source1409: msrestazure-0.6.4.post1.tar.gz
+Source1410: %{oauthlib}-%{oauthlib_version}.tar.gz
+Source1411: pyjwt-2.12.1.tar.gz
+Source1412: requests_oauthlib-1.3.0-py2.py3-none-any.whl
+Source1413: msal-1.36.0.tar.gz
+Source1414: msal_extensions-1.3.1.tar.gz
+Source1415: portalocker-2.5.1.tar.gz
+Source1416: typing_extensions-4.12.2.tar.gz
 # google
-Source1031: cachetools-4.2.2-py3-none-any.whl
-Source1032: chardet-3.0.4-py2.py3-none-any.whl
-Source1033: google_api_core-1.30.0-py2.py3-none-any.whl
-Source1034: google_api_python_client-1.12.8-py2.py3-none-any.whl
-Source1035: googleapis_common_protos-1.53.0-py2.py3-none-any.whl
-Source1036: google_auth-1.32.0-py2.py3-none-any.whl
-Source1037: google_auth_httplib2-0.1.0-py2.py3-none-any.whl
-Source1038: httplib2-0.19.1-py3-none-any.whl
-Source1039: packaging-20.9-py2.py3-none-any.whl
-Source1040: protobuf-3.17.3-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.whl
-Source1041: pyasn1-0.4.8-py2.py3-none-any.whl
-Source1042: pyasn1_modules-0.2.8-py2.py3-none-any.whl
-Source1043: pyparsing-2.4.7-py2.py3-none-any.whl
-Source1044: pyroute2-0.7.12.tar.gz
-Source1045: pyroute2.core-0.6.13.tar.gz
-Source1046: pyroute2.ethtool-0.6.13.tar.gz
-Source1047: pyroute2.ipdb-0.6.13.tar.gz
-Source1048: pyroute2.ipset-0.6.13.tar.gz
-Source1049: pyroute2.ndb-0.6.13.tar.gz
-Source1050: pyroute2.nftables-0.6.13.tar.gz
-Source1051: pyroute2.nslink-0.6.13.tar.gz
-Source1052: pytz-2021.1-py2.py3-none-any.whl
-Source1053: rsa-4.7.2-py3-none-any.whl
-Source1054: setuptools-80.9.0.tar.gz
-Source1055: uritemplate-3.0.1-py2.py3-none-any.whl
-# common (pexpect / suds)
-Source1056: pexpect-4.8.0-py2.py3-none-any.whl
-Source1057: ptyprocess-0.7.0-py2.py3-none-any.whl
-Source1058: suds_community-0.8.5-py3-none-any.whl
-### END ###
+Source1500: %{cachetools}-%{cachetools_version}.tar.gz
+Source1501: google_api_core-1.30.0-py2.py3-none-any.whl
+Source1502: google_api_python_client-1.12.8-py2.py3-none-any.whl
+Source1503: googleapis_common_protos-1.53.0-py2.py3-none-any.whl
+Source1504: google_auth-1.32.0-py2.py3-none-any.whl
+Source1505: google_auth_httplib2-0.1.0-py2.py3-none-any.whl
+Source1506: httplib2-0.19.1-py3-none-any.whl
+Source1507: protobuf-3.17.3-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.whl
+Source1508: pyroute2-0.7.12.tar.gz
+Source1509: pytz-2021.1-py2.py3-none-any.whl
+Source1510: rsa-4.7.2-py3-none-any.whl
+Source1511: uritemplate-3.0.1-py2.py3-none-any.whl
 # kubevirt
 ## pip download --no-binary :all: openshift "ruamel.yaml.clib>=0.1.2"
-### BEGIN
-Source1060: %{openshift}-%{openshift_version}.tar.gz
-Source1061: %{ruamelyamlclib}-%{ruamelyamlclib_version}.tar.gz
-Source1062: %{kubernetes}-%{kubernetes_version}.tar.gz
-Source1063: %{certifi}-%{certifi_version}.tar.gz
-Source1064: %{googleauth}-%{googleauth_version}.tar.gz
-Source1065: %{cachetools}-%{cachetools_version}.tar.gz
-Source1066: %{pyasn1modules}-%{pyasn1modules_version}.tar.gz
-Source1067: %{pyasn1}-%{pyasn1_version}.tar.gz
-Source1068: %{pyyaml}-%{pyyaml_version}.tar.gz
+Source1600: %{openshift}-%{openshift_version}.tar.gz
+Source1601: %{ruamelyamlclib}-%{ruamelyamlclib_version}.tar.gz
+Source1602: %{kubernetes}-%{kubernetes_version}.tar.gz
+Source1603: %{certifi}-%{certifi_version}.tar.gz
+Source1604: %{googleauth}-%{googleauth_version}.tar.gz
+Source1605: %{pyasn1}-%{pyasn1_version}.tar.gz
+Source1606: %{pyasn1modules}-%{pyasn1modules_version}.tar.gz
+Source1607: %{pyyaml}-%{pyyaml_version}.tar.gz
 ## rsa is dependency for "pip install",
 ## but gets removed to use cryptography lib instead
-Source1069: rsa-4.7.2.tar.gz
-Source1070: %{six}-%{six_version}.tar.gz
-Source1071: %{websocketclient}-%{websocketclient_version}.tar.gz
-Source1072: %{jinja2}-%{jinja2_version}.tar.gz
-Source1073: %{markupsafe}-%{markupsafe_version}.tar.gz
-Source1074: python-%{stringutils}-%{stringutils_version}.tar.gz
-Source1075: %{requests}-%{requests_version}.tar.gz
-Source1076: %{chrstnormalizer}-%{chrstnormalizer_version}.tar.gz
-Source1077: %{idna}-%{idna_version}.tar.gz
-Source1078: %{reqstsoauthlib}-%{reqstsoauthlib_version}.tar.gz
-Source1079: %{ruamelyaml}-%{ruamelyaml_version}.tar.gz
+Source1608: %{websocketclient}-%{websocketclient_version}.tar.gz
+Source1609: %{jinja2}-%{jinja2_version}.tar.gz
+Source1610: %{markupsafe}-%{markupsafe_version}.tar.gz
+Source1611: python-%{stringutils}-%{stringutils_version}.tar.gz
+Source1612: %{reqstsoauthlib}-%{reqstsoauthlib_version}.tar.gz
+Source1613: %{ruamelyaml}-%{ruamelyaml_version}.tar.gz
 ## required for installation
-Source1080: setuptools_scm-8.1.0.tar.gz
-Source1081: packaging-21.2-py3-none-any.whl
-Source1082: poetry-core-1.0.7.tar.gz
-Source1083: pyparsing-3.0.1.tar.gz
-Source1084: tomli-2.0.1.tar.gz
-Source1085: flit_core-3.9.0.tar.gz
-Source1086: wheel-0.37.0-py2.py3-none-any.whl
-### END
+Source1900: setuptools_scm-8.1.0.tar.gz
+Source1901: packaging-26.0.tar.gz
+Source1902: tomli-2.0.1.tar.gz
+Source1903: flit_core-3.12.0.tar.gz
+Source1904: pip-26.0.1.tar.gz
+Source1905: setuptools-82.0.1.tar.gz
+Source1906: wheel-0.46.3.tar.gz
 
 Patch0: ha-cloud-support-aliyun.patch
 Patch1: ha-cloud-support-aws.patch
@@ -262,24 +222,12 @@ Patch76: RHEL-145088-fence_ibm_vpc-fix-missing-statuses.patch
 ### HA support libs/utils ###
 # all archs
 Patch1000: bz2217902-1-kubevirt-fix-bundled-dateutil-CVE-2007-4559.patch
-Patch1001: RHEL-146344-kubevirt-1-fix-bundled-urllib3-CVE-2024-37891.patch
-Patch1002: RHEL-146344-kubevirt-2-fix-bundled-urllib3-CVE-2025-66418.patch
-Patch1003: RHEL-146344-kubevirt-3-fix-bundled-urllib3-CVE-2025-66471.patch
-Patch1004: RHEL-146344-kubevirt-4-RHEL-146282-fix-bundled-urllib3-CVE-2026-21441.patch
-Patch1005: RHEL-146344-kubevirt-5-fix-bundled-pyasn1-CVE-2026-23490.patch
+Patch1001: RHEL-146344-kubevirt-fix-bundled-pyasn1-CVE-2026-23490.patch
+Patch1002: RHEL-157202-1-kubevirt-fix-bundled-pyasn1-CVE-2026-30922.patch
 # cloud (x86_64 only)
 Patch2000: bz2217902-2-aws-azure-fix-bundled-dateutil-CVE-2007-4559.patch
-Patch2001: RHEL-43562-fix-bundled-urllib3-CVE-2024-37891.patch
-Patch2002: RHEL-95901-pkg_resources-suppress-UserWarning.patch
-Patch2003: RHEL-136069-fix-bundled-urllib3-CVE-2025-66418.patch
-Patch2004: RHEL-139799-fix-bundled-urllib3-CVE-2025-66471.patch
-Patch2005: RHEL-140796-RHEL-146282-fix-bundled-urllib3-CVE-2026-21441.patch
-Patch2006: RHEL-142460-fix-bundled-pyasn1-CVE-2026-23490.patch
-# cloud (ppc64le only)
-Patch3000: RHEL-146344-ibm-1-fix-bundled-urllib3-CVE-2024-37891.patch
-Patch3001: RHEL-146344-ibm-2-fix-bundled-urllib3-CVE-2025-66418.patch
-Patch3002: RHEL-146344-ibm-3-fix-bundled-urllib3-CVE-2025-66471.patch
-Patch3003: RHEL-146344-ibm-4-RHEL-146282-fix-bundled-urllib3-CVE-2026-21441.patch
+Patch2001: RHEL-142460-fix-bundled-pyasn1-CVE-2026-23490.patch
+Patch2002: RHEL-157202-2-google-fix-bundled-pyasn1-CVE-2026-30922.patch
 
 %global supportedagents amt_ws apc apc_snmp bladecenter brocade cisco_mds cisco_ucs compute drac5 eaton_snmp emerson eps evacuate hpblade ibmblade ibm_powervs ibm_vpc ifmib ilo ilo_moonshot ilo_mp ilo_ssh intelmodular ipdu ipmilan kdump kubevirt lpar mpath nutanix_ahv redfish rhevm rsa rsb sbd scsi vmware_rest vmware_soap wti
 %ifarch x86_64
@@ -350,7 +298,7 @@ BuildRequires: gcc
 BuildRequires: libxslt
 ## Python dependencies
 %if 0%{?fedora} || 0%{?centos} > 7 || 0%{?rhel} > 7 || 0%{?suse_version}
-BuildRequires: python3-devel
+BuildRequires: python3-devel python3-cryptography
 # dependencies for building HA support subpackages
 BuildRequires: python3-pip python3-wheel
 %ifarch x86_64
@@ -481,12 +429,12 @@ sed -i.orig 's|FENCE_ZVM=1|FENCE_ZVM=0|' configure.ac
 
 # aliyun-cli
 %ifarch x86_64
-tar zxf %SOURCE2000
+tar zxf %SOURCE1200
 pushd aliyun-cli-*
 git init
 rmdir aliyun-openapi-meta
-tar zxf %SOURCE2001
-tar zxf %SOURCE2002
+tar zxf %SOURCE1201
+tar zxf %SOURCE1202
 mv aliyun-openapi-meta-* aliyun-openapi-meta
 %define aliyun_cli_version 3.0.198
 # based on https://github.com/containers/podman/blob/main/rpm/podman.spec
@@ -498,6 +446,9 @@ popd
 %endif
 
 # support libs
+%{__python3} -m pip install --no-build-isolation --user --upgrade --no-index --find-links %{_sourcedir} flit-core
+%{__python3} -m pip install --no-build-isolation --user --upgrade --no-index --find-links %{_sourcedir} packaging
+%{__python3} -m pip install --no-build-isolation --user --upgrade --no-index --find-links %{_sourcedir} pip setuptools wheel
 %ifarch x86_64
 LIBS="%{_sourcedir}/requirements-*.txt"
 %endif
@@ -509,47 +460,42 @@ LIBS="%{_sourcedir}/requirements-common.txt"
 %endif
 for x in $LIBS; do
 	[ "%{_arch}" = "x86_64" ] && [ "$x" = "%{_sourcedir}/requirements-ibm.txt" ] && continue
-	%{__python3} -m pip install --target support/$(echo $x | sed -E "s/.*requirements-(.*).txt/\1/") --no-index --find-links %{_sourcedir} -r $x
+	# use --prefix "usr" due to default varying per arch (and "" uses default unlike on RHEL10+)
+	%{__python3} -m pip install --no-build-isolation --use-deprecated=legacy-resolver --prefix "usr" --root support/$(echo $x | sed -E "s/.*requirements-(.*).txt/\1/") --no-index --find-links %{_sourcedir} -r $x
 done
 
-# fix incorrect #! detected by CI
-%ifarch x86_64
-sed -i -e "/^#\!\/Users/c#\!%{__python3}" support/aws/bin/jp
-%endif
-
 # kubevirt
-%{__python3} -m pip install --user --no-index --find-links %{_sourcedir} setuptools-scm
-%{__python3} -m pip install --target support/kubevirt --no-index --find-links %{_sourcedir} openshift
+%{__python3} -m pip install --no-build-isolation --user --no-index --find-links %{_sourcedir} tomli
+%{__python3} -m pip install --no-build-isolation --user --no-index --find-links %{_sourcedir} setuptools-scm
+# use --prefix "usr" due to default varying per arch (and "" uses default unlike on RHEL10+)
+%{__python3} -m pip install --no-build-isolation --prefix "usr" --root support/kubevirt --no-index --find-links %{_sourcedir} openshift
 rm -rf kubevirt/rsa*
+
+# workaround due to --prefix and jmespath bugs mentioned above
+for d in support/*; do
+	mv "$d/usr/lib" "$d"
+	[ -d "$d/usr/lib64" ] && mv "$d/usr/lib64" "$d"
+	rm -rfv "$d/usr"
+done
+
+sed -i -e "s/#PYTHON3_VERSION#/%{python3_version}/" %{_sourcedir}/*.patch make/*.mk lib/*.py agents/*/*.py
 
 # regular patch doesnt work in build-section
 pushd support
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH1000}
-/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH1001}
-/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1002}
-/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1003}
-/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1004}
-/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1005}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1001}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH1002}
 
 %ifarch x86_64
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH2000}
-/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH2001}
-/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2002}
-/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2003}
-/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2004}
-/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2005}
-/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2006}
-%endif
-%ifarch ppc64le
-/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH3000}
-/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH3001}
-/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH3002}
-/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH3003}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2001}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH2002}
 %endif
 popd
 
+export PYTHONPATH="support/common/lib/python%{python3_version}/site-packages:support/aliyun/lib/python%{python3_version}/site-packages:support/aws/lib/python%{python3_version}/site-packages:support/azure/lib/python%{python3_version}/site-packages:support/google/lib/python%{python3_version}/site-packages:support/kubevirt/lib/python%{python3_version}/site-packages"
 ./autogen.sh
-%{configure} --disable-libvirt-qmf-plugin PYTHONPATH="support/aliyun:support/aws:support/azure:support/google:support/common" \
+%{configure} --disable-libvirt-qmf-plugin \
 %if %{defined _tmpfilesdir}
 	SYSTEMD_TMPFILES_DIR=%{_tmpfilesdir} \
 	--with-fencetmpdir=/run/fence-agents \
@@ -565,7 +511,7 @@ rm -rf %{buildroot}
 mkdir -p %{buildroot}%{_usr}/lib/%{name}
 mv support %{buildroot}%{_usr}/lib/%{name}
 
-export PYTHONPATH=%{buildroot}%{_usr}/lib/%{name}/support
+export PYTHONPATH="%{buildroot}%{_usr}/lib/%{name}/support/common/lib/python%{python3_version}/site-packages:%{buildroot}%{_usr}/lib/%{name}/support/aliyun/lib/python%{python3_version}/site-packages:%{buildroot}%{_usr}/lib/%{name}/support/aws/lib/python%{python3_version}/site-packages:%{buildroot}%{_usr}/lib/%{name}/support/azure/lib/python%{python3_version}/site-packages:%{buildroot}%{_usr}/lib/%{name}/support/google/lib/python%{python3_version}/site-packages:%{buildroot}%{_usr}/lib/%{name}/support/kubevirt/lib/python%{python3_version}/site-packages"
 make install DESTDIR=%{buildroot}
 mkdir -p %{buildroot}/%{_unitdir}/
 %ifarch x86_64
@@ -670,94 +616,66 @@ This package contains support files including the Python fencing library.
 %package -n ha-cloud-support
 License: GPL-2.0-or-later AND LGPL-2.0-or-later AND LGPL-2.1-or-later AND Apache-2.0 AND MIT AND BSD-2-Clause AND BSD-3-Clause AND MPL-2.0 AND Apache-2.0 AND PSF-2.0 AND Unlicense AND ISC
 Summary: Support libraries for HA Cloud agents
+Requires: python3-cryptography python3-requests python3-urllib3
 %ifarch x86_64
 Requires: awscli2
 # aliyun
-Provides: bundled(python-aliyun-python-sdk-core) = 2.11.5
-Provides: bundled(python-aliyun-python-sdk-ecs) = 4.24.7
-Provides: bundled(python-cffi) = 1.14.5
-Provides: bundled(python-colorama) = 0.3.3
-Provides: bundled(python-jmespath) = 0.7.1
-Provides: bundled(python-pycryptodome) = 3.20.0
-Provides: bundled(python-pycparser) = 2.20
+Provides: bundled(python-aliyun-sdk-core) = 2.16.0
+Provides: bundled(python-aliyun-sdk-ecs) = 4.24.82
+Provides: bundled(python-jmespath) = 0.10.0
+# aliyuncli (golang)
 Provides: bundled(aliyun-cli) = 3.0.198
 Provides: bundled(aliyun-openapi-meta) = 5cf98b660
 # aws
 Provides: bundled(python-boto3) = 1.40.13
 Provides: bundled(python-botocore) = 1.40.13
 Provides: bundled(python-%{dateutil}) = %{dateutil_version}
+Provides: bundled(python-jmespath) = 0.10.0
 Provides: bundled(python-s3transfer) = 0.13.1
-Provides: bundled(python-urllib3) = 1.26.18
 # azure
 Provides: bundled(python-adal) = 1.2.7
 Provides: bundled(python-azure-common) = 1.1.28
 Provides: bundled(python-azure-core) = 1.32.0
-Provides: bundled(python-azure-identity) = 1.19.0
-Provides: bundled(python-azure-mgmt-compute) = 34.0.0
+Provides: bundled(python-azure-identity) = 1.25.3
 Provides: bundled(python-azure-mgmt-core) = 1.5.0
+Provides: bundled(python-azure-mgmt-compute) = 34.0.0
 Provides: bundled(python-azure-mgmt-network) = 28.1.0
-Provides: bundled(python-chardet) = 4.0.0
-Provides: bundled(python-cffi) = 1.14.5
-Provides: bundled(python-%{chrstnormalizer}) = %{chrstnormalizer_version}
-Provides: bundled(python-cryptography) = 3.3.2
 Provides: bundled(python-%{dateutil}) = %{dateutil_version}
-Provides: bundled(python-%{idna}) = %{idna_version}
 Provides: bundled(python-isodate) = 0.6.1
-Provides: bundled(python-msal) = 1.31.1
-Provides: bundled(python-msal-extensions) = 1.2.0
+Provides: bundled(python-msal) = 1.36.0
+Provides: bundled(python-msal-extensions) = 1.3.1
 Provides: bundled(python-msrest) = 0.7.1
 Provides: bundled(python-msrestazure) = 0.6.4.post1
 Provides: bundled(python-%{oauthlib}) = %{oauthlib_version}
 Provides: bundled(python-portalocker) = 2.5.1
-Provides: bundled(python-pycparser) = 2.20
-Provides: bundled(python-PyJWT) = 2.1.0
-Provides: bundled(python-%{requests}) = %{requests_version}
+Provides: bundled(python-PyJWT) = 2.12.1
 Provides: bundled(python-requests-oauthlib) = 1.3.0
-Provides: bundled(python-%{six}) = %{six_version}
 Provides: bundled(python-typing-extensions) = 4.12.2
-Provides: bundled(python-%{urllib3}) = %{urllib3_version}
 # google
-Provides: bundled(python-cachetools) = 4.2.2
-Provides: bundled(python-chardet) = 3.0.4
+Provides: bundled(python3-%{cachetools}) = %{cachetools_version}
 Provides: bundled(python-google-api-core) = 1.30.0
 Provides: bundled(python-google-api-client) = 1.12.8
 Provides: bundled(python-googleapis-common-protos) = 1.53.0
 Provides: bundled(python-google-auth) = 1.32.0
 Provides: bundled(python-google-auth-httplib2) = 0.1.0
 Provides: bundled(python-httplib2) = 0.19.1
-Provides: bundled(python-packaging) = 20.9
 Provides: bundled(python-protobuf) = 3.17.3
-Provides: bundled(python-pyasn1) = 0.4.8
-Provides: bundled(python-pyasn1-modules) = 0.2.8
-Provides: bundled(python-pyparsing) = 2.4.7
+Provides: bundled(python3-%{pyasn1}) = %{pyasn1_version}
+Provides: bundled(python3-%{pyasn1modules}) = %{pyasn1modules_version}
 Provides: bundled(python-pyroute2) = 0.7.12
-Provides: bundled(python-pyroute2-core) = 0.6.13
-Provides: bundled(python-pyroute2-ethtool) = 0.6.13
-Provides: bundled(python-pyroute2-ipdb) = 0.6.13
-Provides: bundled(python-pyroute2-ipset) = 0.6.13
-Provides: bundled(python-pyroute2-ndb) = 0.6.13
-Provides: bundled(python-pyroute2-nftables) = 0.6.13
-Provides: bundled(python-pyroute2-nslink) = 0.6.13
 Provides: bundled(python-pytz) = 2021.1
 Provides: bundled(python-rsa) = 4.7.2
-Provides: bundled(python3-setuptools) = 80.9.0
 Provides: bundled(python-uritemplate) = 3.0.1
-%endif
-%ifarch ppc64le
-# ibm
-Provides: bundled(python3-%{certifi}) = %{certifi_version}
-Provides: bundled(python3-%{chrstnormalizer}) = %{chrstnormalizer_version}
-Provides: bundled(python3-%{idna}) = %{idna_version}
-Provides: bundled(python3-%{requests}) = %{requests_version}
-Provides: bundled(python3-%{urllib3}) = %{urllib3_version}
 %endif
 %description -n ha-cloud-support
 Support libraries for Fence Agents.
 %files -n ha-cloud-support
+%ifnarch ppc64le
 %dir %{_usr}/lib/%{name}
 %{_usr}/lib/%{name}/support
 %exclude %{_usr}/lib/%{name}/support/common
 %exclude %{_usr}/lib/%{name}/support/kubevirt
+%endif
 %endif
 
 %package all
@@ -787,7 +705,6 @@ Group: System Environment/Base
 Summary: Fence agent for Alibaba Cloud (Aliyun)
 Requires: fence-agents-common >= %{version}-%{release}
 Requires: ha-cloud-support = %{version}-%{release}
-Requires: python3-jmespath >= 0.9.0
 Obsoletes: %{name} < %{version}-%{release}
 %description aliyun
 The fence-agents-aliyun package contains a fence agent for Alibaba Cloud (Aliyun) instances.
@@ -1265,28 +1182,22 @@ License: GPLv2+ and LGPLv2+ and ASL 2.0 and BSD and BSD-2-Clause and BSD-3-Claus
 Summary: Fence agent for KubeVirt platform
 Requires: fence-agents-common = %{version}-%{release}
 Provides: bundled(python3-%{openshift}) = %{openshift_version}
-Provides: bundled(python3-%{ruamelyamlclib}) = %{ruamelyamlclib_version}
 Provides: bundled(python3-%{kubernetes}) = %{kubernetes_version}
 Provides: bundled(python3-%{certifi}) = %{certifi_version}
 Provides: bundled(python3-%{googleauth}) = %{googleauth_version}
 Provides: bundled(python3-%{cachetools}) = %{cachetools_version}
-Provides: bundled(python3-%{pyasn1modules}) = %{pyasn1modules_version}
 Provides: bundled(python3-%{pyasn1}) = %{pyasn1_version}
+Provides: bundled(python3-%{pyasn1modules}) = %{pyasn1modules_version}
 Provides: bundled(python3-%{dateutil}) = %{dateutil_version}
 Provides: bundled(python3-%{pyyaml}) = %{pyyaml_version}
-Provides: bundled(python3-%{six}) = %{six_version}
-Provides: bundled(python3-%{urllib3}) = %{urllib3_version}
 Provides: bundled(python3-%{websocketclient}) = %{websocketclient_version}
 Provides: bundled(python3-%{jinja2}) = %{jinja2_version}
 Provides: bundled(python3-%{markupsafe}) = %{markupsafe_version}
 Provides: bundled(python3-%{stringutils}) = %{stringutils_version}
-Provides: bundled(python3-%{requests}) = %{requests_version}
-Provides: bundled(python3-%{chrstnormalizer}) = %{chrstnormalizer_version}
-Provides: bundled(python3-%{idna}) = %{idna_version}
 Provides: bundled(python3-%{reqstsoauthlib}) = %{reqstsoauthlib_version}
 Provides: bundled(python3-%{oauthlib}) = %{oauthlib_version}
 Provides: bundled(python3-%{ruamelyaml}) = %{ruamelyaml_version}
-Provides: bundled(python3-setuptools) = 80.9.0
+Provides: bundled(python3-%{ruamelyamlclib}) = %{ruamelyamlclib_version}
 %description kubevirt
 Fence agent for KubeVirt platform.
 %files kubevirt
@@ -1605,6 +1516,15 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
+* Wed Apr 29 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-110.2
+- bundled pyasn1: fix CVE-2026-30922
+  Resolves: RHEL-157202
+
+* Thu Apr 16 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-110.1
+- bundled cryptography: replace with dependency to fix CVE-2026-26007
+- bundled PyJWT: upgrade to v2.12.1 to fix CVE-2026-32597
+  Resolves: RHEL-167241, RHEL-155676
+
 * Tue Feb  10 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-110
 - bundled urllib3: fix CVE-2024-37891, CVE-2025-66418, CVE-2025-66471,
   CVE-2026-21441, and pyasn1 CVE-2026-23490 on all archs

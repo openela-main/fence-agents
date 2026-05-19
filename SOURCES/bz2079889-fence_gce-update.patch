@@ -22,8 +22,8 @@
 -from fencing import fail_usage, run_delay, all_opt, atexit_handler, check_input, process_input, show_docs, fence_action
 +from fencing import fail_usage, run_delay, all_opt, atexit_handler, check_input, process_input, show_docs, fence_action, run_command
  try:
-   sys.path.insert(0, '/usr/lib/fence-agents/support/google')
-   import httplib2
+   sys.path.insert(0, '/usr/lib/fence-agents/support/google/lib64/python#PYTHON3_VERSION#/site-packages')
+   sys.path.insert(1, '/usr/lib/fence-agents/support/google/lib/python#PYTHON3_VERSION#/site-packages')
 @@ -42,6 +42,19 @@
  
  METADATA_SERVER = 'http://metadata.google.internal/computeMetadata/v1/'

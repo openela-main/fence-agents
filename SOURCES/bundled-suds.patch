@@ -4,7 +4,7 @@
  #!@PYTHON@ -tt
  
  import sys
-+sys.path.insert(0, '/usr/lib/fence-agents/support/common')
++sys.path.insert(0, '/usr/lib/fence-agents/support/common/lib/python#PYTHON3_VERSION#/site-packages')
  import shutil, tempfile, suds
  import logging, requests
  import atexit, signal
