@@ -1,0 +1,700 @@
+From f704caf5b1b608c06149d456b3842d6e83b8d8fa Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Tue, 25 Nov 2025 15:55:24 +0100
+Subject: [PATCH 1/2] fence_virt: cleanup whitespace at end of lines
+
+---
+ agents/virt/client/main.c    | 10 +++++-----
+ agents/virt/client/options.c | 38 ++++++++++++++++++------------------
+ agents/virt/client/serial.c  | 14 ++++++-------
+ agents/virt/client/tcp.c     |  4 ++--
+ agents/virt/client/vsock.c   |  4 ++--
+ 5 files changed, 35 insertions(+), 35 deletions(-)
+
+diff --git a/agents/virt/client/main.c b/agents/virt/client/main.c
+index 188c05d71..4ffcd549f 100644
+--- a/agents/virt/client/main.c
++++ b/agents/virt/client/main.c
+@@ -13,7 +13,7 @@
+ 
+   You should have received a copy of the GNU General Public License
+   along with this program; see the file COPYING.  If not, write to the
+-  Free Software Foundation, Inc.,  675 Mass Ave, Cambridge, 
++  Free Software Foundation, Inc.,  675 Mass Ave, Cambridge,
+   MA 02139, USA.
+ */
+ /*
+@@ -95,16 +95,16 @@ main(int argc, char **argv)
+ 
+ 	args_finalize(&args);
+ 	dset(args.debug);
+-	
+-	if (args.debug > 0) 
++
++	if (args.debug > 0)
+ 		args_print(&args);
+ 
+ 	/* Additional validation here */
+ 	if (!args.domain && (args.op != FENCE_DEVSTATUS &&
+ 			     args.op != FENCE_HOSTLIST &&
+ 			     args.op != FENCE_METADATA)) {
+-		printf("No domain specified!\n");
+-		syslog(LOG_NOTICE, "No domain specified");
++		fprintf(stderr, "No domain specified!\n");
++		syslog(LOG_ERR, "No domain specified");
+ 		args.flags |= F_ERR;
+ 	}
+ 
+diff --git a/agents/virt/client/options.c b/agents/virt/client/options.c
+index ce7ba14da..c98bf60ad 100644
+--- a/agents/virt/client/options.c
++++ b/agents/virt/client/options.c
+@@ -13,7 +13,7 @@
+ 
+   You should have received a copy of the GNU General Public License
+   along with this program; see the file COPYING.  If not, write to the
+-  Free Software Foundation, Inc.,  675 Mass Ave, Cambridge, 
++  Free Software Foundation, Inc.,  675 Mass Ave, Cambridge,
+   MA 02139, USA.
+ */
+ 
+@@ -425,12 +425,12 @@ static struct arg_info _arg_info[] = {
+ 
+ 	{ '\xff', NULL, "self",
+ 	  NULL, 0, 0, "string", NULL,
+-	  "Not user serviceable", 
++	  "Not user serviceable",
+ 	  NULL },
+ 
+ 	{ '\xff', NULL, "nodename",
+ 	  NULL, 0, 0, "string", NULL,
+-	  "Not user serviceable", 
++	  "Not user serviceable",
+ 	  NULL },
+ 
+ 	{ 'd', "-d", "debug",
+@@ -473,7 +473,7 @@ static struct arg_info _arg_info[] = {
+ 	  "Network interface name to listen on",
+ 	  assign_interface },
+ 
+-	{ 'r', "-r <retrans>", "retrans", 
++	{ 'r', "-r <retrans>", "retrans",
+ 	  NULL, 0, 0, "string", "20",
+ 	  "Multicast retransmit time (in 1/10sec; default=20)",
+ 	  assign_retrans },
+@@ -489,7 +489,7 @@ static struct arg_info _arg_info[] = {
+ 	  assign_auth },
+ 
+ 	{ 'k', "-k <file>", "key_file",
+-	  NULL, 0, 0, "string", DEFAULT_KEY_FILE, 
++	  NULL, 0, 0, "string", DEFAULT_KEY_FILE,
+ 	  "Shared key file (default=" DEFAULT_KEY_FILE ")",
+ 	  assign_key },
+ 
+@@ -541,12 +541,12 @@ static struct arg_info _arg_info[] = {
+ 
+ 	{ 'h', "-h", NULL,
+ 	  NULL, 0, 0, "boolean", "0",
+- 	  "Help",
++	  "Help",
+ 	  assign_help },
+ 
+ 	{ '?', "-?", NULL,
+ 	  NULL, 0, 0, "boolean", "0",
+- 	  "Help (alternate)", 
++	  "Help (alternate)",
+ 	  assign_help },
+ 
+ 	{ 'w', "-w <delay>", "delay",
+@@ -556,7 +556,7 @@ static struct arg_info _arg_info[] = {
+ 
+ 	{ 'V', "-V", NULL,
+ 	  NULL, 0, 0, "boolean", "0",
+- 	  "Display version and exit", 
++	  "Display version and exit",
+ 	  assign_version },
+ 
+ 	/* Terminator */
+@@ -819,16 +819,16 @@ args_metadata(char *progname, const char *optstr)
+ 
+ 	printf("</parameters>\n");
+ 	printf("<actions>\n");
+-	printf("\t<action name=\"null\" />\n");	
++	printf("\t<action name=\"null\" />\n");
+ 	printf("\t<action name=\"on\" />\n");
+ 	printf("\t<action name=\"off\" />\n");
+ 	printf("\t<action name=\"reboot\" />\n");
+-	printf("\t<action name=\"metadata\" />\n");	
+-	printf("\t<action name=\"status\" />\n");	
+-	printf("\t<action name=\"monitor\" />\n");	
+-	printf("\t<action name=\"list\" />\n");	
+-	printf("\t<action name=\"list-status\" />\n");	
+-	printf("\t<action name=\"validate-all\" />\n");	
++	printf("\t<action name=\"metadata\" />\n");
++	printf("\t<action name=\"status\" />\n");
++	printf("\t<action name=\"monitor\" />\n");
++	printf("\t<action name=\"list\" />\n");
++	printf("\t<action name=\"list-status\" />\n");
++	printf("\t<action name=\"validate-all\" />\n");
+ 	printf("</actions>\n");
+ 	printf("</resource-agent>\n");
+ }
+@@ -846,7 +846,7 @@ cleanup(char *line, size_t linelen)
+ {
+ 	char *p;
+ 	int x;
+-	
++
+ 	/* Remove leading whitespace. */
+ 	p = line;
+ 	for (x = 0; x < linelen; x++) {
+@@ -887,7 +887,7 @@ cleanup(char *line, size_t linelen)
+ 
+ /**
+   Parse args from stdin and assign to the specified args structure.
+-  
++
+   @param optstr		Command line option string in getopt(3) format
+   @param args		Args structure to fill in.
+  */
+@@ -913,7 +913,7 @@ args_get_stdin(const char *optstr, fence_virt_args_t *args)
+ 		}
+ 
+ 		arg = find_arg_by_string(name);
+-		if (!arg || (arg->opt != '\xff' && 
++		if (!arg || (arg->opt != '\xff' &&
+ 			     arg->opt != SCHEMA_COMPAT &&
+ 			     !strchr(optstr, arg->opt))) {
+ 			fprintf(stderr,
+@@ -930,7 +930,7 @@ args_get_stdin(const char *optstr, fence_virt_args_t *args)
+ 
+ /**
+   Parse args from stdin and assign to the specified args structure.
+-  
++
+   @param optstr		Command line option string in getopt(3) format
+   @param args		Args structure to fill in.
+  */
+diff --git a/agents/virt/client/serial.c b/agents/virt/client/serial.c
+index 238ef4af2..124679e83 100644
+--- a/agents/virt/client/serial.c
++++ b/agents/virt/client/serial.c
+@@ -1,11 +1,11 @@
+-/* 
++/*
+  * Copyright (C) 2002-2003, 2009 Red Hat, Inc.
+  *
+  * License: GPLv2+
+  *
+  * Written by Lon Hohberger <lhh@redhat.com>
+  *
+- * Serial client for fence_virt (incomplete, but 
++ * Serial client for fence_virt (incomplete, but
+  * a good start)
+  *
+  * Based on:
+@@ -147,7 +147,7 @@ open_port(char *file, char *cspeed, char *cparam)
+ 		perror("tcsetattr");
+ 		close(fd);
+ 		return -1;
+-	}                             
++	}
+ 
+ 	(void) tcflush(fd, TCIOFLUSH);
+ 
+@@ -171,7 +171,7 @@ hangup(int fd, int delay)
+ 		perror("ioctl2");
+ 		return;
+ 	}
+-	
++
+ 	usleep(delay);
+ 
+ 	bits |= (TIOCM_DTR | TIOCM_CTS | TIOCM_RTS | TIOCM_DSR | TIOCM_CD);
+@@ -233,7 +233,7 @@ serial_fence_virt(fence_virt_args_t *args)
+ 			*flags = 0;
+ 			flags++;
+ 		}
+-	
++
+ 		fd = open_port(args->serial.device, speed, flags);
+ 		if (fd == -1) {
+ 			perror("open_port");
+@@ -264,9 +264,9 @@ serial_fence_virt(fence_virt_args_t *args)
+ 	gettimeofday(&tv, NULL);
+ 	req.seqno = (int)tv.tv_usec;
+ 
+-	if (args->domain) 
++	if (args->domain)
+ 		strncpy((char *)req.domain, args->domain, sizeof(req.domain) - 1);
+-	
++
+ 	tv.tv_sec = 3;
+ 	tv.tv_usec = 0;
+ 	swab_serial_req_t(&req);
+diff --git a/agents/virt/client/tcp.c b/agents/virt/client/tcp.c
+index 986fdd942..68e69dbef 100644
+--- a/agents/virt/client/tcp.c
++++ b/agents/virt/client/tcp.c
+@@ -13,7 +13,7 @@
+ 
+   You should have received a copy of the GNU General Public License
+   along with this program; see the file COPYING.  If not, write to the
+-  Free Software Foundation, Inc.,  675 Mass Ave, Cambridge, 
++  Free Software Foundation, Inc.,  675 Mass Ave, Cambridge,
+   MA 02139, USA.
+ */
+ 
+@@ -158,7 +158,7 @@ tcp_fence_virt(fence_virt_args_t *args)
+ 			ret = tcp_exchange(fd, args->net.auth, key, key_len,
+ 					    args->timeout);
+ 			break;
+-		/* case AUTH_X509: 
++		/* case AUTH_X509:
+ 			return ssl_exchange(...); */
+ 		default:
+ 			dbg_printf(3, "Unknown auth type: %d\n", args->net.auth);
+diff --git a/agents/virt/client/vsock.c b/agents/virt/client/vsock.c
+index 7557c5413..a59cb652d 100644
+--- a/agents/virt/client/vsock.c
++++ b/agents/virt/client/vsock.c
+@@ -13,7 +13,7 @@
+ 
+   You should have received a copy of the GNU General Public License
+   along with this program; see the file COPYING.  If not, write to the
+-  Free Software Foundation, Inc.,  675 Mass Ave, Cambridge, 
++  Free Software Foundation, Inc.,  675 Mass Ave, Cambridge,
+   MA 02139, USA.
+ */
+ 
+@@ -163,7 +163,7 @@ vsock_fence_virt(fence_virt_args_t *args)
+ 			ret = sock_exchange(fd, args->net.auth, key, key_len,
+ 					    args->timeout);
+ 			break;
+-		/* case AUTH_X509: 
++		/* case AUTH_X509:
+ 			return ssl_exchange(...); */
+ 		default:
+ 			dbg_printf(3, "Unknown auth type: %d\n", args->net.auth);
+
+From 33dd9cb31b3399f1a1bd7d86801e6e8035ca6090 Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Wed, 26 Nov 2025 09:05:45 +0100
+Subject: [PATCH 2/2] fence_virt: print error messages to sderr
+
+---
+ agents/virt/client/main.c    | 18 +++++++++---------
+ agents/virt/client/mcast.c   | 20 ++++++++++----------
+ agents/virt/client/options.c | 32 ++++++++++++++++----------------
+ agents/virt/client/serial.c  |  6 +++---
+ agents/virt/client/tcp.c     | 10 +++++-----
+ agents/virt/client/vsock.c   | 12 ++++++------
+ 6 files changed, 49 insertions(+), 49 deletions(-)
+
+diff --git a/agents/virt/client/main.c b/agents/virt/client/main.c
+index 4ffcd549f..728932a95 100644
+--- a/agents/virt/client/main.c
++++ b/agents/virt/client/main.c
+@@ -167,28 +167,28 @@ main(int argc, char **argv)
+ 		break;
+ 	case RESP_FAIL:
+ 		if (args.domain) {
+-			syslog(LOG_NOTICE, "Fence operation failed for domain \"%s\"",
++			syslog(LOG_ERR, "Fence operation failed for domain \"%s\"",
+ 				args.domain);
+ 		} else
+-			syslog(LOG_NOTICE, "Fence operation failed");
+-		printf("Operation failed\n");
++			syslog(LOG_ERR, "Fence operation failed");
++		fprintf(stderr, "Operation failed\n");
+ 		break;
+ 	case RESP_PERM:
+ 		if (args.domain) {
+-			syslog(LOG_NOTICE,
++			syslog(LOG_ERR,
+ 				"Permission denied for Fence operation for domain \"%s\"",
+ 				args.domain);
+ 		} else
+-			syslog(LOG_NOTICE, "Permission denied for fence operation");
+-		printf("Permission denied\n");
++			syslog(LOG_ERR, "Permission denied for fence operation");
++		fprintf(stderr, "Permission denied\n");
+ 		break;
+ 	default:
+ 		if (args.domain) {
+-			syslog(LOG_NOTICE, "Unknown response (%d) for domain \"%s\"",
++			syslog(LOG_ERR, "Unknown response (%d) for domain \"%s\"",
+ 				ret, args.domain);
+ 		} else
+-			syslog(LOG_NOTICE, "Unknown response (%d)", ret);
+-		printf("Unknown response (%d)\n", ret);
++			syslog(LOG_ERR, "Unknown response (%d)", ret);
++		fprintf(stderr, "Unknown response (%d)\n", ret);
+ 		break;
+ 	}
+ 
+diff --git a/agents/virt/client/mcast.c b/agents/virt/client/mcast.c
+index 42f0a6b6f..e6994ad25 100644
+--- a/agents/virt/client/mcast.c
++++ b/agents/virt/client/mcast.c
+@@ -102,13 +102,13 @@ do_read_hostlist(int fd, int timeout)
+ 
+ 		ret = _select_retry(fd+1, &rfds, NULL, NULL, &tv);
+ 		if (ret == 0) {
+-			printf("Timed out!\n");
++			fprintf(stderr, "Timed out!\n");
+ 			break;
+ 		}
+ 
+ 		ret = _read_retry(fd, &hinfo, sizeof(hinfo), &tv);
+ 		if (ret < sizeof(hinfo)) {
+-			printf("Bad read!\n");
++			fprintf(stderr, "Bad read!\n");
+ 			break;
+ 		}
+ 
+@@ -134,14 +134,14 @@ tcp_exchange(int fd, fence_auth_type_t auth, void *key,
+ 	dbg_printf(3, "Issuing TCP challenge\n");
+ 	if (sock_challenge(fd, auth, key, key_len, timeout) <= 0) {
+ 		/* Challenge failed */
+-		printf("Invalid response to challenge\n");
++		fprintf(stderr, "Invalid response to challenge\n");
+ 		return 1;
+ 	}
+ 
+ 	/* Now they'll send us one, so we need to respond here */
+ 	dbg_printf(3, "Responding to TCP challenge\n");
+ 	if (sock_response(fd, auth, key, key_len, timeout) <= 0) {
+-		printf("Invalid response to challenge\n");
++		fprintf(stderr, "Invalid response to challenge\n");
+ 		return 1;
+ 	}
+ 
+@@ -277,14 +277,14 @@ mcast_fence_virt(fence_virt_args_t *args)
+ 	/* Initialize NSS; required to do hashing, as silly as that
+ 	   sounds... */
+ 	if (NSS_NoDB_Init(NULL) != SECSuccess) {
+-		printf("Could not initialize NSS\n");
++		fprintf(stderr, "Could not initialize NSS\n");
+ 		return 1;
+ 	}
+ 
+ 	if (args->net.auth != AUTH_NONE || args->net.hash != HASH_NONE) {
+ 		key_len = read_key_file(args->net.key_file, key, sizeof(key));
+ 		if (key_len < 0) {
+-			printf("Could not read %s; trying without "
++			fprintf(stderr, "Could not read %s; trying without "
+ 			       "authentication\n", args->net.key_file);
+ 			args->net.auth = AUTH_NONE;
+ 			args->net.hash = HASH_NONE;
+@@ -294,7 +294,7 @@ mcast_fence_virt(fence_virt_args_t *args)
+ 
+ 	/* Do the real work */
+ 	if (ip_build_list(&ipl) < 0) {
+-		printf("Error building IP address list\n");
++		fprintf(stderr, "Error building IP address list\n");
+ 		return 1;
+ 	}
+ 
+@@ -320,7 +320,7 @@ mcast_fence_virt(fence_virt_args_t *args)
+ 		}
+ 
+ 		if (lfd < 0) {
+-			printf("Failed to listen: %s\n", strerror(errno));
++			fprintf(stderr, "Failed to listen: %s\n", strerror(errno));
+ 			usleep(args->retr_time * 100000);
+ 			if (--attempts > 0)
+ 				goto listen_loop;
+@@ -366,10 +366,10 @@ mcast_fence_virt(fence_virt_args_t *args)
+ 
+ 	if (fd < 0) {
+ 		if (attempts <= 0) {
+-			printf("Timed out waiting for response\n");
++			fprintf(stderr, "Timed out waiting for response\n");
+ 			return 1;
+ 		}
+-		printf("Operation failed: %s\n", strerror(errno));
++		fprintf(stderr, "Operation failed: %s\n", strerror(errno));
+ 		return -1;
+ 	}
+ 
+diff --git a/agents/virt/client/options.c b/agents/virt/client/options.c
+index c98bf60ad..1d50127be 100644
+--- a/agents/virt/client/options.c
++++ b/agents/virt/client/options.c
+@@ -83,7 +83,7 @@ assign_family(fence_virt_args_t *args, struct arg_info *arg,
+ 	} else if (!strcasecmp(value, "auto")) {
+ 		args->net.family = 0;
+ 	} else {
+-		printf("Unsupported family: '%s'\n", value);
++		fprintf(stderr, "Unsupported family: '%s'\n", value);
+ 		args->flags |= F_ERR;
+ 	}
+ }
+@@ -134,7 +134,7 @@ assign_port(fence_virt_args_t *args, struct arg_info *arg, char *value)
+ 
+ 	ret = strtol(value, &p, 0);
+ 	if (ret <= 0 || ret >= 65536 || *p != '\0') {
+-		printf("Invalid port: '%s'\n", value);
++		fprintf(stderr, "Invalid port: '%s'\n", value);
+ 		args->flags |= F_ERR;
+ 	} else
+ 		args->net.port = ret;
+@@ -153,7 +153,7 @@ assign_cid(fence_virt_args_t *args, struct arg_info *arg, char *value)
+ 
+ 	ret = strtoul(value, &p, 0);
+ 	if (!p || *p != '\0' || ret < 2 || ret >= 0xffffffff) {
+-		printf("Invalid CID: '%s'\n", value);
++		fprintf(stderr, "Invalid CID: '%s'\n", value);
+ 		args->flags |= F_ERR;
+ 	} else
+ 		args->net.cid = ret;
+@@ -169,7 +169,7 @@ assign_interface(fence_virt_args_t *args, struct arg_info *arg, char *value)
+ 
+ 	ret = if_nametoindex(value);
+ 	if (ret <= 0) {
+-		printf("Invalid interface: %s: %s\n", value, strerror(errno));
++		fprintf(stderr, "Invalid interface: %s: %s\n", value, strerror(errno));
+ 		args->net.ifindex = 0;
+ 	}
+ 
+@@ -188,7 +188,7 @@ assign_retrans(fence_virt_args_t *args, struct arg_info *arg, char *value)
+ 
+ 	ret = strtol(value, &p, 0);
+ 	if (ret <= 0 || *p != '\0') {
+-		printf("Invalid retransmit time: '%s'\n", value);
++		fprintf(stderr, "Invalid retransmit time: '%s'\n", value);
+ 		args->flags |= F_ERR;
+ 	} else
+ 		args->retr_time = ret;
+@@ -209,7 +209,7 @@ assign_hash(fence_virt_args_t *args, struct arg_info *arg, char *value)
+ 	} else if (!strcasecmp(value, "sha512")) {
+ 		args->net.hash = HASH_SHA512;
+ 	} else {
+-		printf("Unsupported hash: %s\n", value);
++		fprintf(stderr, "Unsupported hash: %s\n", value);
+ 		args->flags |= F_ERR;
+ 	}
+ }
+@@ -230,7 +230,7 @@ assign_auth(fence_virt_args_t *args, struct arg_info *arg, char *value)
+ 	} else if (!strcasecmp(value, "sha512")) {
+ 		args->net.auth = AUTH_SHA512;
+ 	} else {
+-		printf("Unsupported auth type: %s\n", value);
++		fprintf(stderr, "Unsupported auth type: %s\n", value);
+ 		args->flags |= F_ERR;
+ 	}
+ }
+@@ -248,7 +248,7 @@ assign_key(fence_virt_args_t *args, struct arg_info *arg, char *value)
+ 	args->net.key_file = strdup(value);
+ 
+ 	if (stat(value, &st) == -1) {
+-		printf("Invalid key file: '%s' (%s)\n", value,
++		fprintf(stderr, "Invalid key file: '%s' (%s)\n", value,
+ 		       strerror(errno));
+ 		args->flags |= F_ERR;
+ 	}
+@@ -280,7 +280,7 @@ assign_op(fence_virt_args_t *args, struct arg_info *arg, char *value)
+ 	} else if (!strcasecmp(value, "validate-all")) {
+ 		args->op = FENCE_VALIDATEALL;
+ 	} else {
+-		printf("Unsupported operation: %s\n", value);
++		fprintf(stderr, "Unsupported operation: %s\n", value);
+ 		args->flags |= F_ERR;
+ 	}
+ }
+@@ -310,7 +310,7 @@ static inline void
+ assign_domain(fence_virt_args_t *args, struct arg_info *arg, char *value)
+ {
+ 	if (args->domain) {
+-		printf("Domain/UUID may not be specified more than once\n");
++		fprintf(stderr, "Domain/UUID may not be specified more than once\n");
+ 		args->flags |= F_ERR;
+ 		return;
+ 	}
+@@ -321,13 +321,13 @@ assign_domain(fence_virt_args_t *args, struct arg_info *arg, char *value)
+ 	args->domain = strdup(value);
+ 
+ 	if (strlen(value) <= 0) {
+-		printf("Invalid domain name\n");
++		fprintf(stderr, "Invalid domain name\n");
+ 		args->flags |= F_ERR;
+ 	}
+ 
+ 	if (strlen(value) >= MAX_DOMAINNAME_LENGTH) {
+ 		errno = ENAMETOOLONG;
+-		printf("Invalid domain name: '%s' (%s)\n",
++		fprintf(stderr, "Invalid domain name: '%s' (%s)\n",
+ 		       value, strerror(errno));
+ 		args->flags |= F_ERR;
+ 	}
+@@ -359,7 +359,7 @@ assign_timeout(fence_virt_args_t *args, struct arg_info *arg, char *value)
+ 
+ 	ret = strtol(value, &p, 0);
+ 	if (ret <= 0 || *p != '\0') {
+-		printf("Invalid timeout: '%s'\n", value);
++		fprintf(stderr, "Invalid timeout: '%s'\n", value);
+ 		args->flags |= F_ERR;
+ 	} else
+ 		args->timeout = ret;
+@@ -376,7 +376,7 @@ assign_delay(fence_virt_args_t *args, struct arg_info *arg, char *value)
+ 
+ 	ret = strtol(value, &p, 0);
+ 	if (ret < 0 || *p != '\0') {
+-		printf("Invalid delay: '%s'\n", value);
++		fprintf(stderr, "Invalid delay: '%s'\n", value);
+ 		args->flags |= F_ERR;
+ 	} else
+ 		args->delay = ret;
+@@ -979,7 +979,7 @@ args_finalize(fence_virt_args_t *args)
+ 		args->net.addr = addr;
+ 
+ 	if (!args->net.addr) {
+-		printf("No multicast address available\n");
++		fprintf(stderr, "No multicast address available\n");
+ 		args->flags |= F_ERR;
+ 	}
+ 
+@@ -994,7 +994,7 @@ args_finalize(fence_virt_args_t *args)
+ 	if (strchr(args->net.addr, '.'))
+ 		args->net.family = PF_INET;
+ 	if (!args->net.family) {
+-		printf("Could not determine address family\n");
++		fprintf(stderr, "Could not determine address family\n");
+ 		args->flags |= F_ERR;
+ 	}
+ }
+diff --git a/agents/virt/client/serial.c b/agents/virt/client/serial.c
+index 124679e83..2f5c1b620 100644
+--- a/agents/virt/client/serial.c
++++ b/agents/virt/client/serial.c
+@@ -100,7 +100,7 @@ char_to_flags(const char *param)
+ 			sb_f = CSTOPB;
+ 			break;
+ 		default:
+-			printf("Fail: %c\n", param[x]);
++			fprintf(stderr, "Fail: %c\n", param[x]);
+ 			errno = EINVAL;
+ 			return -1;
+ 		}
+@@ -251,7 +251,7 @@ serial_fence_virt(fence_virt_args_t *args)
+ 
+ 		if (fd < 0) {
+ 			perror("vmchannel connect");
+-			printf("Failed to connect to %s:%d\n", args->serial.address,
++			fprintf(stderr, "Failed to connect to %s:%d\n", args->serial.address,
+ 			       args->net.port);
+ 			return -1;
+ 		}
+@@ -276,7 +276,7 @@ serial_fence_virt(fence_virt_args_t *args)
+ 			close(fd);
+ 			return ret;
+ 		}
+-		printf("Failed to send request\n");
++		fprintf(stderr, "Failed to send request\n");
+ 	}
+ 
+ 	tv.tv_sec = args->timeout;
+diff --git a/agents/virt/client/tcp.c b/agents/virt/client/tcp.c
+index 68e69dbef..f2782fadb 100644
+--- a/agents/virt/client/tcp.c
++++ b/agents/virt/client/tcp.c
+@@ -53,14 +53,14 @@ tcp_exchange(int fd, fence_auth_type_t auth, void *key,
+ 	dbg_printf(3, "Issuing TCP challenge\n");
+ 	if (sock_challenge(fd, auth, key, key_len, timeout) <= 0) {
+ 		/* Challenge failed */
+-		printf("Invalid response to challenge\n");
++		fprintf(stderr, "Invalid response to challenge\n");
+ 		return 1;
+ 	}
+ 
+ 	/* Now they'll send us one, so we need to respond here */
+ 	dbg_printf(3, "Responding to TCP challenge\n");
+ 	if (sock_response(fd, auth, key, key_len, timeout) <= 0) {
+-		printf("Invalid response to challenge\n");
++		fprintf(stderr, "Invalid response to challenge\n");
+ 		return 1;
+ 	}
+ 
+@@ -102,14 +102,14 @@ tcp_fence_virt(fence_virt_args_t *args)
+ 	/* Initialize NSS; required to do hashing, as silly as that
+ 	   sounds... */
+ 	if (NSS_NoDB_Init(NULL) != SECSuccess) {
+-		printf("Could not initialize NSS\n");
++		fprintf(stderr, "Could not initialize NSS\n");
+ 		return 1;
+ 	}
+ 
+ 	if (args->net.auth != AUTH_NONE || args->net.hash != HASH_NONE) {
+ 		key_len = read_key_file(args->net.key_file, key, sizeof(key));
+ 		if (key_len < 0) {
+-			printf("Could not read %s; trying without "
++			fprintf(stderr, "Could not read %s; trying without "
+ 			       "authentication\n", args->net.key_file);
+ 			args->net.auth = AUTH_NONE;
+ 			args->net.hash = HASH_NONE;
+@@ -138,7 +138,7 @@ tcp_fence_virt(fence_virt_args_t *args)
+ 	}
+ 
+ 	if (fd < 0) {
+-		printf("Unable to connect to fence_virtd host %s:%d %s\n",
++		fprintf(stderr, "Unable to connect to fence_virtd host %s:%d %s\n",
+ 			args->net.ipaddr, args->net.port, strerror(errno));
+ 		return 1;
+ 	}
+diff --git a/agents/virt/client/vsock.c b/agents/virt/client/vsock.c
+index a59cb652d..b02c3b07c 100644
+--- a/agents/virt/client/vsock.c
++++ b/agents/virt/client/vsock.c
+@@ -54,14 +54,14 @@ sock_exchange(int fd, fence_auth_type_t auth, void *key,
+ 	dbg_printf(3, "Issuing challenge\n");
+ 	if (sock_challenge(fd, auth, key, key_len, timeout) <= 0) {
+ 		/* Challenge failed */
+-		printf("Invalid response to challenge\n");
++		fprintf(stderr, "Invalid response to challenge\n");
+ 		return 1;
+ 	}
+ 
+ 	/* Now they'll send us one, so we need to respond here */
+ 	dbg_printf(3, "Responding to challenge\n");
+ 	if (sock_response(fd, auth, key, key_len, timeout) <= 0) {
+-		printf("Invalid response to challenge\n");
++		fprintf(stderr, "Invalid response to challenge\n");
+ 		return 1;
+ 	}
+ 
+@@ -102,14 +102,14 @@ vsock_fence_virt(fence_virt_args_t *args)
+ 	/* Initialize NSS; required to do hashing, as silly as that
+ 	   sounds... */
+ 	if (NSS_NoDB_Init(NULL) != SECSuccess) {
+-		printf("Could not initialize NSS\n");
++		fprintf(stderr, "Could not initialize NSS\n");
+ 		return 1;
+ 	}
+ 
+ 	if (args->net.auth != AUTH_NONE || args->net.hash != HASH_NONE) {
+ 		key_len = read_key_file(args->net.key_file, key, sizeof(key));
+ 		if (key_len < 0) {
+-			printf("Could not read %s; trying without "
++			fprintf(stderr, "Could not read %s; trying without "
+ 			       "authentication\n", args->net.key_file);
+ 			args->net.auth = AUTH_NONE;
+ 			args->net.hash = HASH_NONE;
+@@ -132,7 +132,7 @@ vsock_fence_virt(fence_virt_args_t *args)
+ 
+ 	fd = socket(PF_VSOCK, SOCK_STREAM, 0);
+ 	if (fd < 0) {
+-		printf("Unable to create vsock: %s", strerror(errno));
++		fprintf(stderr, "Unable to create vsock: %s", strerror(errno));
+ 		return 1;
+ 	}
+ 
+@@ -142,7 +142,7 @@ vsock_fence_virt(fence_virt_args_t *args)
+ 	svm.svm_port = args->net.port;
+ 
+ 	if (connect(fd, (struct sockaddr *) &svm, sizeof(svm)) < 0) {
+-		printf("Unable to connect to fence_virtd host %d:%d %s\n",
++		fprintf(stderr, "Unable to connect to fence_virtd host %d:%d %s\n",
+ 			args->net.cid, args->net.port, strerror(errno));
+ 		close(fd);
+ 		return 1;

@@ -1,0 +1,43 @@
+From 07285aacbc2194c6a2dfc7dd62dda9a3308bc243 Mon Sep 17 00:00:00 2001
+From: dfellmeth-google <dfellmeth@google.com>
+Date: Mon, 17 Nov 2025 04:44:49 -0500
+Subject: [PATCH] fence_gce: fix node list limit (#640)
+
+This change introduces filtering using the plug to the instances.list method to reduce the number of results returned.
+
+It also introduces pagination if the list returned is still too large.
+---
+ agents/gce/fence_gce.py | 13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
+
+diff --git a/agents/gce/fence_gce.py b/agents/gce/fence_gce.py
+index 759567c6f..c7bd2a5dc 100644
+--- a/agents/gce/fence_gce.py
++++ b/agents/gce/fence_gce.py
+@@ -150,15 +150,24 @@ def get_nodes_list(conn, options):
+ 	result = {}
+ 	plug = options["--plug"] if "--plug" in options else ""
+ 	zones = options["--zone"] if "--zone" in options else ""
++	filter = "name="+plug if plug != "" else ""
++	max_results = 1 if options.get("--action") == "monitor" else 500
+ 	if not zones:
+ 		zones = get_zone(conn, options, plug) if "--plugzonemap" not in options else options["--plugzonemap"][plug]
+ 	try:
+ 		for zone in zones.split(","):
+-			instanceList = retry_api_execute(options, conn.instances().list(
++			request = conn.instances().list(
+ 				project=options["--project"],
+-				zone=zone))
++				zone=zone,
++				filter=filter,
++				maxResults=max_results)
++		while request is not None:
++			instanceList = retry_api_execute(options, request)
++			if "items" not in instanceList:
++				break
+ 			for instance in instanceList["items"]:
+ 				result[instance["id"]] = (instance["name"], translate_status(instance["status"]))
++			request = conn.instances().list_next(previous_request=request, previous_response=instanceList)
+ 	except Exception as err:
+ 		fail_fence_agent(options, "Failed: get_nodes_list: {}".format(str(err)))
+ 
