@@ -87,7 +87,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.2.1
-Release: 129%{?alphatag:.%{alphatag}}%{?dist}.26
+Release: 129%{?alphatag:.%{alphatag}}%{?dist}.27
 License: GPLv2+ and LGPLv2+
 Group: System Environment/Base
 URL: https://github.com/ClusterLabs/fence-agents
@@ -346,6 +346,7 @@ Patch2003: RHEL-109814-2-botocore-add-SkipOsShutdown.patch
 Patch2004: RHEL-136027-fix-bundled-urllib3-CVE-2025-66418.patch
 Patch2005: RHEL-139756-fix-bundled-urllib3-CVE-2025-66471.patch
 Patch2006: RHEL-140783-RHEL-146288-fix-bundled-urllib3-CVE-2026-21441.patch
+Patch2007: RHEL-193803-fix-bundled-httplib2-CVE-2026-59939.patch
 
 %if 0%{?fedora} || 0%{?rhel} > 7
 %global supportedagents amt_ws apc apc_snmp bladecenter brocade cisco_mds cisco_ucs compute drac5 eaton_snmp emerson eps evacuate hds_cb hpblade ibmblade ibm_powervs ibm_vpc ifmib ilo ilo_moonshot ilo_mp ilo_ssh intelmodular ipdu ipmilan kdump kubevirt lpar mpath nutanix_ahv redfish rhevm rsa rsb sbd scsi vmware_rest vmware_soap wti
@@ -667,11 +668,6 @@ popd
 pushd %{aliyunsdkvpc_dir}
 %{__python3} setup.py install -O1 --skip-build --root %{buildroot} --install-lib /usr/lib/fence-agents/%{bundled_lib_dir}/aliyun
 popd
-
-# google cloud
-## for httplib2 install only
-%{__python3} -m pip install --user --no-index --find-links %{_sourcedir} pyparsing
-%{__python3} -m pip install --target %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}/google --no-index --find-links %{_sourcedir} httplib2
 %endif
 
 # aws/kubevirt
@@ -694,6 +690,12 @@ rm -rf %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}/kubevirt/rsa*
 # We're unable to `pip install` without cryptography and PyJWT,
 # so we delete them and replace them with depencies instead
 rm -rf %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}/azure/{cryptography*,jwt,PyJWT-*}
+
+# google cloud
+## for httplib2 install only
+%{__python3} -m pip install --user --no-index --find-links %{_sourcedir} pyparsing
+%{__python3} -m pip install --target %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}/google --no-index --find-links %{_sourcedir} httplib2
+%{__python3} -m pip install --target %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}/google --no-index --find-links %{_sourcedir} typing_extensions
 %endif
 
 # regular patch doesnt work in build-section
@@ -718,6 +720,7 @@ pushd %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2004}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2005}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2006}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2007}
 %endif
 popd
 
@@ -1111,6 +1114,7 @@ Requires: python3-google-api-client
 Requires: python3-pysocks
 # google cloud
 Provides: bundled(python-httplib2) = %{httplib2_version}
+Provides: bundled(python3-typing-extensions) = 4.1.1
 Obsoletes: %{name} < %{version}-%{release}
 BuildArch: noarch
 %description gce
@@ -1650,6 +1654,10 @@ Fence agent for IBM z/VM over IP.
 %endif
 
 %changelog
+* Tue Jul 14 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-129.27
+- bundled httplib2: fix CVE-2026-59939
+  Resolves: RHEL-193803
+
 * Fri Jun 19 2026 Arslan Ahmad <arahmad@redhat.com> - 4.2.1-129.26
 - fence_openstack: fix list-action to avoid timeout when
   there are 100+ VMs on the hypervisor
