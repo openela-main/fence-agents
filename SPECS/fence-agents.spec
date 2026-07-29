@@ -87,7 +87,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.2.1
-Release: 129%{?alphatag:.%{alphatag}}%{?dist}.25
+Release: 129%{?alphatag:.%{alphatag}}%{?dist}.26
 License: GPLv2+ and LGPLv2+
 Group: System Environment/Base
 URL: https://github.com/ClusterLabs/fence-agents
@@ -323,6 +323,7 @@ Patch150: RHEL-96179-fence_kubevirt-force-off.patch
 Patch151: RHEL-110964-1-fence_nutanix_ahv.patch
 Patch152: RHEL-110964-2-fence_nutanix_ahv-update-metadata.patch
 Patch153: RHEL-145087-fence_ibm_vpc-fix-missing-statuses.patch
+Patch154: RHEL-186317-fence_openstack-fix-list-action-to-avoid-timeout-with-large-number-of-VMs.patch
 
 ### HA support libs/utils ###
 # all archs
@@ -576,6 +577,7 @@ BuildRequires: python3-google-api-client python3-pip python3-wheel python3-jinja
 %patch -p1 -P 151
 %patch -p1 -P 152
 %patch -p1 -P 153
+%patch -p1 -P 154
 
 # prevent compilation of something that won't get used anyway
 sed -i.orig 's|FENCE_ZVM=1|FENCE_ZVM=0|' configure.ac
@@ -1648,6 +1650,11 @@ Fence agent for IBM z/VM over IP.
 %endif
 
 %changelog
+* Fri Jun 19 2026 Arslan Ahmad <arahmad@redhat.com> - 4.2.1-129.26
+- fence_openstack: fix list-action to avoid timeout when
+  there are 100+ VMs on the hypervisor
+  Resolves: RHEL-186317
+
 * Mon Apr 27 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-129.25
 - bundled cryptography: replace with dependency to fix CVE-2026-26007
 - bundled PyJWT: replace with dependency to fix CVE-2026-32597
