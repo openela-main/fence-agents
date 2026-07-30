@@ -13,7 +13,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.16.0
-Release: 21%{?alphatag:.%{alphatag}}%{?dist}.2
+Release: 21%{?alphatag:.%{alphatag}}%{?dist}.5
 License: GPL-2.0-or-later AND LGPL-2.0-or-later
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
@@ -71,7 +71,7 @@ Source1401: chardet-3.0.4.tar.gz
 Source1402: google-api-core-1.34.1.tar.gz
 Source1403: google-auth-2.28.1.tar.gz
 Source1404: google-auth-httplib2-0.2.0.tar.gz
-Source1405: httplib2-0.22.0.tar.gz
+Source1405: httplib2-0.32.0.tar.gz
 Source1406: uritemplate-3.0.1.tar.gz
 Source1407: cachetools-5.3.2.tar.gz
 Source1408: googleapis-common-protos-1.62.0.tar.gz
@@ -84,6 +84,7 @@ Source1414: pyroute2.ipset-0.6.13.tar.gz
 Source1415: pyroute2.ndb-0.6.13.tar.gz
 Source1416: pyroute2.nftables-0.6.13.tar.gz
 Source1417: pyroute2.nslink-0.6.13.tar.gz
+Source1418: PySocks-1.7.1.tar.gz
 ## NEEEDED FOR GOOGLE AUTH
 ## INFO: pip is looking at multiple versions of google-auth to determine which version is compatible with other requirements. This could take a while.
 ## ERROR: Could not find a version that satisfies the requirement rsa<5,>=3.1.4 (from google-auth) (from versions: none)
@@ -451,7 +452,7 @@ Provides: bundled(python3-chardet) = 3.0.4
 Provides: bundled(python3-google-api-core) = 1.34.1
 Provides: bundled(python3-google-auth) = 2.28.1
 Provides: bundled(python3-google-auth-httplib2) = 0.2.0
-Provides: bundled(python3-httplib2) = 0.22.0
+Provides: bundled(python3-httplib2) = 0.32.0
 Provides: bundled(python3-uritemplate) = 3.0.1
 Provides: bundled(python3-cachetools) = 5.3.2
 Provides: bundled(python3-googleapis-common-protos) = 1.62.0
@@ -464,6 +465,7 @@ Provides: bundled(python-pyroute2-ipset) = 0.6.13
 Provides: bundled(python-pyroute2-ndb) = 0.6.13
 Provides: bundled(python-pyroute2-nftables) = 0.6.13
 Provides: bundled(python-pyroute2-nslink) = 0.6.13
+Provides: bundled(python-PySocks) = 1.7.1
 Provides: bundled(python3-rsa) = 4.9
 %description -n ha-cloud-support
 Support libraries for Fence Agents.
@@ -1220,6 +1222,10 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
+* Wed Jul 29 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-21.5
+- bundled httplib2: upgrade to v0.32.0 to fix CVE-2026-59939
+  Resolves: RHEL-193812
+
 * Mon Jun  8 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-21.2
 - bundled PyJWT: upgrade to v2.13.0 to fix CVE-2026-48526
   Resolves: RHEL-182314
