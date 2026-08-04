@@ -87,7 +87,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.2.1
-Release: 129%{?alphatag:.%{alphatag}}%{?dist}.27
+Release: 129%{?alphatag:.%{alphatag}}%{?dist}.28
 License: GPLv2+ and LGPLv2+
 Group: System Environment/Base
 URL: https://github.com/ClusterLabs/fence-agents
@@ -338,6 +338,7 @@ Patch1007: RHEL-148156-kubevirt-2-fix-bundled-urllib3-CVE-2025-66471.patch
 Patch1008: RHEL-148156-kubevirt-3-RHEL-146288-fix-bundled-urllib3-CVE-2026-21441.patch
 Patch1009: RHEL-148156-kubevirt-4-RHEL-142447-fix-bundled-pyasn1-CVE-2026-23490.patch
 Patch1010: RHEL-157189-fix-bundled-pyasn1-CVE-2026-30922.patch
+Patch1011: RHEL-178594-kubevirt-fix-bundled-urllib3-CVE-2026-44431.patch
 # cloud (x86_64 only)
 Patch2000: bz2218234-2-aws-fix-bundled-dateutil-CVE-2007-4559.patch
 Patch2001: RHEL-43568-2-aws-fix-bundled-urllib3-CVE-2024-37891.patch
@@ -347,6 +348,7 @@ Patch2004: RHEL-136027-fix-bundled-urllib3-CVE-2025-66418.patch
 Patch2005: RHEL-139756-fix-bundled-urllib3-CVE-2025-66471.patch
 Patch2006: RHEL-140783-RHEL-146288-fix-bundled-urllib3-CVE-2026-21441.patch
 Patch2007: RHEL-193803-fix-bundled-httplib2-CVE-2026-59939.patch
+Patch2008: RHEL-178594-fix-bundled-urllib3-CVE-2026-44431.patch
 
 %if 0%{?fedora} || 0%{?rhel} > 7
 %global supportedagents amt_ws apc apc_snmp bladecenter brocade cisco_mds cisco_ucs compute drac5 eaton_snmp emerson eps evacuate hds_cb hpblade ibmblade ibm_powervs ibm_vpc ifmib ilo ilo_moonshot ilo_mp ilo_ssh intelmodular ipdu ipmilan kdump kubevirt lpar mpath nutanix_ahv redfish rhevm rsa rsb sbd scsi vmware_rest vmware_soap wti
@@ -711,6 +713,7 @@ pushd %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1008}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1009}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH1010}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1011}
 
 %ifarch x86_64
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2000}
@@ -721,6 +724,7 @@ pushd %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2005}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2006}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2007}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2008}
 %endif
 popd
 
@@ -1654,6 +1658,10 @@ Fence agent for IBM z/VM over IP.
 %endif
 
 %changelog
+* Wed Jul 15 2026 RHEL Packaging Agent <redhat-ymir-agent@redhat.com> - 4.2.1-129.28
+- bundled urllib3: fix CVE-2026-44431
+  Resolves: RHEL-178594
+
 * Tue Jul 14 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-129.27
 - bundled httplib2: fix CVE-2026-59939
   Resolves: RHEL-193803
