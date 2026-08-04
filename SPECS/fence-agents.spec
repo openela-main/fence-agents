@@ -47,7 +47,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.10.0
-Release: 110%{?alphatag:.%{alphatag}}%{?dist}.3
+Release: 110%{?alphatag:.%{alphatag}}%{?dist}.5
 License: GPLv2+ and LGPLv2+
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
@@ -108,12 +108,13 @@ Source1502: google_api_python_client-1.12.8-py2.py3-none-any.whl
 Source1503: googleapis_common_protos-1.53.0-py2.py3-none-any.whl
 Source1504: google_auth-1.32.0-py2.py3-none-any.whl
 Source1505: google_auth_httplib2-0.1.0-py2.py3-none-any.whl
-Source1506: httplib2-0.19.1-py3-none-any.whl
-Source1507: protobuf-3.17.3-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.whl
-Source1508: pyroute2-0.7.12.tar.gz
-Source1509: pytz-2021.1-py2.py3-none-any.whl
-Source1510: rsa-4.7.2-py3-none-any.whl
-Source1511: uritemplate-3.0.1-py2.py3-none-any.whl
+Source1506: pyparsing-3.3.2.tar.gz
+Source1507: httplib2-0.32.0.tar.gz
+Source1508: protobuf-3.17.3-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.whl
+Source1509: pyroute2-0.7.12.tar.gz
+Source1510: pytz-2021.1-py2.py3-none-any.whl
+Source1511: rsa-4.7.2-py3-none-any.whl
+Source1512: uritemplate-3.0.1-py2.py3-none-any.whl
 # kubevirt
 ## pip download --no-binary :all: openshift "ruamel.yaml.clib>=0.1.2"
 Source1600: %{openshift}-%{openshift_version}.tar.gz
@@ -218,6 +219,7 @@ Patch73: RHEL-114753-fence_ibm_powervs-update-api-type-description.patch
 Patch74: RHEL-128926-1-fence_gce-make-zone-parameter-optional.patch
 Patch75: RHEL-128926-2-fence_gce-fix-node-list-limit.patch
 Patch76: RHEL-145088-fence_ibm_vpc-fix-missing-statuses.patch
+Patch77: RHEL-186320-fence_openstack-fix-list-action-to-avoid-timeout-with-large-number-of-VMs.patch
 
 ### HA support libs/utils ###
 # all archs
@@ -418,6 +420,7 @@ BuildRequires: %{systemd_units}
 %patch -p1 -P 74
 %patch -p1 -P 75
 %patch -p1 -P 76
+%patch -p1 -P 77
 
 # prevent compilation of something that won't get used anyway
 sed -i.orig 's|FENCE_ZVM=1|FENCE_ZVM=0|' configure.ac
@@ -451,6 +454,8 @@ popd
 %{__python3} -m pip install --no-build-isolation --user --upgrade --no-index --find-links %{_sourcedir} pip setuptools wheel
 %ifarch x86_64
 LIBS="%{_sourcedir}/requirements-*.txt"
+# required for httplib2
+%{__python3} -m pip install --no-build-isolation --upgrade --ignore-installed --prefix "usr" --root support/google --no-index --find-links %{_sourcedir} pyparsing
 %endif
 %ifarch ppc64le
 LIBS="%{_sourcedir}/requirements-common.txt %{_sourcedir}/requirements-ibm.txt"
@@ -459,9 +464,11 @@ LIBS="%{_sourcedir}/requirements-common.txt %{_sourcedir}/requirements-ibm.txt"
 LIBS="%{_sourcedir}/requirements-common.txt"
 %endif
 for x in $LIBS; do
+	# Workaround to be able to install pyparsing with --ignore-installed without pip trying to install it again
+	[ "$x" = "%{_sourcedir}/requirements-google.txt" ] && { echo "pyparsing" > %{_sourcedir}/constraints-google.txt && ADDITIONAL_OPTS="-c %{_sourcedir}/constraints-google.txt"; } || ADDITIONAL_OPTS=""
 	[ "%{_arch}" = "x86_64" ] && [ "$x" = "%{_sourcedir}/requirements-ibm.txt" ] && continue
 	# use --prefix "usr" due to default varying per arch (and "" uses default unlike on RHEL10+)
-	%{__python3} -m pip install --no-build-isolation --use-deprecated=legacy-resolver --prefix "usr" --root support/$(echo $x | sed -E "s/.*requirements-(.*).txt/\1/") --no-index --find-links %{_sourcedir} -r $x
+	%{__python3} -m pip install --no-build-isolation --use-deprecated=legacy-resolver $ADDITIONAL_OPTS --prefix "usr" --root support/$(echo $x | sed -E "s/.*requirements-(.*).txt/\1/") --no-index --find-links %{_sourcedir} -r $x
 done
 
 # kubevirt
@@ -616,7 +623,7 @@ This package contains support files including the Python fencing library.
 %package -n ha-cloud-support
 License: GPL-2.0-or-later AND LGPL-2.0-or-later AND LGPL-2.1-or-later AND Apache-2.0 AND MIT AND BSD-2-Clause AND BSD-3-Clause AND MPL-2.0 AND Apache-2.0 AND PSF-2.0 AND Unlicense AND ISC
 Summary: Support libraries for HA Cloud agents
-Requires: python3-cryptography python3-requests python3-urllib3
+Requires: python3-cryptography python3-pysocks python3-requests python3-urllib3
 %ifarch x86_64
 Requires: awscli2
 # aliyun
@@ -658,7 +665,8 @@ Provides: bundled(python-google-api-client) = 1.12.8
 Provides: bundled(python-googleapis-common-protos) = 1.53.0
 Provides: bundled(python-google-auth) = 1.32.0
 Provides: bundled(python-google-auth-httplib2) = 0.1.0
-Provides: bundled(python-httplib2) = 0.19.1
+Provides: bundled(python-pyparsing) = 3.3.2
+Provides: bundled(python-httplib2) = 0.32.0
 Provides: bundled(python-protobuf) = 3.17.3
 Provides: bundled(python3-%{pyasn1}) = %{pyasn1_version}
 Provides: bundled(python3-%{pyasn1modules}) = %{pyasn1modules_version}
@@ -1516,6 +1524,15 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
+* Wed Jul 15 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-110.5
+- bundled httplib2: upgrade to v0.32.0 to fix CVE-2026-59939
+  Resolves: RHEL-193808
+
+* Mon Jun 22 2026 Arslan Ahmad <arahmad@redhat.com> - 4.10.0-110.4
+- fence_openstack: fix list-action to avoid timeout when
+  there are 100+ VMs on the hypervisor
+  Resolves: RHEL-186320
+
 * Mon Jun  8 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-110.3
 - bundled PyJWT: upgrade to v2.13.0 to fix CVE-2026-48526
   Resolves: RHEL-182313
