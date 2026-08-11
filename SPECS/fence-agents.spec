@@ -47,7 +47,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.10.0
-Release: 110%{?alphatag:.%{alphatag}}%{?dist}.5
+Release: 110%{?alphatag:.%{alphatag}}%{?dist}.6
 License: GPLv2+ and LGPLv2+
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
@@ -226,10 +226,12 @@ Patch77: RHEL-186320-fence_openstack-fix-list-action-to-avoid-timeout-with-large
 Patch1000: bz2217902-1-kubevirt-fix-bundled-dateutil-CVE-2007-4559.patch
 Patch1001: RHEL-146344-kubevirt-fix-bundled-pyasn1-CVE-2026-23490.patch
 Patch1002: RHEL-157202-1-kubevirt-fix-bundled-pyasn1-CVE-2026-30922.patch
+Patch1003: RHEL-217934-1-kubevirt-fix-bundled-pyasn1-CVE-2026-59886.patch
 # cloud (x86_64 only)
 Patch2000: bz2217902-2-aws-azure-fix-bundled-dateutil-CVE-2007-4559.patch
 Patch2001: RHEL-142460-fix-bundled-pyasn1-CVE-2026-23490.patch
 Patch2002: RHEL-157202-2-google-fix-bundled-pyasn1-CVE-2026-30922.patch
+Patch2003: RHEL-217934-2-google-fix-bundled-pyasn1-CVE-2026-59886.patch
 
 %global supportedagents amt_ws apc apc_snmp bladecenter brocade cisco_mds cisco_ucs compute drac5 eaton_snmp emerson eps evacuate hpblade ibmblade ibm_powervs ibm_vpc ifmib ilo ilo_moonshot ilo_mp ilo_ssh intelmodular ipdu ipmilan kdump kubevirt lpar mpath nutanix_ahv redfish rhevm rsa rsb sbd scsi vmware_rest vmware_soap wti
 %ifarch x86_64
@@ -492,11 +494,13 @@ pushd support
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH1000}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1001}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH1002}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1003}
 
 %ifarch x86_64
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH2000}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2001}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH2002}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2003}
 %endif
 popd
 
@@ -1524,6 +1528,10 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
+* Thu Jul 30 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-110.6
+- bundled pyasn1: fix CVE-2026-59886
+  Resolves: RHEL-217934
+
 * Wed Jul 15 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-110.5
 - bundled httplib2: upgrade to v0.32.0 to fix CVE-2026-59939
   Resolves: RHEL-193808
