@@ -87,7 +87,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.2.1
-Release: 129%{?alphatag:.%{alphatag}}%{?dist}.28
+Release: 129%{?alphatag:.%{alphatag}}%{?dist}.29
 License: GPLv2+ and LGPLv2+
 Group: System Environment/Base
 URL: https://github.com/ClusterLabs/fence-agents
@@ -339,6 +339,7 @@ Patch1008: RHEL-148156-kubevirt-3-RHEL-146288-fix-bundled-urllib3-CVE-2026-21441
 Patch1009: RHEL-148156-kubevirt-4-RHEL-142447-fix-bundled-pyasn1-CVE-2026-23490.patch
 Patch1010: RHEL-157189-fix-bundled-pyasn1-CVE-2026-30922.patch
 Patch1011: RHEL-178594-kubevirt-fix-bundled-urllib3-CVE-2026-44431.patch
+Patch1012: RHEL-217923-fix-bundled-pyasn1-CVE-2026-59886.patch
 # cloud (x86_64 only)
 Patch2000: bz2218234-2-aws-fix-bundled-dateutil-CVE-2007-4559.patch
 Patch2001: RHEL-43568-2-aws-fix-bundled-urllib3-CVE-2024-37891.patch
@@ -714,6 +715,7 @@ pushd %{buildroot}/usr/lib/fence-agents/%{bundled_lib_dir}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1009}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=2 < %{PATCH1010}
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1011}
+/usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH1012}
 
 %ifarch x86_64
 /usr/bin/patch --no-backup-if-mismatch -p1 --fuzz=0 < %{PATCH2000}
@@ -1658,6 +1660,10 @@ Fence agent for IBM z/VM over IP.
 %endif
 
 %changelog
+* Thu Jul 30 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.2.1-129.29
+- bundled pyasn1: fix CVE-2026-59886
+  Resolves: RHEL-217923
+
 * Wed Jul 15 2026 RHEL Packaging Agent <redhat-ymir-agent@redhat.com> - 4.2.1-129.28
 - bundled urllib3: fix CVE-2026-44431
   Resolves: RHEL-178594
