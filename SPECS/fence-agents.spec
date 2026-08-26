@@ -47,7 +47,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.10.0
-Release: 110%{?alphatag:.%{alphatag}}%{?dist}.6
+Release: 110%{?alphatag:.%{alphatag}}%{?dist}.7
 License: GPLv2+ and LGPLv2+
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
@@ -63,7 +63,7 @@ Source105: requirements-ibm.txt
 # common (pexpect / suds)
 Source1000: pexpect-4.8.0-py2.py3-none-any.whl
 Source1001: ptyprocess-0.7.0-py2.py3-none-any.whl
-Source1002: suds_community-0.8.5-py3-none-any.whl
+Source1002: suds_community-1.2.0.tar.gz
 Source1100: aliyun-python-sdk-core-2.16.0.tar.gz
 Source1101: aliyun-python-sdk-ecs-4.24.82.tar.gz
 Source1102: colorama-0.3.3.tar.gz
@@ -591,7 +591,7 @@ Requires: python-pycurl
 # pexpect / suds
 Provides: bundled(python-pexpect) = 4.8.0
 Provides: bundled(python-ptyprocess) = 0.7.0
-Provides: bundled(python-suds) = 0.8.5
+Provides: bundled(python3-suds) = 1.2.0
 BuildArch: noarch
 %description common
 A collection of executables to handle isolation ("fencing") of possibly
@@ -1528,6 +1528,10 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
+* Fri Aug 07 2026 Arslan Ahmad <arahmad@redhat.com> - 4.10.0-110.7
+- fence_vmware_soap: fix fence failure when FIPS is enabled
+  Resolves: RHEL-235120
+
 * Thu Jul 30 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-110.6
 - bundled pyasn1: fix CVE-2026-59886
   Resolves: RHEL-217934
