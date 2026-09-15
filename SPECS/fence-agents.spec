@@ -13,7 +13,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.16.0
-Release: 21%{?alphatag:.%{alphatag}}%{?dist}.5
+Release: 21%{?alphatag:.%{alphatag}}%{?dist}.6
 License: GPL-2.0-or-later AND LGPL-2.0-or-later
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
@@ -120,6 +120,7 @@ Patch17: RHEL-114752-fence_ibm_powervs-update-api-type-description.patch
 Patch18: RHEL-128925-fence_gce-fix-node-list-limit.patch
 Patch19: RHEL-125959-fence_virt-print-errors-to-stderr.patch
 Patch20: RHEL-145086-fence_ibm_vpc-fix-missing-statuses.patch
+Patch21: RHEL-185610-fence_openstack-fix-list-action-to-avoid-timeout-with-large-number-of-VMs.patch
 
 %global supportedagents amt_ws apc apc_snmp bladecenter brocade cisco_mds cisco_ucs drac5 eaton_snmp emerson eps hpblade ibmblade ibm_powervs ibm_vpc ifmib ilo ilo_moonshot ilo_mp ilo_ssh intelmodular ipdu ipmilan kdump kubevirt lpar mpath nutanix_ahv redfish rhevm rsa rsb sbd scsi vmware_rest vmware_soap wti
 %ifarch x86_64
@@ -249,6 +250,7 @@ BuildRequires: %{systemd_units}
 %patch -p1 -P 18
 %patch -p1 -P 19
 %patch -p1 -P 20
+%patch -p1 -P 21
 
 # prevent compilation of something that won't get used anyway
 sed -i.orig 's|FENCE_ZVM=1|FENCE_ZVM=0|' configure.ac
@@ -1222,6 +1224,11 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
+* Thu Jul 30 2026 Arslan Ahmad <arahmad@redhat.com> - 4.16.0-21.6
+- fence_openstack: fix list-action to avoid timeout when
+  there are 100+ VMs on the hypervisor
+  Resolves: RHEL-185610
+
 * Wed Jul 29 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-21.5
 - bundled httplib2: upgrade to v0.32.0 to fix CVE-2026-59939
   Resolves: RHEL-193812

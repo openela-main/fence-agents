@@ -1,0 +1,56 @@
+From 101344d675f5c4f4141a01ec60a3265898cea94d Mon Sep 17 00:00:00 2001
+From: Arslan Ahmad <arslan.ahmad97@googlemail.com>
+Date: Tue, 16 Jun 2026 21:02:53 +0530
+Subject: [PATCH] fence_openstack: fix list-action to avoid timeout when there
+ are 100+ VMs on the hypervisor
+
+Routine `monitor` actions internally translate to a full `list` command.
+On large deployments, fetching all VMs from the Nova API creates massive
+payloads that cause the agent to timeout.
+
+Changes in this patch:
+* Fetch only 1 VM (`limit=1`) during `monitor` operations to eliminate
+API overhead and prevent timeouts.
+
+Signed-off-by: Arslan Ahmad <arslan.ahmad97@googlemail.com>
+---
+ agents/openstack/fence_openstack.py | 25 +++++++++++++++++--------
+ 1 file changed, 17 insertions(+), 8 deletions(-)
+
+diff --git a/agents/openstack/fence_openstack.py b/agents/openstack/fence_openstack.py
+index 4054e5149..b90d80d6a 100644
+--- a/agents/openstack/fence_openstack.py
++++ b/agents/openstack/fence_openstack.py
+@@ -52,15 +52,24 @@ def get_cloud(options):
+ 
+ 
+ def get_nodes_list(conn, options):
+-    logging.info("Running %s action", options["--action"])
++    logging.info("Running %s action", options.get("--original-action", options.get("--action")))
+     result = {}
+-    response = conn.servers.list(detailed=True)
+-    if response is not None:
+-        for item in response:
+-            instance_id = item.id
+-            instance_name = item.name
+-            instance_status = item.status
+-            result[instance_id] = (instance_name, translate_status(instance_status))
++    search_opts = {}
++    max_results = 1 if options.get("--original-action") == "monitor" else None
++
++    if "--plug" in options:
++        search_opts["uuid"] = options["--plug"]
++
++    try:
++        response = conn.servers.list(detailed=True, search_opts=search_opts, limit=max_results)
++        if response is not None:
++            for item in response:
++                instance_id = item.id
++                instance_name = item.name
++                instance_status = item.status
++                result[instance_id] = (instance_name, translate_status(instance_status))
++    except Exception as e:
++        logging.error("Failed to retrieve node list: %s", e)
+     return result
+ 
+ 
