@@ -47,7 +47,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.10.0
-Release: 110%{?alphatag:.%{alphatag}}%{?dist}.7
+Release: 110%{?alphatag:.%{alphatag}}%{?dist}.8
 License: GPLv2+ and LGPLv2+
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
@@ -95,7 +95,7 @@ Source1407: isodate-0.6.1.tar.gz
 Source1408: msrest-0.7.1.zip
 Source1409: msrestazure-0.6.4.post1.tar.gz
 Source1410: %{oauthlib}-%{oauthlib_version}.tar.gz
-Source1411: pyjwt-2.13.0.tar.gz
+Source1411: pyjwt-2.15.1.tar.gz
 Source1412: requests_oauthlib-1.3.0-py2.py3-none-any.whl
 Source1413: msal-1.36.0.tar.gz
 Source1414: msal_extensions-1.3.1.tar.gz
@@ -659,7 +659,7 @@ Provides: bundled(python-msrest) = 0.7.1
 Provides: bundled(python-msrestazure) = 0.6.4.post1
 Provides: bundled(python-%{oauthlib}) = %{oauthlib_version}
 Provides: bundled(python-portalocker) = 2.5.1
-Provides: bundled(python-PyJWT) = 2.13.0
+Provides: bundled(python-PyJWT) = 2.15.1
 Provides: bundled(python-requests-oauthlib) = 1.3.0
 Provides: bundled(python-typing-extensions) = 4.12.2
 # google
@@ -1528,6 +1528,11 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
+* Tue Oct 20 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-110.8
+- bundled PyJWT: upgrade to v2.15.1 to fix CVE-2026-102266,
+  CVE-2026-102267, CVE-2026-102268, CVE-2026-102271, and CVE-2026-102272
+  Resolves: RHEL-281011, RHEL-281460, RHEL-286482, RHEL-278388, RHEL-281053
+
 * Fri Aug 07 2026 Arslan Ahmad <arahmad@redhat.com> - 4.10.0-110.7
 - fence_vmware_soap: fix fence failure when FIPS is enabled
   Resolves: RHEL-235120
