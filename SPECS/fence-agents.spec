@@ -13,7 +13,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.16.0
-Release: 21%{?alphatag:.%{alphatag}}%{?dist}.6
+Release: 21%{?alphatag:.%{alphatag}}%{?dist}.7
 License: GPL-2.0-or-later AND LGPL-2.0-or-later
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
@@ -62,7 +62,7 @@ Source1310: adal-1.2.7.tar.gz
 Source1311: certifi-2025.1.31.tar.gz
 Source1312: isodate-0.6.1.tar.gz
 Source1313: portalocker-2.10.1.tar.gz
-Source1314: pyjwt-2.13.0.tar.gz
+Source1314: pyjwt-2.15.1.tar.gz
 ## azure buildreq
 Source1315: setuptools-82.0.1.tar.gz
 # google
@@ -447,7 +447,7 @@ Provides: bundled(python3-adal) = 1.2.7
 Provides: bundled(python3-certifi) = 2025.1.31
 Provides: bundled(python3-isodate) = 0.6.1
 Provides: bundled(python3-portalocker) = 2.10.1
-Provides: bundled(python3-PyJWT) = 2.13.0
+Provides: bundled(python3-PyJWT) = 2.15.1
 # google
 Provides: bundled(python3-google-api-python-client) = 1.12.8
 Provides: bundled(python3-chardet) = 3.0.4
@@ -1224,6 +1224,11 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
+* Tue Oct 20 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-21.7
+- bundled PyJWT: upgrade to v2.15.1 to fix CVE-2026-102266,
+  CVE-2026-102267, CVE-2026-102268, CVE-2026-102271, and CVE-2026-102272
+  Resolves: RHEL-281025, RHEL-281457, RHEL-286479, RHEL-278385, RHEL-281051
+
 * Thu Jul 30 2026 Arslan Ahmad <arahmad@redhat.com> - 4.16.0-21.6
 - fence_openstack: fix list-action to avoid timeout when
   there are 100+ VMs on the hypervisor
