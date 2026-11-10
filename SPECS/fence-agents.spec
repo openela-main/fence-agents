@@ -47,7 +47,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.10.0
-Release: 110%{?alphatag:.%{alphatag}}%{?dist}.8
+Release: 122%{?alphatag:.%{alphatag}}%{?dist}
 License: GPLv2+ and LGPLv2+
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
@@ -95,7 +95,7 @@ Source1407: isodate-0.6.1.tar.gz
 Source1408: msrest-0.7.1.zip
 Source1409: msrestazure-0.6.4.post1.tar.gz
 Source1410: %{oauthlib}-%{oauthlib_version}.tar.gz
-Source1411: pyjwt-2.15.1.tar.gz
+Source1411: pyjwt-2.13.0.tar.gz
 Source1412: requests_oauthlib-1.3.0-py2.py3-none-any.whl
 Source1413: msal-1.36.0.tar.gz
 Source1414: msal_extensions-1.3.1.tar.gz
@@ -219,19 +219,24 @@ Patch73: RHEL-114753-fence_ibm_powervs-update-api-type-description.patch
 Patch74: RHEL-128926-1-fence_gce-make-zone-parameter-optional.patch
 Patch75: RHEL-128926-2-fence_gce-fix-node-list-limit.patch
 Patch76: RHEL-145088-fence_ibm_vpc-fix-missing-statuses.patch
-Patch77: RHEL-186320-fence_openstack-fix-list-action-to-avoid-timeout-with-large-number-of-VMs.patch
+Patch77: RHEL-146216-fence_kubevirt-report-Succeeded-and-Failed-as-OFF.patch
+Patch78: RHEL-183892-fence_ibm_vpc-set-proxy-when-token-is-expired-as-well.patch
+Patch79: RHEL-154985-fence_openstack-fix-list-action-to-avoid-timeout-with-large-number-of-VMs.patch
+Patch80: RHEL-193739-1-fence_vmware_rest-add-token-based-authentication.patch
+Patch81: RHEL-193739-2-fence_vmware_rest-remove-static-token-option.patch
+Patch82: RHEL-187353-fence_gce-fail-immediately-with-import-error.patch
 
 ### HA support libs/utils ###
 # all archs
 Patch1000: bz2217902-1-kubevirt-fix-bundled-dateutil-CVE-2007-4559.patch
 Patch1001: RHEL-146344-kubevirt-fix-bundled-pyasn1-CVE-2026-23490.patch
-Patch1002: RHEL-157202-1-kubevirt-fix-bundled-pyasn1-CVE-2026-30922.patch
-Patch1003: RHEL-217934-1-kubevirt-fix-bundled-pyasn1-CVE-2026-59886.patch
+Patch1002: RHEL-157203-1-kubevirt-fix-bundled-pyasn1-CVE-2026-30922.patch
+Patch1003: RHEL-217926-1-kubevirt-fix-bundled-pyasn1-CVE-2026-59886.patch
 # cloud (x86_64 only)
 Patch2000: bz2217902-2-aws-azure-fix-bundled-dateutil-CVE-2007-4559.patch
 Patch2001: RHEL-142460-fix-bundled-pyasn1-CVE-2026-23490.patch
-Patch2002: RHEL-157202-2-google-fix-bundled-pyasn1-CVE-2026-30922.patch
-Patch2003: RHEL-217934-2-google-fix-bundled-pyasn1-CVE-2026-59886.patch
+Patch2002: RHEL-157203-2-google-fix-bundled-pyasn1-CVE-2026-30922.patch
+Patch2003: RHEL-217926-2-google-fix-bundled-pyasn1-CVE-2026-59886.patch
 
 %global supportedagents amt_ws apc apc_snmp bladecenter brocade cisco_mds cisco_ucs compute drac5 eaton_snmp emerson eps evacuate hpblade ibmblade ibm_powervs ibm_vpc ifmib ilo ilo_moonshot ilo_mp ilo_ssh intelmodular ipdu ipmilan kdump kubevirt lpar mpath nutanix_ahv redfish rhevm rsa rsb sbd scsi vmware_rest vmware_soap wti
 %ifarch x86_64
@@ -423,6 +428,11 @@ BuildRequires: %{systemd_units}
 %patch -p1 -P 75
 %patch -p1 -P 76
 %patch -p1 -P 77
+%patch -p1 -P 78
+%patch -p1 -P 79
+%patch -p1 -P 80
+%patch -p1 -P 81
+%patch -p1 -P 82
 
 # prevent compilation of something that won't get used anyway
 sed -i.orig 's|FENCE_ZVM=1|FENCE_ZVM=0|' configure.ac
@@ -659,7 +669,7 @@ Provides: bundled(python-msrest) = 0.7.1
 Provides: bundled(python-msrestazure) = 0.6.4.post1
 Provides: bundled(python-%{oauthlib}) = %{oauthlib_version}
 Provides: bundled(python-portalocker) = 2.5.1
-Provides: bundled(python-PyJWT) = 2.15.1
+Provides: bundled(python-PyJWT) = 2.13.0
 Provides: bundled(python-requests-oauthlib) = 1.3.0
 Provides: bundled(python-typing-extensions) = 4.12.2
 # google
@@ -1528,40 +1538,51 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
-* Tue Oct 20 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-110.8
-- bundled PyJWT: upgrade to v2.15.1 to fix CVE-2026-102266,
-  CVE-2026-102267, CVE-2026-102268, CVE-2026-102271, and CVE-2026-102272
-  Resolves: RHEL-281011, RHEL-281460, RHEL-286482, RHEL-278388, RHEL-281053
-
-* Fri Aug 07 2026 Arslan Ahmad <arahmad@redhat.com> - 4.10.0-110.7
+* Thu Aug 06 2026 Arslan Ahmad <arahmad@redhat.com> - 4.10.0-122
 - fence_vmware_soap: fix fence failure when FIPS is enabled
-  Resolves: RHEL-235120
+  Resolves: RHEL-166378
 
-* Thu Jul 30 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-110.6
+* Fri Jul 31 2026 Arslan Ahmad <arahmad@redhat.com> - 4.10.0-121
+- fence_gce: fail immediately with import errors
+  Resolves: RHEL-187353
+
+* Thu Jul 30 2026 Arslan Ahmad <arahmad@redhat.com> - 4.10.0-120
+- fence_vmware_rest: add token-based authentication
+  Resolves: RHEL-193739
+
+* Thu Jul 30 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-119
 - bundled pyasn1: fix CVE-2026-59886
-  Resolves: RHEL-217934
+  Resolves: RHEL-217926
 
-* Wed Jul 15 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-110.5
+* Wed Jul 15 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-118
 - bundled httplib2: upgrade to v0.32.0 to fix CVE-2026-59939
-  Resolves: RHEL-193808
+  Resolves: RHEL-193813
 
-* Mon Jun 22 2026 Arslan Ahmad <arahmad@redhat.com> - 4.10.0-110.4
+* Wed Jun 17 2026 Arslan Ahmad <arahmad@redhat.com> - 4.10.0-116
 - fence_openstack: fix list-action to avoid timeout when
   there are 100+ VMs on the hypervisor
-  Resolves: RHEL-186320
+  Resolves: RHEL-154985
 
-* Mon Jun  8 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-110.3
+* Mon Jun 15 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-115
+- fence_ibm_vpc: set proxy when token has expired as well
+  Resolves: RHEL-183892
+
+* Mon Jun  8 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-114
 - bundled PyJWT: upgrade to v2.13.0 to fix CVE-2026-48526
-  Resolves: RHEL-182313
+  Resolves: RHEL-182311
 
-* Wed Apr 29 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-110.2
+* Thu May 21 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-113
+- fence_kubevirt: report Succeeded and Failed as OFF
+  Resolves: RHEL-146216
+
+* Wed Apr 29 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-112
 - bundled pyasn1: fix CVE-2026-30922
-  Resolves: RHEL-157202
+  Resolves: RHEL-157203
 
-* Thu Apr 16 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-110.1
+* Thu Apr 16 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-111
 - bundled cryptography: replace with dependency to fix CVE-2026-26007
 - bundled PyJWT: upgrade to v2.12.1 to fix CVE-2026-32597
-  Resolves: RHEL-167241, RHEL-155676
+  Resolves: RHEL-148437, RHEL-155677
 
 * Tue Feb  10 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.10.0-110
 - bundled urllib3: fix CVE-2024-37891, CVE-2025-66418, CVE-2025-66471,

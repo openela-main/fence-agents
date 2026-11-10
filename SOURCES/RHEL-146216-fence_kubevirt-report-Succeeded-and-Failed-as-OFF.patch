@@ -1,0 +1,30 @@
+From 083b61cdc849962c665d906c57a98ece3fe9ee0b Mon Sep 17 00:00:00 2001
+From: Oyvind Albrigtsen <oalbrigt@redhat.com>
+Date: Tue, 12 May 2026 13:37:49 +0200
+Subject: [PATCH] fence_kubevirt: report Succeeded and Failed as OFF
+
+With specific settings like RunStrategy: Manual and
+failure to start up or manual shutdown from within,
+the VMI object may exist while the VM is not running,
+and it needs to be correctly parsed to provide the
+right VM status.
+---
+ agents/kubevirt/fence_kubevirt.py | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/agents/kubevirt/fence_kubevirt.py b/agents/kubevirt/fence_kubevirt.py
+index c0b865bb8..d4e65b8cd 100755
+--- a/agents/kubevirt/fence_kubevirt.py
++++ b/agents/kubevirt/fence_kubevirt.py
+@@ -65,8 +65,11 @@ def get_power_status(conn, options):
+         fail(EC_STATUS)
+ 
+ def translate_status(instance_status):
++    logging.debug(f"translate_status(): {instance_status}")
+     if instance_status == "Running":
+         return "on"
++    elif instance_status in ["Succeeded", "Failed"]:
++        return "off"
+     return "unknown"
+ 
+ def set_power_status(conn, options):
