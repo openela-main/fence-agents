@@ -1,0 +1,30 @@
+From d945ac94ce5b5dff3c74401f83b8422181cb529d Mon Sep 17 00:00:00 2001
+From: "Fabio M. Di Nitto" <fdinitto@redhat.com>
+Date: Tue, 9 Dec 2025 14:16:01 +0100
+Subject: [PATCH] Remove discards const qualifier warnings
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+gcc 15.2.1 started producing warning about "assignment discards
+‘const’ qualifier from pointer target type" so patch adds const
+qualifier to fix this warning.
+
+Signed-off-by: Fabio M. Di Nitto <fdinitto@redhat.com>
+---
+ agents/virt/server/virt-serial.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/agents/virt/server/virt-serial.c b/agents/virt/server/virt-serial.c
+index bfcf4de26..17ac2b659 100644
+--- a/agents/virt/server/virt-serial.c
++++ b/agents/virt/server/virt-serial.c
+@@ -55,7 +55,7 @@ struct domain_info {
+ static int
+ is_in_directory(const char *dir, const char *pathspec)
+ {
+-	char *last_slash = NULL;
++	const char *last_slash = NULL;
+ 	size_t dirlen, pathlen;
+ 
+ 	if (!dir || !pathspec)

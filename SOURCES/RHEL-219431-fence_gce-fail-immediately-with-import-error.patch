@@ -1,0 +1,62 @@
+From 449658afaa6a03387cae61842550ccb4b4c5f9dd Mon Sep 17 00:00:00 2001
+From: Arslan Ahmad <arahmad@redhat.com>
+Date: Mon, 20 Jul 2026 13:42:48 +0530
+Subject: [PATCH] fence_gce: fail immediately on import errors
+
+Previously, if a dependency like `httplib2` failed to load due to
+a package conflict, the script would silently pass and crash further
+down the stack. Now, it explicitly catches the error, prints a clear
+log message identifying the broken module and exits immediately
+making aware of the dependency issue.
+
+AI: Assisted by Claude
+
+Signed-off-by: Arslan Ahmad <arahmad@redhat.com>
+---
+ agents/gce/fence_gce.py |  7 ++++---
+ lib/fencing.py.py       | 13 +++++++++++++
+ 2 files changed, 17 insertions(+), 3 deletions(-)
+
+diff --git a/agents/gce/fence_gce.py b/agents/gce/fence_gce.py
+index c7bd2a5dc..7cc8bbbf6 100644
+--- a/agents/gce/fence_gce.py
++++ b/agents/gce/fence_gce.py
+@@ -36,10 +36,11 @@
+   import socks
+   try:
+     from google.oauth2.credentials import Credentials as GoogleCredentials
+-  except:
++  except ImportError:
+     from oauth2client.client import GoogleCredentials
+-except:
+-  pass
++except Exception as e:
++    from fencing import fail_import_if_not_metadata_or_help_action
++    fail_import_if_not_metadata_or_help_action("Failed to import Google Cloud dependencies", e)
+ 
+ VERSION = '1.0.5'
+ ACTION_IDS = {
+diff --git a/lib/fencing.py.py b/lib/fencing.py.py
+index 123926782..8adacea85 100644
+--- a/lib/fencing.py.py
++++ b/lib/fencing.py.py
+@@ -1280,6 +1280,19 @@ def source_env(env_file):
+     os.environ.clear()
+     os.environ.update(line.partition('=')[::2] for line in output.decode("utf-8").split('\0') if not re.match(r"^\s*$", line))
+ 
++def fail_import_if_not_metadata_or_help_action(message, e):
++    args = sys.argv[1:]
++    opts = list(zip(args, args[1:] + [None]))
++    if any(opt in ("-h", "--help", "--action=metadata", "--action=manpage") or (opt in ("-o", "--action") and arg in ("metadata", "manpage")) for opt, arg in opts):
++        return
++    # When no command-line args, input might be from stdin - defer error to let argument validation happen
++    if len(args) == 0:
++        return
++    # Otherwise fail immediately
++    logging.getLogger().name = os.path.basename(sys.argv[0])
++    logging.error("%s: %s", message, str(e))
++    sys.exit(EC_GENERIC_ERROR)
++
+ # Convert array of format [[key1, value1], [key2, value2], ... [keyN, valueN]] to dict, where key is
+ # in format a.b.c.d...z and returned dict has key only z
+ def array_to_dict(array):

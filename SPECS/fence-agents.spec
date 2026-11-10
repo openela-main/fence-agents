@@ -13,7 +13,7 @@
 Name: fence-agents
 Summary: Set of unified programs capable of host isolation ("fencing")
 Version: 4.16.0
-Release: 21%{?alphatag:.%{alphatag}}%{?dist}.7
+Release: 34%{?alphatag:.%{alphatag}}%{?dist}
 License: GPL-2.0-or-later AND LGPL-2.0-or-later
 URL: https://github.com/ClusterLabs/fence-agents
 Source0: https://fedorahosted.org/releases/f/e/fence-agents/%{name}-%{version}.tar.gz
@@ -54,7 +54,7 @@ Source1302: azure_mgmt_core-1.5.0.tar.gz
 Source1303: azure_mgmt_compute-34.0.0.tar.gz
 Source1304: azure_mgmt_network-28.1.0.tar.gz
 Source1305: azure_identity-1.19.0.tar.gz
-Source1306: msal-1.31.1.tar.gz
+Source1306: msal-1.37.0.tar.gz
 Source1307: msal_extensions-1.2.0.tar.gz
 Source1308: msrest-0.7.1.zip
 Source1309: msrestazure-0.6.4.post1.tar.gz
@@ -62,7 +62,7 @@ Source1310: adal-1.2.7.tar.gz
 Source1311: certifi-2025.1.31.tar.gz
 Source1312: isodate-0.6.1.tar.gz
 Source1313: portalocker-2.10.1.tar.gz
-Source1314: pyjwt-2.15.1.tar.gz
+Source1314: pyjwt-2.13.0.tar.gz
 ## azure buildreq
 Source1315: setuptools-82.0.1.tar.gz
 # google
@@ -120,7 +120,13 @@ Patch17: RHEL-114752-fence_ibm_powervs-update-api-type-description.patch
 Patch18: RHEL-128925-fence_gce-fix-node-list-limit.patch
 Patch19: RHEL-125959-fence_virt-print-errors-to-stderr.patch
 Patch20: RHEL-145086-fence_ibm_vpc-fix-missing-statuses.patch
-Patch21: RHEL-185610-fence_openstack-fix-list-action-to-avoid-timeout-with-large-number-of-VMs.patch
+Patch21: RHEL-170614-fence_virtd-fix-discard-const-error-with-GCC-16.patch
+Patch22: RHEL-81658-fence_kubevirt-report-Succeeded-and-Failed-as-OFF.patch
+Patch23: RHEL-140160-fence_ibm_vpc-set-proxy-when-token-is-expired-as-well.patch
+Patch24: RHEL-155007-fence_openstack-fix-list-action-to-avoid-timeout-with-large-number-of-VMs.patch
+Patch25: RHEL-191488-1-fence_vmware_rest-add-token-based-authentication.patch
+Patch26: RHEL-191488-2-fence_vmware_rest-remove-static-token-option.patch
+Patch27: RHEL-219431-fence_gce-fail-immediately-with-import-error.patch
 
 %global supportedagents amt_ws apc apc_snmp bladecenter brocade cisco_mds cisco_ucs drac5 eaton_snmp emerson eps hpblade ibmblade ibm_powervs ibm_vpc ifmib ilo ilo_moonshot ilo_mp ilo_ssh intelmodular ipdu ipmilan kdump kubevirt lpar mpath nutanix_ahv redfish rhevm rsa rsb sbd scsi vmware_rest vmware_soap wti
 %ifarch x86_64
@@ -251,6 +257,12 @@ BuildRequires: %{systemd_units}
 %patch -p1 -P 19
 %patch -p1 -P 20
 %patch -p1 -P 21
+%patch -p1 -P 22
+%patch -p1 -P 23
+%patch -p1 -P 24
+%patch -p1 -P 25
+%patch -p1 -P 26
+%patch -p1 -P 27
 
 # prevent compilation of something that won't get used anyway
 sed -i.orig 's|FENCE_ZVM=1|FENCE_ZVM=0|' configure.ac
@@ -439,7 +451,7 @@ Provides: bundled(python3-azure-mgmt-core) = 1.5.0
 Provides: bundled(python3-azure-mgmt-compute) = 34.0.0
 Provides: bundled(python3-azure-mgmt-network) = 28.1.0
 Provides: bundled(python3-azure-identity) = 1.19.0
-Provides: bundled(python3-msal) = 1.31.1
+Provides: bundled(python3-msal) = 1.37.0
 Provides: bundled(python3-msal-extensions) = 1.2.0
 Provides: bundled(python3-msrest) = 0.7.1
 Provides: bundled(python3-msrestazure) = 0.6.4.post1
@@ -447,7 +459,7 @@ Provides: bundled(python3-adal) = 1.2.7
 Provides: bundled(python3-certifi) = 2025.1.31
 Provides: bundled(python3-isodate) = 0.6.1
 Provides: bundled(python3-portalocker) = 2.10.1
-Provides: bundled(python3-PyJWT) = 2.15.1
+Provides: bundled(python3-PyJWT) = 2.13.0
 # google
 Provides: bundled(python3-google-api-python-client) = 1.12.8
 Provides: bundled(python3-chardet) = 3.0.4
@@ -1224,28 +1236,43 @@ are located on corosync cluster nodes.
 %endif
 
 %changelog
-* Tue Oct 20 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-21.7
-- bundled PyJWT: upgrade to v2.15.1 to fix CVE-2026-102266,
-  CVE-2026-102267, CVE-2026-102268, CVE-2026-102271, and CVE-2026-102272
-  Resolves: RHEL-281025, RHEL-281457, RHEL-286479, RHEL-278385, RHEL-281051
+* Fri Jul 31 2026 Arslan Ahmad <arahmad@redhat.com> - 4.16.0-34
+- fence_gce: fail immediately with import errors
+  Resolves: RHEL-219431
 
-* Thu Jul 30 2026 Arslan Ahmad <arahmad@redhat.com> - 4.16.0-21.6
+* Fri Jul 31 2026 Arslan Ahmad <arahmad@redhat.com> - 4.16.0-33
+- fence_vmware_rest: add token-based authentication
+  Resolves: RHEL-191488
+
+* Tue Jul 14 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-31
+- bundled httplib2: upgrade to v0.32.0 to fix CVE-2026-59939
+  Resolves: RHEL-193809
+
+* Wed Jun 17 2026 Arslan Ahmad <arahmad@redhat.com> - 4.16.0-29
 - fence_openstack: fix list-action to avoid timeout when
   there are 100+ VMs on the hypervisor
-  Resolves: RHEL-185610
+  Resolves: RHEL-155007
 
-* Wed Jul 29 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-21.5
-- bundled httplib2: upgrade to v0.32.0 to fix CVE-2026-59939
-  Resolves: RHEL-193812
+* Mon Jun 15 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-28
+- fence_ibm_vpc: set proxy when token has expired as well
+  Resolves: RHEL-140160
 
-* Mon Jun  8 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-21.2
+* Mon Jun  8 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-27
 - bundled PyJWT: upgrade to v2.13.0 to fix CVE-2026-48526
-  Resolves: RHEL-182314
+  Resolves: RHEL-182312
 
-* Wed Apr 29 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-21.1
+* Thu May 21 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-26
+- fence_kubevirt: report Succeeded and Failed as OFF
+  Resolves: RHEL-81658
+
+* Mon May  4 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-25
+- fence_virtd: fix discard-const error with GCC 16
+  Resolves: RHEL-170614
+
+* Wed Apr 29 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-24
 - bundled pyasn1: replace with dependency to fix CVE-2026-30922
 - bundled PyJWT: upgrade to v2.12.1 to fix CVE-2026-32597
-  Resolves: RHEL-157187, RHEL-155668
+  Resolves: RHEL-157188, RHEL-155669
 
 * Mon Feb 16 2026 Oyvind Albrigtsen <oalbrigt@redhat.com> - 4.16.0-21
 - bundled pyasn1: fix CVE-2026-23490
